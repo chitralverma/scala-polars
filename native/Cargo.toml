@@ -12,5 +12,5 @@ rust-version = "1.65"
 jni = "0.20"
 
 [lib]
-name="divider"
+name="scala_polars"
 crate_type = ["cdylib"]
