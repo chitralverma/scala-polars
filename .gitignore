@@ -1,2 +1,18 @@
 *.class
 *.log
+.DS_Store
+
+# IntelliJ IDEA specific
+.idea/
+*.iml
+
+# Rust specific
+Cargo.lock
+
+# SBT specific
+.bsp/
+coverage.xml
+target/
+.classpath
+.project
+.settings/
