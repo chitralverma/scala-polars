@@ -1,12 +1,11 @@
 [package]
 name = "scala-polars-native"
 version = "0.1.0"
-authors = ["Chitral Verma <chitral.verma@gmail.com>"]
+authors = ["chitralverma <chitral.verma@gmail.com>"]
 edition = "2021"
 license = "Apache-2.0"
 license-file = "../LICENSE"
 readme = "../README.md"
-rust-version = "1.65"
 
 [dependencies]
 jni = "0.20"
