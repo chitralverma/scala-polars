@@ -1,3 +1,5 @@
+import scala.sys.process._
+
 /*
  ***********************
  * Constants *
@@ -14,6 +16,17 @@ val allScalaVersions = Seq(scala212, scala213, scala32)
 ThisBuild / scalaVersion := defaultScalaVersion
 ThisBuild / turbo := true
 
+def priorTo213(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _ => false
+  }
+
+lazy val javaTargetSettings = Seq(
+  scalacOptions ++=
+    (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8") else Seq("-release", "8"))
+)
+
 lazy val commonSettings = Seq(
   organization := "org.polars",
   licenses := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
@@ -28,14 +41,18 @@ lazy val commonSettings = Seq(
   scalaVersion := defaultScalaVersion,
   crossScalaVersions := allScalaVersions,
   fork := true,
-  scalacOptions ++= Seq("-target:17", "-Ywarn-unused:imports"),
-  Compile / javacOptions ++= Seq("-source", "17"),
-  Compile / compile / javacOptions ++= Seq(
-    "-target",
-    "17",
-    "-Xlint:all",
-    "-Xlint:-options",
-    "-Werror"
+  scalacOptions ++= Seq(
+    "-encoding",
+    "utf8",
+    "-deprecation",
+    "-feature",
+    "-language:existentials",
+    "-language:implicitConversions",
+    "-language:reflectiveCalls",
+    "-language:higherKinds",
+    "-language:postfixOps",
+    "-unchecked",
+    "-Xfatal-warnings"
   )
 )
 
@@ -46,11 +63,12 @@ lazy val commonSettings = Seq(
  */
 
 lazy val root = (project in file("."))
-  .settings(commonSettings)
+  .settings(crossScalaVersions := Nil)
+  .settings(skipReleaseSettings: _*)
   .settings(
-    name := "scala-polars-parent",
-    crossScalaVersions := Nil, // Setting crossScalaVersions to Nil on the root project
-    publish / skip := true
+    addCommandAlias("cleanAll", ";clean; cleanFiles; reload"),
+    addCommandAlias("fmtAll", ";scalafmtAll; scalafmtSbt; cargoFmt; reload"),
+    addCommandAlias("fmtCheckAll", ";scalafmtCheckAll; scalafmtSbtCheck; cargoCheck")
   )
   .aggregate(core, native)
 
@@ -60,12 +78,31 @@ lazy val root = (project in file("."))
  ***********************
  */
 
+lazy val cargoFmt = taskKey[Unit]("Formats native module using rustfmt.")
+lazy val cargoCheck = taskKey[Unit]("Checks the formatting of native module.")
+
 lazy val native = project
   .in(file("native"))
-  .settings(commonSettings)
+  .settings(commonSettings: _*)
+  .settings(javaTargetSettings: _*)
   .settings(
     name := "scala-polars-native",
+    crossPaths := false,
     nativeCompile / sourceDirectory := baseDirectory.value
+  )
+  .settings(
+    cargoFmt := {
+      s"cargo fmt --verbose --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! ProcessLogger(
+        (o: String) => sLog.value.info(o),
+        (e: String) => sLog.value.error(e)
+      )
+    },
+    cargoCheck := {
+      s"cargo fmt --check --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! ProcessLogger(
+        (o: String) => sLog.value.info(o),
+        (e: String) => sLog.value.error(e)
+      )
+    }
   )
   .enablePlugins(JniNative)
 
@@ -75,16 +112,30 @@ lazy val native = project
  ***********************
  */
 
-lazy val coreLibraryDependencies = Seq()
-
 lazy val core = project
   .in(file("core"))
-  .settings(commonSettings)
+  .settings(commonSettings: _*)
+  .settings(javaTargetSettings: _*)
+  .settings(name := "scala-polars")
   .settings(
-    name := "scala-polars",
-    Compile / mainClass := Some("org.polars.scala.polars.Main"),
-    libraryDependencies ++= coreLibraryDependencies,
-    sbtJniCoreScope := Compile, // because we use `NativeLoader`, not the `@nativeLoader` macro
-    classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat // because of `turbo := true`, otherwise `java.lang.UnsatisfiedLinkError: com.github.sideeffffect.scalarustinterop.Divider.divideBy(I)I`
+    sbtJniCoreScope := Compile,
+    classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+  )
+  .settings(
+    assembly / mainClass := None,
+    assembly / assemblyOption ~= {
+      _.withIncludeScala(false)
+    }
   )
   .dependsOn(native % Runtime)
+
+/*
+ ***********************
+ * Release Settings *
+ ***********************
+ */
+
+lazy val skipReleaseSettings = Seq(
+  publishArtifact := false,
+  publish / skip := true
+)
