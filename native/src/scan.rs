@@ -5,7 +5,7 @@ use jni::JNIEnv;
 #[no_mangle]
 pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_io_Scan_00024__1scanParquet(
     env: JNIEnv,
-    object: JObject,
+    _object: JObject,
     path: jstring,
 ) -> jobject {
     let binding = env

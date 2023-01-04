@@ -9,9 +9,11 @@ const POLARS_VERSION: &str = "0.26.1";
 #[no_mangle]
 pub extern "system" fn Java_org_polars_scala_polars_Polars_00024_version(
     env: JNIEnv,
-    object: JObject,
+    _object: JObject,
 ) -> jstring {
-    env.new_string(POLARS_VERSION)
-        .expect("Unable to get Polars version.")
-        .into_raw()
+    let version_str = env
+        .new_string(POLARS_VERSION)
+        .expect("Unable to get Polars version.");
+
+    version_str.into_raw()
 }

@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["chitralverma <chitral.verma@gmail.com>"]
 edition = "2021"
 license = "Apache-2.0"
-license-file = "../LICENSE"
 readme = "../README.md"
+publish = false
 
 [dependencies]
 jni = "0.20"
