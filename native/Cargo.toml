@@ -1,0 +1,15 @@
+[package]
+name = "scala-polars-native"
+version = "0.1.0"
+authors = ["chitralverma <chitral.verma@gmail.com>"]
+edition = "2021"
+license = "Apache-2.0"
+readme = "../README.md"
+publish = false
+
+[dependencies]
+jni = "0.20"
+
+[lib]
+name="scala_polars"
+crate_type = ["cdylib"]
