@@ -66,7 +66,8 @@ lazy val root = (project in file("."))
   .settings(crossScalaVersions := Nil)
   .settings(skipReleaseSettings: _*)
   .settings(
-    addCommandAlias("cleanAll", ";clean; cleanFiles; reload"),
+    addCommandAlias("cleanAll", ";cleanHeaders; clean; cleanFiles; reload"),
+    addCommandAlias("genHeaders", ";cleanHeaders; javah"),
     addCommandAlias("fmtAll", ";scalafmtAll; scalafmtSbt; cargoFmt; reload"),
     addCommandAlias("fmtCheckAll", ";scalafmtCheckAll; scalafmtSbtCheck; cargoCheck")
   )
@@ -112,6 +113,8 @@ lazy val native = project
  ***********************
  */
 
+lazy val cleanHeaders = taskKey[Unit]("Removes all previously generated headers")
+
 lazy val core = project
   .in(file("core"))
   .settings(commonSettings: _*)
@@ -125,6 +128,17 @@ lazy val core = project
     assembly / mainClass := None,
     assembly / assemblyOption ~= {
       _.withIncludeScala(false)
+    }
+  )
+  .settings(
+    cleanHeaders := {
+      import scala.reflect.io.Directory
+
+      val headerDir = (javah / target).value
+      val directory = new Directory(headerDir)
+
+      directory.deleteRecursively()
+      sLog.value.info(s"Removed headers directory $headerDir")
     }
   )
   .dependsOn(native % Runtime)
