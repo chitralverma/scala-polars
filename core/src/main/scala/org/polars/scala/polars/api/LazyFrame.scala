@@ -1,11 +1,17 @@
 package org.polars.scala.polars.api
 
-import org.polars.scala.polars.internal.jni.Natively
+import org.polars.scala.polars.internal.jni.{Natively, lazy_frame}
 
-class LazyFrame extends Natively {
+class LazyFrame private (ptrLong: Long) extends Natively {
 
-  @native def collect(): Unit
+  def collect(): DataFrame = {
+    val dfPtr = lazy_frame.collect(ptrLong)
+    DataFrame.withPtr(dfPtr)
+  }
 
-  @native def fetch(nRows: Long): Unit
+}
 
+object LazyFrame {
+
+  private[polars] def withPtr(ptr: Long) = new LazyFrame(ptr)
 }
