@@ -7,9 +7,26 @@ license = "Apache-2.0"
 readme = "../README.md"
 publish = false
 
+[lib]
+name = "scala_polars"
+crate_type = ["cdylib"]
+
+[dev-dependencies]
+cargo-sort = "1.0.9"
+
 [dependencies]
 jni = "0.20"
 
-[lib]
-name="scala_polars"
-crate_type = ["cdylib"]
+[dependencies.polars]
+version = "0.26.1"
+default-features = false
+features = [
+    "avro",
+    "json",
+    "parquet",
+    "csv-file",
+    "lazy",
+    "fmt",
+    "performant"
+]
+
