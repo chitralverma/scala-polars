@@ -1,9 +1,12 @@
 package org.polars.scala.polars
 
 import org.polars.scala.polars.api.io.{Readable, Scannable}
+import org.polars.scala.polars.config.Config
 import org.polars.scala.polars.internal.jni.Natively
 
 object Polars extends Natively {
+
+  def config: Config = Config.getConfig
 
   def scan: Scannable = new Scannable
 
