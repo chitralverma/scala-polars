@@ -79,8 +79,8 @@ lazy val root = (project in file("."))
  ***********************
  */
 
-lazy val cargoFmt = taskKey[Unit]("Formats native module using rustfmt.")
-lazy val cargoCheck = taskKey[Unit]("Checks the formatting of native module.")
+lazy val cargoFmt = taskKey[Unit]("Formats native module and its Cargo.toml.")
+lazy val cargoCheck = taskKey[Unit]("Checks the formatting of native module and its Cargo.toml.")
 
 lazy val native = project
   .in(file("native"))
@@ -93,16 +93,21 @@ lazy val native = project
   )
   .settings(
     cargoFmt := {
-      s"cargo fmt --verbose --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! ProcessLogger(
+      val processLogger = ProcessLogger(
         (o: String) => sLog.value.info(o),
         (e: String) => sLog.value.error(e)
       )
+      s"cargo fmt --verbose --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! processLogger
+      s"cargo sort ${baseDirectory.value}" ! processLogger
     },
     cargoCheck := {
-      s"cargo fmt --check --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! ProcessLogger(
+      val processLogger = ProcessLogger(
         (o: String) => sLog.value.info(o),
         (e: String) => sLog.value.error(e)
       )
+
+      s"cargo fmt --check --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! processLogger
+      s"cargo sort --check ${baseDirectory.value}" ! processLogger
     }
   )
   .enablePlugins(JniNative)
