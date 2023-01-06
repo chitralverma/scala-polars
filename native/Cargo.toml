@@ -27,6 +27,7 @@ features = [
     "csv-file",
     "lazy",
     "fmt",
-    "performant"
+    "performant",
+    "temporal"
 ]
 
