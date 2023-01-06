@@ -126,6 +126,12 @@ lazy val core = project
   .settings(javaTargetSettings: _*)
   .settings(name := "scala-polars")
   .settings(
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
+      "org.json4s" %% "json4s-native" % "4.0.6"
+    )
+  )
+  .settings(
     sbtJniCoreScope := Compile,
     classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
   )
