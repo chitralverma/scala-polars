@@ -21,6 +21,7 @@ jni = "0.20"
 version = "0.26.1"
 default-features = false
 features = [
+    "ipc",
     "avro",
     "json",
     "parquet",
