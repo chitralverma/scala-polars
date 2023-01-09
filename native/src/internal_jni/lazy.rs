@@ -51,6 +51,9 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_parquet_0002
     object: JObject,
     filePath: JString,
     nRows: jlong,
+    cache: jboolean,
+    reChunk: jboolean,
+    lowMemory: jboolean,
     rowCountColName: JString,
     rowCountColOffset: jint,
 ) -> jlong {
@@ -60,11 +63,11 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_parquet_0002
 
     let scan_args = ScanArgsParquet {
         n_rows,
-        cache: false,
-        parallel: Default::default(),
-        rechunk: false,
         row_count,
-        low_memory: false,
+        parallel: Default::default(),
+        cache: cache == JNI_TRUE,
+        rechunk: reChunk == JNI_TRUE,
+        low_memory: lowMemory == JNI_TRUE,
     };
 
     let j_ldf = LazyFrame::scan_parquet(this_path, scan_args);
@@ -82,6 +85,9 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_csv_00024__1
     inferSchemaRows: jlong,
     ignoreErrors: jboolean,
     parseDates: jboolean,
+    cache: jboolean,
+    reChunk: jboolean,
+    lowMemory: jboolean,
     rowCountColName: JString,
     rowCountColOffset: jint,
 ) -> jlong {
@@ -97,6 +103,9 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_csv_00024__1
         .with_row_count(row_count)
         .with_infer_schema_length(Some(inferSchemaRows as usize))
         .with_parse_dates(parseDates == JNI_TRUE)
+        .with_cache(cache == JNI_TRUE)
+        .with_rechunk(reChunk == JNI_TRUE)
+        .low_memory(lowMemory == JNI_TRUE)
         .finish();
 
     ldf_to_ptr(env, object, j_ldf)
@@ -109,6 +118,9 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_ndjson_00024
     filePath: JString,
     nRows: jlong,
     inferSchemaRows: jlong,
+    cache: jboolean,
+    reChunk: jboolean,
+    lowMemory: jboolean,
     rowCountColName: JString,
     rowCountColOffset: jint,
 ) -> jlong {
@@ -120,7 +132,41 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_ndjson_00024
         .with_n_rows(n_rows)
         .with_row_count(row_count)
         .with_infer_schema_length(Some(inferSchemaRows as usize))
+        .with_rechunk(reChunk == JNI_TRUE)
+        .low_memory(lowMemory == JNI_TRUE)
         .finish();
 
+    let cached_or_not = j_ldf
+        .map(|l| if cache == JNI_TRUE { l.cache() } else { l })
+        .unwrap();
+
+    ldf_to_ptr(env, object, PolarsResult::Ok(cached_or_not))
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_ipc_00024__1scanIPC(
+    env: JNIEnv,
+    object: JObject,
+    filePath: JString,
+    nRows: jlong,
+    cache: jboolean,
+    re_chunk: jboolean,
+    mem_map: jboolean,
+    rowCountColName: JString,
+    rowCountColOffset: jint,
+) -> jlong {
+    let this_path = get_file_path(env, filePath);
+    let n_rows = get_n_rows(nRows);
+    let row_count = get_row_count(env, rowCountColName, rowCountColOffset);
+
+    let scan_args = ScanArgsIpc {
+        n_rows,
+        cache: cache == JNI_TRUE,
+        rechunk: re_chunk == JNI_TRUE,
+        row_count,
+        memmap: mem_map == JNI_TRUE,
+    };
+
+    let j_ldf = LazyFrame::scan_ipc(this_path, scan_args);
     ldf_to_ptr(env, object, j_ldf)
 }

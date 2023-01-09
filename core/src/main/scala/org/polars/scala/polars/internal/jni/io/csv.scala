@@ -13,6 +13,9 @@ private[polars] object csv extends Natively {
       skipRowsAfterHeader: Int,
       ignoreErrors: Boolean,
       parseDates: Boolean,
+      cache: Boolean,
+      reChunk: Boolean,
+      lowMemory: Boolean,
       rowCountColName: String,
       rowCountColOffset: Int
   ): Long

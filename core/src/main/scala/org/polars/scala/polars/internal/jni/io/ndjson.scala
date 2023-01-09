@@ -8,6 +8,9 @@ private[polars] object ndjson extends Natively {
       filePath: String,
       nRows: Long,
       inferSchemaRows: Long,
+      cache: Boolean,
+      reChunk: Boolean,
+      lowMemory: Boolean,
       rowCountColName: String,
       rowCountColOffset: Int
   ): Long
