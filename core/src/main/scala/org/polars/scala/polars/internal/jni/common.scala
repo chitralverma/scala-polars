@@ -4,6 +4,6 @@ private[polars] object common extends Natively {
 
   @native def _version(): String
 
-  @native def _concatLazyFrames(ptrs: Array[Long]): Long
+  @native def _concatLazyFrames(ptrs: Array[Long], reChunk: Boolean, parallel: Boolean): Long
 
 }

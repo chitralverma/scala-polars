@@ -25,6 +25,8 @@ pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_0
     env: JNIEnv,
     object: JObject,
     inputs: jlongArray,
+    parallel: jboolean,
+    re_chunk: jboolean,
 ) -> jlong {
     let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
 
@@ -39,7 +41,7 @@ pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_0
             })
             .collect();
 
-    let concat_ldf = concat(vec, false, true);
+    let concat_ldf = concat(vec, re_chunk == JNI_TRUE, parallel == JNI_TRUE);
     ldf_to_ptr(env, object, concat_ldf)
 }
 

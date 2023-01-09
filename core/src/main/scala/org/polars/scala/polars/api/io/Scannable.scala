@@ -1,7 +1,7 @@
 package org.polars.scala.polars.api.io
 
+import org.polars.scala.polars.Polars
 import org.polars.scala.polars.api.LazyFrame
-import org.polars.scala.polars.internal.jni.common._concatLazyFrames
 import org.polars.scala.polars.internal.jni.io.csv._scanCSV
 import org.polars.scala.polars.internal.jni.io.ndjson._scanNdJson
 import org.polars.scala.polars.internal.jni.io.parquet._scanParquet
@@ -13,17 +13,17 @@ class Scannable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): LazyFrame = {
-    val ptrs = filePaths.map(path =>
-      _scanParquet(
+    val lazyFrames = filePaths.map { path =>
+      val ptr = _scanParquet(
         path,
         nRows.getOrElse(-1),
         rowCountColName.orNull,
         rowCountColOffset.getOrElse(0)
       )
-    )
+      LazyFrame.withPtr(ptr)
+    }
 
-    val ptr = _concatLazyFrames(ptrs.toArray)
-    LazyFrame.withPtr(ptr)
+    Polars.concat(lazyFrames: _*)()
   }
 
   def csv(filePaths: String*)(
@@ -37,8 +37,8 @@ class Scannable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): LazyFrame = {
-    val ptrs = filePaths.map(path =>
-      _scanCSV(
+    val lazyFrames = filePaths.map { path =>
+      val ptr = _scanCSV(
         path,
         nRows.getOrElse(-1),
         delimiter,
@@ -50,10 +50,11 @@ class Scannable private[polars] () {
         rowCountColName.orNull,
         rowCountColOffset.getOrElse(0)
       )
-    )
 
-    val ptr = _concatLazyFrames(ptrs.toArray)
-    LazyFrame.withPtr(ptr)
+      LazyFrame.withPtr(ptr)
+    }
+
+    Polars.concat(lazyFrames: _*)()
   }
 
   def ndJson(filePaths: String*)(
@@ -62,17 +63,17 @@ class Scannable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): LazyFrame = {
-    val ptrs = filePaths.map(path =>
-      _scanNdJson(
+    val lazyFrames = filePaths.map { path =>
+      val ptr = _scanNdJson(
         path,
         nRows.getOrElse(-1),
         inferSchemaRows,
         rowCountColName.orNull,
         rowCountColOffset.getOrElse(0)
       )
-    )
+      LazyFrame.withPtr(ptr)
+    }
 
-    val ptr = _concatLazyFrames(ptrs.toArray)
-    LazyFrame.withPtr(ptr)
+    Polars.concat(lazyFrames: _*)()
   }
 }

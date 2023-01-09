@@ -16,8 +16,11 @@ object Polars extends Natively {
 
   def read: Readable = new Readable
 
-  def concat(lazyFrames: LazyFrame*): LazyFrame = {
-    val ptr = _concatLazyFrames(lazyFrames.map(_.ptr).toArray)
+  def concat(
+      lazyFrames: LazyFrame*
+  )(reChunk: Boolean = false, parallel: Boolean = true): LazyFrame = {
+    val ptr =
+      _concatLazyFrames(lazyFrames.map(_.ptr).toArray, reChunk = reChunk, parallel = parallel)
     LazyFrame.withPtr(ptr)
   }
 
