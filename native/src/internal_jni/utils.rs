@@ -1,3 +1,4 @@
+use crate::j_data_frame::JDataFrame;
 use jni::objects::{JObject, JString};
 use jni::sys::{jint, jlong};
 use jni::JNIEnv;
@@ -47,6 +48,15 @@ pub fn ldf_to_ptr(env: JNIEnv, object: JObject, ldf: PolarsResult<LazyFrame>) ->
 
     let global_ref = env.new_global_ref(object).unwrap();
     let j_ldf = JLazyFrame::new(ldf, global_ref);
+
+    Box::into_raw(Box::new(j_ldf)) as jlong
+}
+
+pub fn df_to_ptr(env: JNIEnv, object: JObject, ldf: PolarsResult<DataFrame>) -> jlong {
+    let df = ldf.expect("Cannot create LazyFrame from provided arguments.");
+
+    let global_ref = env.new_global_ref(object).unwrap();
+    let j_ldf = JDataFrame::new(df, global_ref);
 
     Box::into_raw(Box::new(j_ldf)) as jlong
 }

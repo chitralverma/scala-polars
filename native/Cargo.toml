@@ -16,6 +16,7 @@ cargo-sort = "1.0.9"
 
 [dependencies]
 jni = "0.20"
+polars-core = { version = "0.26.1", default-features = false }
 
 [dependencies.polars]
 version = "0.26.1"

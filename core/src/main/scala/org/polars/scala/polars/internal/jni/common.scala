@@ -6,4 +6,6 @@ private[polars] object common extends Natively {
 
   @native def _concatLazyFrames(ptrs: Array[Long], reChunk: Boolean, parallel: Boolean): Long
 
+  @native def _concatDataFrames(ptrs: Array[Long]): Long
+
 }
