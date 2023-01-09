@@ -97,6 +97,7 @@ lazy val native = project
         (o: String) => sLog.value.info(o),
         (e: String) => sLog.value.error(e)
       )
+      s"cargo fix --verbose --manifest-path ${baseDirectory.value}/Cargo.toml" ! processLogger
       s"cargo fmt --verbose --all --manifest-path ${baseDirectory.value}/Cargo.toml" ! processLogger
       s"cargo sort ${baseDirectory.value}" ! processLogger
     },

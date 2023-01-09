@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 
+use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JObject, JString};
-use jni::sys::{jint, jlong};
+use jni::sys::{jboolean, jchar, jint, jlong, jlongArray, JNI_TRUE};
 use jni::JNIEnv;
 use polars::export::num::ToPrimitive;
-use polars::io::RowCount;
 use polars::prelude::*;
 
+use crate::internal_jni::utils::*;
 use crate::j_lazy_frame::JLazyFrame;
 
 #[no_mangle]
@@ -20,55 +21,152 @@ pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1fr
 }
 
 #[no_mangle]
+pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_00024__1concatLazyFrames(
+    env: JNIEnv,
+    object: JObject,
+    inputs: jlongArray,
+    parallel: jboolean,
+    re_chunk: jboolean,
+) -> jlong {
+    let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
+
+    let vec: Vec<LazyFrame> =
+        std::slice::from_raw_parts(arr.as_ptr(), arr.size().unwrap() as usize)
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_ldf = &mut *(ptr as *mut JLazyFrame);
+                j_ldf.to_owned().ldf
+            })
+            .collect();
+
+    let concat_ldf = concat(vec, re_chunk == JNI_TRUE, parallel == JNI_TRUE);
+    ldf_to_ptr(env, object, concat_ldf)
+}
+
+#[no_mangle]
 pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_parquet_00024__1scanParquet(
     env: JNIEnv,
     object: JObject,
     filePath: JString,
     nRows: jlong,
+    cache: jboolean,
+    reChunk: jboolean,
+    lowMemory: jboolean,
     rowCountColName: JString,
     rowCountColOffset: jint,
 ) -> jlong {
-    let this_path: String = env
-        .get_string(filePath)
-        .expect("Unable to get/ convert raw path to UTF8.")
-        .into();
-
-    let n_rows = if nRows.is_positive() {
-        nRows.to_usize()
-    } else {
-        None
-    };
-
-    let row_count = if !rowCountColName.is_null() {
-        Some(RowCount {
-            name: env
-                .get_string(rowCountColName)
-                .expect("Unable to get/ convert row column name to UTF8.")
-                .into(),
-            offset: if rowCountColOffset.is_positive() {
-                rowCountColOffset as IdxSize
-            } else {
-                0
-            },
-        })
-    } else {
-        None
-    };
+    let this_path = get_file_path(env, filePath);
+    let n_rows = get_n_rows(nRows);
+    let row_count = get_row_count(env, rowCountColName, rowCountColOffset);
 
     let scan_args = ScanArgsParquet {
         n_rows,
-        cache: false,
-        parallel: Default::default(),
-        rechunk: false,
         row_count,
-        low_memory: false,
+        parallel: Default::default(),
+        cache: cache == JNI_TRUE,
+        rechunk: reChunk == JNI_TRUE,
+        low_memory: lowMemory == JNI_TRUE,
     };
 
-    let ldf = LazyFrame::scan_parquet(this_path, scan_args)
-        .expect("Cannot create LazyFrame from provided arguments.");
+    let j_ldf = LazyFrame::scan_parquet(this_path, scan_args);
+    ldf_to_ptr(env, object, j_ldf)
+}
 
-    let global_ref = env.new_global_ref(object).unwrap();
-    let j_ldf = JLazyFrame::new(ldf, global_ref);
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_csv_00024__1scanCSV(
+    env: JNIEnv,
+    object: JObject,
+    filePath: JString,
+    nRows: jlong,
+    delimiter: jchar,
+    hasHeader: jboolean,
+    inferSchemaRows: jlong,
+    ignoreErrors: jboolean,
+    parseDates: jboolean,
+    cache: jboolean,
+    reChunk: jboolean,
+    lowMemory: jboolean,
+    rowCountColName: JString,
+    rowCountColOffset: jint,
+) -> jlong {
+    let this_path = get_file_path(env, filePath);
+    let n_rows = get_n_rows(nRows);
+    let row_count = get_row_count(env, rowCountColName, rowCountColOffset);
 
-    Box::into_raw(Box::new(j_ldf)) as jlong
+    let j_ldf = LazyCsvReader::new(this_path)
+        .with_n_rows(n_rows)
+        .with_delimiter(delimiter as u8)
+        .has_header(hasHeader == JNI_TRUE)
+        .with_ignore_parser_errors(ignoreErrors == JNI_TRUE)
+        .with_row_count(row_count)
+        .with_infer_schema_length(Some(inferSchemaRows as usize))
+        .with_parse_dates(parseDates == JNI_TRUE)
+        .with_cache(cache == JNI_TRUE)
+        .with_rechunk(reChunk == JNI_TRUE)
+        .low_memory(lowMemory == JNI_TRUE)
+        .finish();
+
+    ldf_to_ptr(env, object, j_ldf)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_ndjson_00024__1scanNdJson(
+    env: JNIEnv,
+    object: JObject,
+    filePath: JString,
+    nRows: jlong,
+    inferSchemaRows: jlong,
+    cache: jboolean,
+    reChunk: jboolean,
+    lowMemory: jboolean,
+    rowCountColName: JString,
+    rowCountColOffset: jint,
+) -> jlong {
+    let this_path = get_file_path(env, filePath);
+    let n_rows = get_n_rows(nRows);
+    let row_count = get_row_count(env, rowCountColName, rowCountColOffset);
+
+    let j_ldf = LazyJsonLineReader::new(this_path)
+        .with_n_rows(n_rows)
+        .with_row_count(row_count)
+        .with_infer_schema_length(Some(inferSchemaRows as usize))
+        .with_rechunk(reChunk == JNI_TRUE)
+        .low_memory(lowMemory == JNI_TRUE)
+        .finish();
+
+    let cached_or_not = j_ldf
+        .map(|l| if cache == JNI_TRUE { l.cache() } else { l })
+        .unwrap();
+
+    ldf_to_ptr(env, object, PolarsResult::Ok(cached_or_not))
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_ipc_00024__1scanIPC(
+    env: JNIEnv,
+    object: JObject,
+    filePath: JString,
+    nRows: jlong,
+    cache: jboolean,
+    re_chunk: jboolean,
+    mem_map: jboolean,
+    rowCountColName: JString,
+    rowCountColOffset: jint,
+) -> jlong {
+    let this_path = get_file_path(env, filePath);
+    let n_rows = get_n_rows(nRows);
+    let row_count = get_row_count(env, rowCountColName, rowCountColOffset);
+
+    let scan_args = ScanArgsIpc {
+        n_rows,
+        cache: cache == JNI_TRUE,
+        rechunk: re_chunk == JNI_TRUE,
+        row_count,
+        memmap: mem_map == JNI_TRUE,
+    };
+
+    let j_ldf = LazyFrame::scan_ipc(this_path, scan_args);
+    ldf_to_ptr(env, object, j_ldf)
 }
