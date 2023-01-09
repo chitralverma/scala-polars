@@ -1,8 +1,10 @@
 #![allow(non_snake_case)]
 
+use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JObject, JString};
-use jni::sys::{jboolean, jchar, jint, jlong, JNI_TRUE};
+use jni::sys::{jboolean, jchar, jint, jlong, jlongArray, JNI_TRUE};
 use jni::JNIEnv;
+use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 
 use crate::internal_jni::utils::*;
@@ -16,6 +18,29 @@ pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1fr
 ) -> jlong {
     let j_ldf = &mut *(ptr as *mut JLazyFrame);
     j_ldf.collect(_env, _object)
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_00024__1concatLazyFrames(
+    env: JNIEnv,
+    object: JObject,
+    inputs: jlongArray,
+) -> jlong {
+    let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
+
+    let vec: Vec<LazyFrame> =
+        std::slice::from_raw_parts(arr.as_ptr(), arr.size().unwrap() as usize)
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_ldf = &mut *(ptr as *mut JLazyFrame);
+                j_ldf.to_owned().ldf
+            })
+            .collect();
+
+    let concat_ldf = concat(vec, false, true);
+    ldf_to_ptr(env, object, concat_ldf)
 }
 
 #[no_mangle]

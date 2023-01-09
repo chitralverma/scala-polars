@@ -9,7 +9,7 @@ pub mod j_lazy_frame;
 const POLARS_VERSION: &str = "0.26.1";
 
 #[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_Polars_00024_version(
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_common_00024__1version(
     env: JNIEnv,
     _object: JObject,
 ) -> jstring {

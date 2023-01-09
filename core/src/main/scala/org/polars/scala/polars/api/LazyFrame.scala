@@ -2,10 +2,10 @@ package org.polars.scala.polars.api
 
 import org.polars.scala.polars.internal.jni.{Natively, lazy_frame}
 
-class LazyFrame private (ptrLong: Long) extends Natively {
+class LazyFrame private (private[polars] val ptr: Long) extends Natively {
 
   def collect(): DataFrame = {
-    val dfPtr = lazy_frame.collect(ptrLong)
+    val dfPtr = lazy_frame.collect(ptr)
     DataFrame.withPtr(dfPtr)
   }
 
