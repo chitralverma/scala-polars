@@ -4,6 +4,7 @@ use jni::JNIEnv;
 
 pub mod internal_jni;
 pub mod j_data_frame;
+pub mod j_expr;
 pub mod j_lazy_frame;
 
 const POLARS_VERSION: &str = "0.26.1";

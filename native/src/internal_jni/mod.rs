@@ -1,4 +1,5 @@
 pub mod config;
+pub mod expr;
 pub mod frame;
 pub mod lazy;
-mod utils;
+pub mod utils;
