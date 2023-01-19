@@ -31,4 +31,10 @@ impl JLazyFrame {
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
+
+    pub fn filter(&self, env: JNIEnv, callback_obj: JObject, expr: Expr) -> jlong {
+        let ldf = self.ldf.clone().filter(expr);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
 }

@@ -33,4 +33,16 @@ impl JDataFrame {
 
         df_to_ptr(env, callback_obj, df_res)
     }
+
+    pub fn filter(&self, env: JNIEnv, callback_obj: JObject, predicate: Expr) -> jlong {
+        let df_res = self
+            .df
+            .clone()
+            .lazy()
+            .filter(predicate)
+            .without_optimizations()
+            .collect();
+
+        df_to_ptr(env, callback_obj, df_res)
+    }
 }

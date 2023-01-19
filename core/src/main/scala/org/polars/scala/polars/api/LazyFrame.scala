@@ -17,6 +17,12 @@ class LazyFrame private (private[polars] val ptr: Long) extends Natively {
     LazyFrame.withPtr(ldfPtr)
   }
 
+  def filter(predicate: Expression): LazyFrame = {
+    val ldfPtr = lazy_frame.filterFromExprs(ptr, predicate.ptr)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
   def collect(): DataFrame = {
     val dfPtr = lazy_frame.collect(ptr)
     DataFrame.withPtr(dfPtr)

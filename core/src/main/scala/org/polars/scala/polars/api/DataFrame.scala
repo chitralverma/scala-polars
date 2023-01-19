@@ -17,6 +17,12 @@ class DataFrame private (private[polars] val ptr: Long) extends Natively {
     DataFrame.withPtr(ldfPtr)
   }
 
+  def filter(predicate: Expression): DataFrame = {
+    val ldfPtr = data_frame.filterFromExprs(ptr, predicate.ptr)
+
+    DataFrame.withPtr(ldfPtr)
+  }
+
   def show(): Unit = data_frame.show(ptr)
 
   def count(): Long = data_frame.count(ptr)

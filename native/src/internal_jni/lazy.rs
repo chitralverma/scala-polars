@@ -62,6 +62,19 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_000
 }
 
 #[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_filterFromExprs(
+    env: JNIEnv,
+    object: JObject,
+    ldf_ptr: jlong,
+    expr_ptr: jlong,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
+
+    j_ldf.filter(env, object, j_expr.expr.clone())
+}
+
+#[no_mangle]
 pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_collect(
     env: JNIEnv,
     object: JObject,
