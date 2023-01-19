@@ -22,8 +22,14 @@ impl JDataFrame {
         println!("{:?}", self.df)
     }
 
-    pub fn select(&self, env: JNIEnv, callback_obj: JObject, exprs: Vec<String>) -> jlong {
-        let df_res = self.df.clone().select(exprs);
+    pub fn select(&self, env: JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
+        let df_res = self
+            .df
+            .clone()
+            .lazy()
+            .select(exprs)
+            .without_optimizations()
+            .collect();
 
         df_to_ptr(env, callback_obj, df_res)
     }

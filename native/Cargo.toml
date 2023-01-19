@@ -30,6 +30,10 @@ features = [
     "lazy",
     "fmt",
     "performant",
-    "temporal"
+    "temporal",
+    "dtype-binary",
+    "dtype-categorical",
+    "strings",
+    "serde"
 ]
 

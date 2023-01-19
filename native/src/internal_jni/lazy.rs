@@ -8,10 +8,11 @@ use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 
 use crate::internal_jni::utils::*;
+use crate::j_expr::JExpr;
 use crate::j_lazy_frame::JLazyFrame;
 
 #[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_select(
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_selectFromStrings(
     _env: JNIEnv,
     _object: JObject,
     ptr: jlong,
@@ -36,13 +37,38 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_000
 }
 
 #[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_selectFromExprs(
+    env: JNIEnv,
+    object: JObject,
+    ptr: jlong,
+    inputs: jlongArray,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+
+    let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
+    let exprs: Vec<Expr> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.size().unwrap() as usize)
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_ldf = &mut *(ptr as *mut JExpr);
+                j_ldf.to_owned().expr
+            })
+            .collect()
+    };
+
+    j_ldf.select(env, object, exprs)
+}
+
+#[no_mangle]
 pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_collect(
-    _env: JNIEnv,
-    _object: JObject,
+    env: JNIEnv,
+    object: JObject,
     ptr: jlong,
 ) -> jlong {
     let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    j_ldf.collect(_env, _object)
+    j_ldf.collect(env, object)
 }
 
 #[no_mangle]

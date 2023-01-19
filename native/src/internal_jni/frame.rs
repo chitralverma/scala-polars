@@ -11,9 +11,10 @@ use polars_core::utils::concat_df;
 
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
+use crate::j_expr::JExpr;
 
 #[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_select(
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_selectFromStrings(
     _env: JNIEnv,
     _object: JObject,
     ptr: jlong,
@@ -22,7 +23,7 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_000
     let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
     let num_expr = _env.get_array_length(expr_strs).unwrap();
 
-    let mut exprs: Vec<String> = Vec::new();
+    let mut exprs: Vec<Expr> = Vec::new();
 
     for i in 0..num_expr {
         let result = _env
@@ -31,10 +32,35 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_000
             .unwrap();
         let expr_str = get_string(_env, result, "Unable to get/ convert Expr to UTF8.");
 
-        exprs.push(expr_str)
+        exprs.push(col(expr_str.as_str()))
     }
 
     j_df.select(_env, _object, exprs)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_selectFromExprs(
+    env: JNIEnv,
+    object: JObject,
+    ptr: jlong,
+    inputs: jlongArray,
+) -> jlong {
+    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
+
+    let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
+    let exprs: Vec<Expr> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.size().unwrap() as usize)
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_ldf = &mut *(ptr as *mut JExpr);
+                j_ldf.to_owned().expr
+            })
+            .collect()
+    };
+
+    j_df.select(env, object, exprs)
 }
 
 #[no_mangle]

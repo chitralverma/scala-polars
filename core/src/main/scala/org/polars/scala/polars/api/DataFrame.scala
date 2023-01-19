@@ -1,13 +1,20 @@
 package org.polars.scala.polars.api
 
+import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.internal.jni.{Natively, data_frame}
 
 class DataFrame private (private[polars] val ptr: Long) extends Natively {
 
-  def select(expr: String, exprs: String*): DataFrame = {
-    val dfPtr = data_frame.select(ptr, exprs.+:(expr).distinct.toArray)
+  def select(colName: String, colNames: String*): DataFrame = {
+    val dfPtr = data_frame.selectFromStrings(ptr, colNames.+:(colName).distinct.toArray)
 
     DataFrame.withPtr(dfPtr)
+  }
+
+  def select(column: Expression, columns: Expression*): DataFrame = {
+    val ldfPtr = data_frame.selectFromExprs(ptr, columns.+:(column).map(_.ptr).distinct.toArray)
+
+    DataFrame.withPtr(ldfPtr)
   }
 
   def show(): Unit = data_frame.show(ptr)
