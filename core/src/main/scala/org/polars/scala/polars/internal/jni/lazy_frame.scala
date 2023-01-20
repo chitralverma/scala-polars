@@ -1,6 +1,6 @@
 package org.polars.scala.polars.internal.jni
 
-object lazy_frame extends Natively {
+private[polars] object lazy_frame extends Natively {
 
   @native def selectFromStrings(ptr: Long, cols: Array[String]): Long
 

@@ -1,9 +1,9 @@
 package org.polars.scala.polars.api
 
 import org.polars.scala.polars.api.expressions.Expression
-import org.polars.scala.polars.internal.jni.{Natively, data_frame}
+import org.polars.scala.polars.internal.jni.data_frame
 
-class DataFrame private (private[polars] val ptr: Long) extends Natively {
+class DataFrame private (private[polars] val ptr: Long) {
 
   def select(colName: String, colNames: String*): DataFrame = {
     val dfPtr = data_frame.selectFromStrings(ptr, colNames.+:(colName).distinct.toArray)

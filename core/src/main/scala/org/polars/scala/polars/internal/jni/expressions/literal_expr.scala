@@ -1,8 +1,8 @@
 package org.polars.scala.polars.internal.jni.expressions
 
-import java.sql.{Date, Timestamp}
+import org.polars.scala.polars.internal.jni.Natively
 
-object literal_expr {
+private[polars] object literal_expr extends Natively {
 
   @native def nullLit(): Long
 

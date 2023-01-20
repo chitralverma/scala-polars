@@ -1,6 +1,8 @@
 package org.polars.scala.polars.internal.jni.expressions
 
-object column_expr {
+import org.polars.scala.polars.internal.jni.Natively
+
+private[polars] object column_expr extends Natively {
 
   @native def column(name: String): Long
 
