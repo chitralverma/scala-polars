@@ -1,9 +1,15 @@
 package org.polars.scala.polars.api
 
 import org.polars.scala.polars.api.expressions.Expression
+import org.polars.scala.polars.api.types.Schema
 import org.polars.scala.polars.internal.jni.lazy_frame
 
 class LazyFrame private (private[polars] val ptr: Long) {
+
+  val schema: Schema = {
+    val schemaString = lazy_frame.schemaString(ptr)
+    Schema.from(schemaString)
+  }
 
   def select(colName: String, colNames: String*): LazyFrame = {
     val ldfPtr = lazy_frame.selectFromStrings(ptr, colNames.+:(colName).distinct.toArray)

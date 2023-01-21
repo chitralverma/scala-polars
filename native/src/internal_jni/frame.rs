@@ -2,7 +2,7 @@
 
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JObject, JString};
-use jni::sys::{jlong, jlongArray, jobjectArray};
+use jni::sys::{jlong, jlongArray, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use polars::export::num::ToPrimitive;
@@ -12,6 +12,19 @@ use polars_core::utils::concat_df;
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_schemaString(
+    env: JNIEnv,
+    _object: JObject,
+    ldf_ptr: jlong) -> jstring {
+    let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
+    let schema_string = serde_json::to_string(&j_df.df.schema()).unwrap();
+
+    env.new_string(schema_string)
+        .expect("Unable to get/ convert Schema to UTF8.")
+        .into_raw()
+}
 
 #[no_mangle]
 pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_selectFromStrings(

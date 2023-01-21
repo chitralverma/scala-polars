@@ -2,6 +2,8 @@ package org.polars.scala.polars.internal.jni
 
 private[polars] object lazy_frame extends Natively {
 
+  @native def schemaString(ptr: Long): String
+
   @native def selectFromStrings(ptr: Long, cols: Array[String]): Long
 
   @native def selectFromExprs(ptr: Long, exprs: Array[Long]): Long

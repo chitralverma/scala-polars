@@ -2,7 +2,7 @@
 
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JObject, JString};
-use jni::sys::{jboolean, jchar, jint, jlong, jlongArray, jobjectArray, JNI_TRUE};
+use jni::sys::{jboolean, jchar, jint, jlong, jlongArray, jobjectArray, JNI_TRUE, jstring};
 use jni::JNIEnv;
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
@@ -10,6 +10,19 @@ use polars::prelude::*;
 use crate::internal_jni::utils::*;
 use crate::j_expr::JExpr;
 use crate::j_lazy_frame::JLazyFrame;
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_schemaString(
+    env: JNIEnv,
+    _object: JObject,
+    ldf_ptr: jlong) -> jstring {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let schema_string = serde_json::to_string(&j_ldf.ldf.schema().unwrap()).unwrap();
+
+    env.new_string(schema_string)
+        .expect("Unable to get/ convert Schema to UTF8.")
+        .into_raw()
+}
 
 #[no_mangle]
 pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_selectFromStrings(

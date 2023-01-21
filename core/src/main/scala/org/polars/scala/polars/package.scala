@@ -13,6 +13,9 @@ package object polars {
   private[polars] val libraryLoaded =
     new AtomicReference[LibraryStates.LibraryState](LibraryStates.NOT_LOADED)
 
+  // noinspection TypeAnnotation
+  implicit val formats = org.json4s.DefaultFormats
+
   private[polars] def loadLibraryIfRequired(): Unit = {
     if (libraryLoaded.get() == LibraryStates.LOADED)
       return
