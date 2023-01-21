@@ -2,26 +2,103 @@
 
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JObject, JString};
-use jni::sys::{jboolean, jchar, jint, jlong, jlongArray, JNI_TRUE};
+use jni::sys::{jboolean, jchar, jint, jlong, jlongArray, jobjectArray, JNI_TRUE, jstring};
 use jni::JNIEnv;
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 
 use crate::internal_jni::utils::*;
+use crate::j_expr::JExpr;
 use crate::j_lazy_frame::JLazyFrame;
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_collect(
-    _env: JNIEnv,
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_schemaString(
+    env: JNIEnv,
     _object: JObject,
-    ptr: jlong,
-) -> jlong {
-    let j_ldf = &mut *(ptr as *mut JLazyFrame);
-    j_ldf.collect(_env, _object)
+    ldf_ptr: jlong) -> jstring {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let schema_string = serde_json::to_string(&j_ldf.ldf.schema().unwrap()).unwrap();
+
+    env.new_string(schema_string)
+        .expect("Unable to get/ convert Schema to UTF8.")
+        .into_raw()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_00024__1concatLazyFrames(
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_selectFromStrings(
+    _env: JNIEnv,
+    _object: JObject,
+    ptr: jlong,
+    expr_strs: jobjectArray,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    let num_expr = _env.get_array_length(expr_strs).unwrap();
+
+    let mut exprs: Vec<Expr> = Vec::new();
+
+    for i in 0..num_expr {
+        let result = _env
+            .get_object_array_element(expr_strs, i)
+            .map(JString::from)
+            .unwrap();
+        let expr_str = get_string(_env, result, "Unable to get/ convert Expr to UTF8.");
+
+        exprs.push(col(expr_str.as_str()))
+    }
+
+    j_ldf.select(_env, _object, exprs)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_selectFromExprs(
+    env: JNIEnv,
+    object: JObject,
+    ptr: jlong,
+    inputs: jlongArray,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+
+    let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
+    let exprs: Vec<Expr> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.size().unwrap() as usize)
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_ldf = &mut *(ptr as *mut JExpr);
+                j_ldf.to_owned().expr
+            })
+            .collect()
+    };
+
+    j_ldf.select(env, object, exprs)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_filterFromExprs(
+    env: JNIEnv,
+    object: JObject,
+    ldf_ptr: jlong,
+    expr_ptr: jlong,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
+
+    j_ldf.filter(env, object, j_expr.expr.clone())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_lazy_1frame_00024_collect(
+    env: JNIEnv,
+    object: JObject,
+    ptr: jlong,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    j_ldf.collect(env, object)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_common_00024__1concatLazyFrames(
     env: JNIEnv,
     object: JObject,
     inputs: jlongArray,
@@ -30,7 +107,7 @@ pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_0
 ) -> jlong {
     let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
 
-    let vec: Vec<LazyFrame> =
+    let vec: Vec<LazyFrame> = unsafe {
         std::slice::from_raw_parts(arr.as_ptr(), arr.size().unwrap() as usize)
             .to_vec()
             .iter()
@@ -39,7 +116,8 @@ pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_common_0
                 let j_ldf = &mut *(ptr as *mut JLazyFrame);
                 j_ldf.to_owned().ldf
             })
-            .collect();
+            .collect()
+    };
 
     let concat_ldf = concat(vec, re_chunk == JNI_TRUE, parallel == JNI_TRUE);
     ldf_to_ptr(env, object, concat_ldf)
@@ -140,7 +218,7 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_io_ndjson_00024
         .map(|l| if cache == JNI_TRUE { l.cache() } else { l })
         .unwrap();
 
-    ldf_to_ptr(env, object, PolarsResult::Ok(cached_or_not))
+    ldf_to_ptr(env, object, Ok(cached_or_not))
 }
 
 #[no_mangle]

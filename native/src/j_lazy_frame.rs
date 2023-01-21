@@ -1,9 +1,9 @@
 use jni::objects::{GlobalRef, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
-use polars::prelude::LazyFrame;
+use polars::prelude::{Expr, LazyFrame};
 
-use crate::j_data_frame::JDataFrame;
+use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr};
 
 #[derive(Clone)]
 pub struct JLazyFrame {
@@ -21,11 +21,20 @@ impl JLazyFrame {
 
     pub fn collect(&self, env: JNIEnv, callback_obj: JObject) -> jlong {
         let ldf = self.ldf.clone();
-        let df = ldf.collect().expect("Unable to collect DataFrame.");
+        let df = ldf.collect();
 
-        let global_ref = env.new_global_ref(callback_obj).unwrap();
-        let j_df = JDataFrame::new(df, global_ref);
+        df_to_ptr(env, callback_obj, df)
+    }
 
-        Box::into_raw(Box::new(j_df)) as jlong
+    pub fn select(&self, env: JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
+        let ldf = self.ldf.clone().select(exprs);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
+
+    pub fn filter(&self, env: JNIEnv, callback_obj: JObject, expr: Expr) -> jlong {
+        let ldf = self.ldf.clone().filter(expr);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
 }

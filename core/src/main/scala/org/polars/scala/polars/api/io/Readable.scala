@@ -5,7 +5,7 @@ import org.polars.scala.polars.api.DataFrame
 
 class Readable private[polars] () {
 
-  def parquet(filePaths: String*)(
+  def parquet(filePath: String, filePaths: String*)(
       nRows: Option[Long] = None,
       cache: Boolean = true,
       reChunk: Boolean = false,
@@ -13,7 +13,7 @@ class Readable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): DataFrame = Polars.scan
-    .parquet(filePaths: _*)(
+    .parquet(filePath, filePaths: _*)(
       nRows,
       cache,
       reChunk,
@@ -23,7 +23,7 @@ class Readable private[polars] () {
     )
     .collect()
 
-  def csv(filePaths: String*)(
+  def csv(filePath: String, filePaths: String*)(
       nRows: Option[Long] = None,
       delimiter: Char = ',',
       hasHeader: Boolean = true,
@@ -37,7 +37,7 @@ class Readable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): DataFrame = Polars.scan
-    .csv(filePaths: _*)(
+    .csv(filePath, filePaths: _*)(
       nRows,
       delimiter,
       hasHeader,
@@ -53,7 +53,7 @@ class Readable private[polars] () {
     )
     .collect()
 
-  def ndJson(filePaths: String*)(
+  def ndJson(filePath: String, filePaths: String*)(
       nRows: Option[Long] = None,
       inferSchemaRows: Long = 100,
       cache: Boolean = true,
@@ -62,7 +62,7 @@ class Readable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): DataFrame = Polars.scan
-    .ndJson(filePaths: _*)(
+    .ndJson(filePath, filePaths: _*)(
       nRows,
       inferSchemaRows,
       cache,
@@ -73,7 +73,7 @@ class Readable private[polars] () {
     )
     .collect()
 
-  def ipc(filePaths: String*)(
+  def ipc(filePath: String, filePaths: String*)(
       nRows: Option[Long] = None,
       cache: Boolean = true,
       reChunk: Boolean = false,
@@ -81,7 +81,7 @@ class Readable private[polars] () {
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
   ): DataFrame = Polars.scan
-    .ipc(filePaths: _*)(
+    .ipc(filePath, filePaths: _*)(
       nRows,
       cache,
       reChunk,

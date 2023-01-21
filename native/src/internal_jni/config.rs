@@ -3,7 +3,7 @@ use jni::sys::{jboolean, JNI_TRUE};
 use jni::JNIEnv;
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_org_polars_scala_polars_internal_jni_config_00024__1setConfigs(
+pub extern "system" fn Java_org_polars_scala_polars_internal_jni_config_00024__1setConfigs(
     _env: JNIEnv,
     _object: JObject,
     options: JObject,

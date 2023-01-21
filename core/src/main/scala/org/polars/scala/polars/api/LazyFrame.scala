@@ -1,8 +1,33 @@
 package org.polars.scala.polars.api
 
-import org.polars.scala.polars.internal.jni.{Natively, lazy_frame}
+import org.polars.scala.polars.api.expressions.Expression
+import org.polars.scala.polars.api.types.Schema
+import org.polars.scala.polars.internal.jni.lazy_frame
 
-class LazyFrame private (private[polars] val ptr: Long) extends Natively {
+class LazyFrame private (private[polars] val ptr: Long) {
+
+  val schema: Schema = {
+    val schemaString = lazy_frame.schemaString(ptr)
+    Schema.from(schemaString)
+  }
+
+  def select(colName: String, colNames: String*): LazyFrame = {
+    val ldfPtr = lazy_frame.selectFromStrings(ptr, colNames.+:(colName).distinct.toArray)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
+  def select(column: Expression, columns: Expression*): LazyFrame = {
+    val ldfPtr = lazy_frame.selectFromExprs(ptr, columns.+:(column).map(_.ptr).distinct.toArray)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
+  def filter(predicate: Expression): LazyFrame = {
+    val ldfPtr = lazy_frame.filterFromExprs(ptr, predicate.ptr)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
 
   def collect(): DataFrame = {
     val dfPtr = lazy_frame.collect(ptr)

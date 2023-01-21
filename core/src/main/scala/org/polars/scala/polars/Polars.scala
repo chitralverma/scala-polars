@@ -3,10 +3,9 @@ package org.polars.scala.polars
 import org.polars.scala.polars.api.io.{Readable, Scannable}
 import org.polars.scala.polars.api.{DataFrame, LazyFrame}
 import org.polars.scala.polars.config.Config
-import org.polars.scala.polars.internal.jni.Natively
 import org.polars.scala.polars.internal.jni.common._
 
-object Polars extends Natively {
+object Polars {
 
   def config: Config = Config.getConfig
 
@@ -29,4 +28,10 @@ object Polars extends Natively {
     DataFrame.withPtr(ptr)
   }
 
+}
+
+private[polars] object LibraryStates extends Enumeration {
+  type LibraryState = Value
+
+  val NOT_LOADED, LOADING, LOADED = Value
 }

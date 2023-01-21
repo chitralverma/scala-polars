@@ -8,6 +8,7 @@ import scala.jdk.CollectionConverters._
 
 import org.json4s.native.Serialization.{read, write}
 import org.polars.scala.polars.internal.jni
+import org.polars.scala.polars.formats
 
 private case class ConfigExport(
     environment: Map[String, String],
@@ -15,9 +16,6 @@ private case class ConfigExport(
 )
 
 class Config private (val options: Map[String, String]) {
-
-  // noinspection TypeAnnotation
-  private implicit val formats = org.json4s.DefaultFormats
 
   class Updater private[config] () {
     private[this] val options = new java.util.HashMap[String, String]()
