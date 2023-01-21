@@ -7,8 +7,8 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 import scala.jdk.CollectionConverters._
 
 import org.json4s.native.Serialization.{read, write}
-import org.polars.scala.polars.internal.jni
 import org.polars.scala.polars.formats
+import org.polars.scala.polars.internal.jni.common
 
 private case class ConfigExport(
     environment: Map[String, String],
@@ -119,7 +119,7 @@ class Config private (val options: Map[String, String]) {
 
     def apply(): Boolean = synchronized {
       Config.updateConfig(new Config(options.asScala.toMap))
-      jni.config._setConfigs(options)
+      common.setConfigs(options)
     }
   }
 

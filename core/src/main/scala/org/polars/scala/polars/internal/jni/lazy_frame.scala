@@ -2,6 +2,8 @@ package org.polars.scala.polars.internal.jni
 
 private[polars] object lazy_frame extends Natively {
 
+  @native def concatLazyFrames(ptrs: Array[Long], reChunk: Boolean, parallel: Boolean): Long
+
   @native def schemaString(ptr: Long): String
 
   @native def selectFromStrings(ptr: Long, cols: Array[String]): Long

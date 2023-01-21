@@ -3,30 +3,41 @@ package org.polars.scala.polars
 import org.polars.scala.polars.api.io.{Readable, Scannable}
 import org.polars.scala.polars.api.{DataFrame, LazyFrame}
 import org.polars.scala.polars.config.Config
-import org.polars.scala.polars.internal.jni.common._
+import org.polars.scala.polars.internal.jni.{common, data_frame, lazy_frame}
 
 object Polars {
 
   def config: Config = Config.getConfig
 
-  def version(): String = _version()
+  def version(): String = common.version()
 
   def scan: Scannable = new Scannable
 
   def read: Readable = new Readable
 
   def concat(
+      lazyFrame: LazyFrame,
       lazyFrames: LazyFrame*
-  )(reChunk: Boolean = false, parallel: Boolean = true): LazyFrame = {
-    val ptr =
-      _concatLazyFrames(lazyFrames.map(_.ptr).toArray, reChunk = reChunk, parallel = parallel)
-    LazyFrame.withPtr(ptr)
-  }
+  )(reChunk: Boolean = false, parallel: Boolean = true): LazyFrame =
+    if (lazyFrames.isEmpty) lazyFrame
+    else {
+      val ptr =
+        lazy_frame.concatLazyFrames(
+          lazyFrames.+:(lazyFrame).map(_.ptr).toArray,
+          reChunk = reChunk,
+          parallel = parallel
+        )
 
-  def concat(dataFrames: DataFrame*): DataFrame = {
-    val ptr = _concatDataFrames(dataFrames.map(_.ptr).toArray)
-    DataFrame.withPtr(ptr)
-  }
+      LazyFrame.withPtr(ptr)
+    }
+
+  def concat(dataFrame: DataFrame, dataFrames: DataFrame*): DataFrame =
+    if (dataFrames.isEmpty) dataFrame
+    else {
+      val ptr = data_frame.concatDataFrames(dataFrames.+:(dataFrame).map(_.ptr).toArray)
+
+      DataFrame.withPtr(ptr)
+    }
 
 }
 

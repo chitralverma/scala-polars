@@ -4,6 +4,7 @@ use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JObject, JString};
 use jni::sys::{jlong, jlongArray, jobjectArray, jstring};
 use jni::JNIEnv;
+use jni_fn::jni_fn;
 
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
@@ -13,11 +14,8 @@ use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_schemaString(
-    env: JNIEnv,
-    _object: JObject,
-    ldf_ptr: jlong) -> jstring {
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn schemaString(env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
     let schema_string = serde_json::to_string(&j_df.df.schema()).unwrap();
 
@@ -26,8 +24,8 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_000
         .into_raw()
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_selectFromStrings(
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn selectFromStrings(
     _env: JNIEnv,
     _object: JObject,
     ptr: jlong,
@@ -51,13 +49,8 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_000
     j_df.select(_env, _object, exprs)
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_selectFromExprs(
-    env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
-    inputs: jlongArray,
-) -> jlong {
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn selectFromExprs(env: JNIEnv, object: JObject, ptr: jlong, inputs: jlongArray) -> jlong {
     let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
 
     let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
@@ -76,46 +69,29 @@ pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_000
     j_df.select(env, object, exprs)
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_filterFromExprs(
-    env: JNIEnv,
-    object: JObject,
-    ldf_ptr: jlong,
-    expr_ptr: jlong,
-) -> jlong {
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn filterFromExprs(env: JNIEnv, object: JObject, ldf_ptr: jlong, expr_ptr: jlong) -> jlong {
     let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
     let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
 
     j_df.filter(env, object, j_expr.expr.clone())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_show(
-    _env: JNIEnv,
-    _object: JObject,
-    ptr: jlong,
-) {
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn show(_env: JNIEnv, _object: JObject, ptr: jlong) {
     let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
     j_df.show()
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_data_1frame_00024_count(
-    _env: JNIEnv,
-    _object: JObject,
-    ptr: jlong,
-) -> jlong {
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn count(_env: JNIEnv, _object: JObject, ptr: jlong) -> jlong {
     let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
 
     j_df.df.shape().0 as i64
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_common_00024__1concatDataFrames(
-    env: JNIEnv,
-    object: JObject,
-    inputs: jlongArray,
-) -> jlong {
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn concatDataFrames(env: JNIEnv, object: JObject, inputs: jlongArray) -> jlong {
     let arr = env.get_long_array_elements(inputs, NoCopyBack).unwrap();
 
     let vec: Vec<DataFrame> = unsafe {
