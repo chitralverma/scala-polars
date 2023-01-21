@@ -83,8 +83,7 @@ class Schema private (private[polars] val json: String) {
 
       Field(name, StructType(sf))
 
-    case x =>
-      println(x)
+    case _ =>
       throw new IllegalArgumentException("Invalid field cannot be parsed as a JSON.")
   }
 
@@ -113,8 +112,5 @@ class Schema private (private[polars] val json: String) {
 }
 
 object Schema {
-  def from(jsonString: String): Schema = {
-    println(jsonString)
-    new Schema(jsonString)
-  }
+  def from(jsonString: String): Schema = new Schema(jsonString)
 }
