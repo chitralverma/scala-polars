@@ -31,7 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: taiki-e/upload-rust-binary-action@v1
-        working-directory: ./native
         with:
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
           # Note that glob pattern is not supported yet.
@@ -48,3 +47,4 @@ jobs:
           token: ${{ secrets.REL_WORKFLOW }}
 
           checksum: true
+          manifest_path: ./native/Cargo.toml
