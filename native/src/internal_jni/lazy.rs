@@ -76,6 +76,26 @@ pub fn filterFromExprs(env: JNIEnv, object: JObject, ldf_ptr: jlong, expr_ptr: j
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn withColumn(
+    env: JNIEnv,
+    object: JObject,
+    ldf_ptr: jlong,
+    col_name: JString,
+    expr_ptr: jlong,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let name = get_string(env, col_name, "Unable to get/ convert value to UTF8.");
+    let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
+
+    let ldf = j_ldf
+        .ldf
+        .clone()
+        .with_column(j_expr.expr.clone().alias(name.as_str()));
+
+    ldf_to_ptr(env, object, Ok(ldf))
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
 pub fn collect(env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
     let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
     j_ldf.collect(env, object)
