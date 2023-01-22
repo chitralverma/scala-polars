@@ -4,9 +4,8 @@ permissions:
   contents: write
 
 on:
-  push:
-    branches:
-      - test-release-workflow
+  release:
+    types: [created]
 
 jobs:
   create-release:
