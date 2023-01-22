@@ -1,13 +1,21 @@
 package org.polars.scala.polars.api.io
 
+import scala.collection.parallel.{immutable => ParallelCollections}
+
 import org.polars.scala.polars.Polars
 import org.polars.scala.polars.api.LazyFrame
-import org.polars.scala.polars.internal.jni.io.csv._scanCSV
-import org.polars.scala.polars.internal.jni.io.ipc._scanIPC
-import org.polars.scala.polars.internal.jni.io.ndjson._scanNdJson
-import org.polars.scala.polars.internal.jni.io.parquet._scanParquet
+import org.polars.scala.polars.internal.jni.io.scan._
 
 class Scannable private[polars] () {
+
+  def concat(f: => Seq[LazyFrame]): LazyFrame = {
+    val lazyFrames = f
+
+    lazyFrames match {
+      case ldf :: Nil => ldf
+      case ldf :: others => Polars.concat(ldf, others: _*)()
+    }
+  }
 
   def parquet(filePath: String, filePaths: String*)(
       nRows: Option[Long] = None,
@@ -16,22 +24,23 @@ class Scannable private[polars] () {
       lowMemory: Boolean = false,
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
-  ): LazyFrame = {
-    val lazyFrames = filePaths.+:(filePath).map { path =>
-      val ptr = _scanParquet(
-        path,
-        nRows.getOrElse(-1),
-        cache,
-        reChunk,
-        lowMemory,
-        rowCountColName.orNull,
-        rowCountColOffset.getOrElse(0)
-      )
+  ): LazyFrame = concat {
+    ParallelCollections.ParSeq
+      .concat(filePaths.+:(filePath))
+      .map { path =>
+        val ptr = scanParquet(
+          path,
+          nRows.getOrElse(-1),
+          cache,
+          reChunk,
+          lowMemory,
+          rowCountColName.orNull,
+          rowCountColOffset.getOrElse(0)
+        )
 
-      LazyFrame.withPtr(ptr)
-    }
-
-    Polars.concat(lazyFrames: _*)()
+        LazyFrame.withPtr(ptr)
+      }
+      .toList
   }
 
   def csv(filePath: String, filePaths: String*)(
@@ -47,28 +56,29 @@ class Scannable private[polars] () {
       lowMemory: Boolean = false,
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
-  ): LazyFrame = {
-    val lazyFrames = filePaths.+:(filePath).map { path =>
-      val ptr = _scanCSV(
-        path,
-        nRows.getOrElse(-1),
-        delimiter,
-        hasHeader,
-        inferSchemaRows,
-        skipRowsAfterHeader,
-        ignoreErrors,
-        parseDates,
-        cache,
-        reChunk,
-        lowMemory,
-        rowCountColName.orNull,
-        rowCountColOffset.getOrElse(0)
-      )
+  ): LazyFrame = concat {
+    ParallelCollections.ParSeq
+      .concat(filePaths.+:(filePath))
+      .map { path =>
+        val ptr = scanCSV(
+          path,
+          nRows.getOrElse(-1),
+          delimiter,
+          hasHeader,
+          inferSchemaRows,
+          skipRowsAfterHeader,
+          ignoreErrors,
+          parseDates,
+          cache,
+          reChunk,
+          lowMemory,
+          rowCountColName.orNull,
+          rowCountColOffset.getOrElse(0)
+        )
 
-      LazyFrame.withPtr(ptr)
-    }
-
-    Polars.concat(lazyFrames: _*)()
+        LazyFrame.withPtr(ptr)
+      }
+      .toList
   }
 
   def ndJson(filePath: String, filePaths: String*)(
@@ -79,22 +89,24 @@ class Scannable private[polars] () {
       lowMemory: Boolean = false,
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
-  ): LazyFrame = {
-    val lazyFrames = filePaths.+:(filePath).map { path =>
-      val ptr = _scanNdJson(
-        path,
-        nRows.getOrElse(-1),
-        inferSchemaRows,
-        cache,
-        reChunk,
-        lowMemory,
-        rowCountColName.orNull,
-        rowCountColOffset.getOrElse(0)
-      )
-      LazyFrame.withPtr(ptr)
-    }
+  ): LazyFrame = concat {
+    ParallelCollections.ParSeq
+      .concat(filePaths.+:(filePath))
+      .map { path =>
+        val ptr = scanNdJson(
+          path,
+          nRows.getOrElse(-1),
+          inferSchemaRows,
+          cache,
+          reChunk,
+          lowMemory,
+          rowCountColName.orNull,
+          rowCountColOffset.getOrElse(0)
+        )
 
-    Polars.concat(lazyFrames: _*)()
+        LazyFrame.withPtr(ptr)
+      }
+      .toList
   }
 
   def ipc(filePath: String, filePaths: String*)(
@@ -104,22 +116,23 @@ class Scannable private[polars] () {
       memMap: Boolean = true,
       rowCountColName: Option[String] = None,
       rowCountColOffset: Option[Int] = Some(0)
-  ): LazyFrame = {
-    val lazyFrames = filePaths.+:(filePath).map { path =>
-      val ptr = _scanIPC(
-        path,
-        nRows.getOrElse(-1),
-        cache,
-        reChunk,
-        memMap,
-        rowCountColName.orNull,
-        rowCountColOffset.getOrElse(0)
-      )
+  ): LazyFrame = concat {
+    ParallelCollections.ParSeq
+      .concat(filePaths.+:(filePath))
+      .map { path =>
+        val ptr = scanIPC(
+          path,
+          nRows.getOrElse(-1),
+          cache,
+          reChunk,
+          memMap,
+          rowCountColName.orNull,
+          rowCountColOffset.getOrElse(0)
+        )
 
-      LazyFrame.withPtr(ptr)
-    }
-
-    Polars.concat(lazyFrames: _*)()
+        LazyFrame.withPtr(ptr)
+      }
+      .toList
   }
 
 }

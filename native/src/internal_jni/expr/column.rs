@@ -1,180 +1,114 @@
 #![allow(non_snake_case)]
 
+use std::ops::{Add, Div, Mul, Rem, Sub};
+
 use jni::objects::{JObject, JString};
+use jni::sys::jint;
 use jni::sys::jlong;
 use jni::JNIEnv;
+use jni_fn::jni_fn;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+
 use polars::prelude::*;
 
 use crate::internal_jni::utils::{expr_to_ptr, get_string};
 use crate::j_expr::JExpr;
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_column(
-    env: JNIEnv,
-    object: JObject,
-    col_name: JString,
-) -> jlong {
+#[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
+pub enum BinaryOperator {
+    EqualTo = 0,
+    NotEqualTo = 1,
+    LessThan = 2,
+    LessThanEqualTo = 3,
+    GreaterThan = 4,
+    GreaterThanEqualTo = 5,
+    Or = 6,
+    And = 7,
+    Plus = 8,
+    Minus = 9,
+    Multiply = 10,
+    Divide = 11,
+    Modulus = 12,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
+pub enum UnaryOperator {
+    NOT = 0,
+    IsNull = 1,
+    IsNotNull = 2,
+    IsNan = 3,
+    IsNotNan = 4,
+    Between = 5,
+    IsIn = 6,
+    Like = 7,
+    Cast = 8,
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+pub fn column(env: JNIEnv, object: JObject, col_name: JString) -> jlong {
     let name = get_string(env, col_name, "Unable to get/ convert column name to UTF8.");
 
     let expr = col(name.as_str());
     expr_to_ptr(env, object, expr)
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_not(
-    env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
-) -> jlong {
-    let expr = unsafe { &mut *(ptr as *mut JExpr) };
+#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+pub fn applyUnary(env: JNIEnv, object: JObject, ptr: jlong, operator: jint) -> jlong {
+    let left_expr = unsafe { &mut *(ptr as *mut JExpr) };
 
-    expr.not(env, object)
+    let option = UnaryOperator::from_i32(operator)
+        .unwrap_or_else(|| panic!("Unsupported unary operator with ID `{operator}` provided."));
+
+    let l_copy = left_expr.expr.clone();
+
+    let expr_opt = match option {
+        UnaryOperator::NOT => Some(l_copy.not()),
+        UnaryOperator::IsNull => Some(l_copy.is_null()),
+        UnaryOperator::IsNotNull => Some(l_copy.is_not_null()),
+        UnaryOperator::IsNan => Some(l_copy.is_nan()),
+        UnaryOperator::IsNotNan => Some(l_copy.is_not_nan()),
+        _ => None,
+    };
+
+    let expr = expr_opt
+        .unwrap_or_else(|| panic!("Unsupported unary operator with ID `{operator}` provided."));
+
+    expr_to_ptr(env, object, expr)
 }
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_and(
+#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+pub fn applyBinary(
     env: JNIEnv,
     object: JObject,
     left_ptr: jlong,
     right_ptr: jlong,
+    operator: jint,
 ) -> jlong {
     let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
     let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
 
-    left_expr.and(env, object, right_expr.to_owned())
-}
+    let option = BinaryOperator::from_i32(operator)
+        .unwrap_or_else(|| panic!("Unsupported binary operator with ID `{operator}` provided."));
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_or(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
+    let l_copy = left_expr.expr.clone();
+    let r_copy = right_expr.expr.clone();
 
-    left_expr.or(env, object, right_expr.to_owned())
-}
+    let expr = match option {
+        BinaryOperator::EqualTo => l_copy.eq(r_copy),
+        BinaryOperator::NotEqualTo => l_copy.neq(r_copy),
+        BinaryOperator::LessThan => l_copy.lt(r_copy),
+        BinaryOperator::LessThanEqualTo => l_copy.lt_eq(r_copy),
+        BinaryOperator::GreaterThan => l_copy.gt(r_copy),
+        BinaryOperator::GreaterThanEqualTo => l_copy.gt_eq(r_copy),
+        BinaryOperator::Or => l_copy.or(r_copy),
+        BinaryOperator::And => l_copy.and(r_copy),
+        BinaryOperator::Plus => l_copy.add(r_copy),
+        BinaryOperator::Minus => l_copy.sub(r_copy),
+        BinaryOperator::Multiply => l_copy.mul(r_copy),
+        BinaryOperator::Divide => l_copy.div(r_copy),
+        BinaryOperator::Modulus => l_copy.rem(r_copy),
+    };
 
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_equalTo(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
-
-    left_expr.equal_to(env, object, right_expr.to_owned())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_notEqualTo(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
-
-    left_expr.not_equal_to(env, object, right_expr.to_owned())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_lessThan(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
-
-    left_expr.less_than(env, object, right_expr.to_owned())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_greaterThan(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
-
-    left_expr.greater_than(env, object, right_expr.to_owned())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_lessThanEqualTo(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
-
-    left_expr.less_than_equal_to(env, object, right_expr.to_owned())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_greaterThanEqualTo(
-    env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
-) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
-
-    left_expr.greater_than_equal_to(env, object, right_expr.to_owned())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_isNull(
-    env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
-) -> jlong {
-    let expr = unsafe { &mut *(ptr as *mut JExpr) };
-
-    expr.is_null(env, object)
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_isNotNull(
-    env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
-) -> jlong {
-    let expr = unsafe { &mut *(ptr as *mut JExpr) };
-
-    expr.is_not_null(env, object)
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_isNaN(
-    env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
-) -> jlong {
-    let expr = unsafe { &mut *(ptr as *mut JExpr) };
-
-    expr.is_nan(env, object)
-}
-
-#[no_mangle]
-pub extern "system" fn Java_org_polars_scala_polars_internal_jni_expressions_column_1expr_00024_isNotNaN(
-    env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
-) -> jlong {
-    let expr = unsafe { &mut *(ptr as *mut JExpr) };
-
-    expr.is_not_nan(env, object)
+    expr_to_ptr(env, object, expr)
 }

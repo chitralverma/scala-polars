@@ -133,6 +133,14 @@ lazy val core = project
     )
   )
   .settings(
+    libraryDependencies ++= {
+      if (!priorTo213(scalaVersion.value))
+        Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
+      else
+        Seq()
+    }
+  )
+  .settings(
     sbtJniCoreScope := Compile,
     classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
   )

@@ -4,6 +4,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.{Failure, Success, Try}
 
+import org.json4s.DefaultFormats
+
 import com.github.sbt.jni.syntax.NativeLoader
 
 package object polars {
@@ -13,8 +15,7 @@ package object polars {
   private[polars] val libraryLoaded =
     new AtomicReference[LibraryStates.LibraryState](LibraryStates.NOT_LOADED)
 
-  // noinspection TypeAnnotation
-  implicit val formats = org.json4s.DefaultFormats
+  implicit val formats: DefaultFormats.type = DefaultFormats
 
   private[polars] def loadLibraryIfRequired(): Unit = {
     if (libraryLoaded.get() == LibraryStates.LOADED)
