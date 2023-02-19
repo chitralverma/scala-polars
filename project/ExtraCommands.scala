@@ -1,8 +1,8 @@
 import sbt.Keys._
 import sbt._
-import com.github.sbt.jni.plugins.JniJavah.autoImport.javah
 
 import Utils._
+import com.github.sbt.jni.plugins.JniJavah.autoImport.javah
 
 object ExtraCommands {
 
@@ -31,21 +31,23 @@ object ExtraCommands {
       sLog.value.info(s"Removed headers directory $headerDir")
     },
     cargoFmt := {
-      Seq(
+      val nativeRootDir = nativeRoot.value: @sbtUnchecked
+      val cmds = Seq(
         "cargo fix --allow-dirty --allow-staged",
         "cargo sort",
         "cargo fmt --verbose --all"
-      ).foreach(cmd =>
-        executeProcess(cmd = cmd, cwd = Some(nativeRoot.value), sLog.value, infoOnly = true)
       )
+
+      executeProcesses(cmds, cwd = Some(nativeRootDir), sLog.value, infoOnly = true)
     },
     cargoCheck := {
-      Seq(
+      val nativeRootDir = nativeRoot.value: @sbtUnchecked
+      val cmds = Seq(
         "cargo fmt --check --all",
         "cargo sort --check"
-      ).foreach(cmd =>
-        executeProcess(cmd = cmd, cwd = Some(nativeRoot.value), sLog.value, infoOnly = true)
       )
+
+      executeProcesses(cmds, cwd = Some(nativeRootDir), sLog.value, infoOnly = true)
     }
   )
 

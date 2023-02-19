@@ -1,13 +1,19 @@
-import sbt.{Def, _}
+import sbt._
 
 import scala.sys.process._
 
 object Utils {
 
-  @sbtUnchecked
   lazy val nativeRoot = taskKey[File]("Directory pointing to the native project root.")
 
-  def dynTask[T](f: => T): Def.Initialize[Task[T]] = Def.taskDyn[T](Def.task(f))
+  def executeProcesses(
+      cmds: Seq[String],
+      cwd: Option[File] = None,
+      logger: Logger,
+      infoOnly: Boolean = false,
+      extraEnv: Seq[(String, String)] = Nil
+  ): Unit = cmds.foreach(cmd => executeProcess(cmd, cwd, logger, infoOnly = true))
+
   def executeProcess(
       cmd: String,
       cwd: Option[File] = None,
@@ -15,7 +21,8 @@ object Utils {
       infoOnly: Boolean = false,
       extraEnv: Seq[(String, String)] = Nil
   ): Unit = {
-    val exitCode = Process(cmd, cwd, extraEnv: _*).run(getProcessLogger(logger, infoOnly)).exitValue()
+    val exitCode =
+      Process(cmd, cwd, extraEnv: _*).run(getProcessLogger(logger, infoOnly)).exitValue()
     logger.info(s"Executed command `$cmd` with exit code $exitCode.")
   }
 

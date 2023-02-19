@@ -125,13 +125,7 @@ object NativeBuildSettings {
       managedNativeLibraries.value
         .map { path =>
           val pathStr = path.toString
-
-          // TODO: Remove later if not required
-          val arch =
-//            if (pathStr.contains("aarch64")) "aarch64"
-//            else if (pathStr.contains("x86_64")) "x86_64"
-//            else
-              path.getParent.getFileName.toString
+          val arch = path.getParent.getFileName.toString
 
           val libraryFile = path.toFile
 

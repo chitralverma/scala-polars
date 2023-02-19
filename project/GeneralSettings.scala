@@ -15,7 +15,6 @@ object GeneralSettings {
   lazy val settings: Seq[Setting[_]] = Seq(
     organization := "org.polars",
     name := "scala-polars",
-    version := "0.1.0-SNAPSHOT",
     versionScheme := Some("early-semver"),
     licenses := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
