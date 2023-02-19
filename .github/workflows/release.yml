@@ -1,0 +1,183 @@
+name: Create Release
+on:
+  push:
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  get-version:
+    name: Compute and verify the version number
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+          cache: 'sbt'
+      - name: Get Version
+        id: version
+        run: echo "snapshot=$(sbt -no-colors 'print version' | tail -n 1)" >> $GITHUB_OUTPUT
+
+      - name: Show Version
+        run: echo $(sbt -no-colors 'print version' | tail -n 1)
+
+      - name: Set Version in ENV
+        run:
+          echo "PROJECT_VERSION=${{ steps.version.outputs.snapshot }}" >> $GITHUB_ENV
+
+      - name: Add Version to summary
+        run: echo "${{ steps.version.outputs.snapshot }}" >> $GITHUB_STEP_SUMMARY
+
+  build-natives:
+    name: ${{ matrix.arch }} build
+    runs-on: ${{ matrix.os }}
+    env:
+      TARGET_TRIPLE: ${{ matrix.arch }}
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: aarch64-unknown-linux-gnu
+            packages: "sudo apt update && sudo apt-get install gcc-aarch64-linux-gnu"
+
+          - os: ubuntu-latest
+            arch: x86_64-unknown-linux-gnu
+            packages: ""
+
+          - os: windows-latest
+            arch: aarch64-pc-windows-msvc
+            packages: ""
+
+          - os: windows-latest
+            arch: x86_64-pc-windows-msvc
+            packages: ""
+
+          - os: macos-latest
+            arch: x86_64-apple-darwin
+            packages: ""
+
+          - os: macos-latest
+            arch: aarch64-apple-darwin
+            packages: ""
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Install system packages
+        run: ${{ matrix.packages }}
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/
+            /target/
+            native/target/
+            core/target/
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+          key: ${{ runner.arch }}-${{ runner.os }}-cache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.arch }}-${{ runner.os }}-cargo-
+
+      - name: Cross publish artifacts containing native library
+        run: |
+          rustup target add ${{ matrix.arch }}
+          sbt generateNativeLibrary
+          ls -R /tmp/native-libs/
+
+      - name: Temporarily save native library for ${{ matrix.arch }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: native_libs
+          path: /tmp/native-libs/
+          retention-days: 1
+          if-no-files-found: error
+
+  test-build:
+    name: ${{ matrix.os }} test
+    runs-on: ${{ matrix.os }}
+    needs: [ build-natives, get-version ]
+    env:
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+      SKIP_NATIVE_GENERATION: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+
+          - os: windows-latest
+
+          - os: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: native_libs
+          path: /tmp/native-libs/
+
+      - name: Test for ${{ matrix.os }}
+        run: |
+          sbt +assembly
+          java -cp ./core/target/scala-2.13/scala-polars-assembly-0.1.0-SNAPSHOT.jar org.polars.scala.polars.Main
+          java -cp ./core/target/scala-2.12/scala-polars-assembly-0.1.0-SNAPSHOT.jar org.polars.scala.polars.Main
+
+  publish:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+      SKIP_NATIVE_GENERATION: true
+    needs: [ test-build ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: native_libs
+          path: /tmp/native-libs/
+
+      - name: List the built artifacts
+        run: ls -R
+        working-directory: /tmp/native-libs/
+
+      - name: Publish Artifacts
+        run: sbt +aetherDeploy
