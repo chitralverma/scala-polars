@@ -11,10 +11,8 @@ publish = false
 name = "scala_polars"
 crate_type = ["cdylib"]
 
-[dev-dependencies]
-cargo-sort = "1.0.9"
-
 [dependencies]
+cargo-sort = "1.0.9"
 jni = "0.20"
 jni_fn = { git = "https://gitlab.com/antonok/jni_fn.git", branch = "scala-class-dollars" }
 num = "0.4.0"
@@ -43,3 +41,6 @@ features = [
     "serde-lazy",
 ]
 
+[profile.release]
+codegen-units = 1
+lto = true
