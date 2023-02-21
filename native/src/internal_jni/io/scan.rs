@@ -33,6 +33,7 @@ pub fn scanParquet(
         cache: cache == JNI_TRUE,
         rechunk: reChunk == JNI_TRUE,
         low_memory: lowMemory == JNI_TRUE,
+        cloud_options: None,
     };
 
     let j_ldf = LazyFrame::scan_parquet(this_path, scan_args);
@@ -64,7 +65,7 @@ pub fn scanCSV(
         .with_n_rows(n_rows)
         .with_delimiter(delimiter as u8)
         .has_header(hasHeader == JNI_TRUE)
-        .with_ignore_parser_errors(ignoreErrors == JNI_TRUE)
+        .with_ignore_errors(ignoreErrors == JNI_TRUE)
         .with_row_count(row_count)
         .with_infer_schema_length(Some(inferSchemaRows as usize))
         .with_parse_dates(parseDates == JNI_TRUE)

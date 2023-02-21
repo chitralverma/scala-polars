@@ -6,8 +6,6 @@ import scala.util.{Failure, Success, Try}
 
 import org.json4s.DefaultFormats
 
-import com.github.sbt.jni.syntax.NativeLoader
-
 package object polars {
 
   private final val NATIVE_LIB_NAME = "scala_polars"
