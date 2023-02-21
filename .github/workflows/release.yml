@@ -1,8 +1,6 @@
-name: Create Release
+name: Publish Artifacts
 on:
   push:
-    tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
     branches:
       - test-release-workflow
 
@@ -10,36 +8,10 @@ permissions:
   contents: read
 
 jobs:
-  get-version:
-    name: Compute and verify the version number
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: "8"
-          distribution: 'temurin'
-          cache: 'sbt'
-      - name: Get Version
-        id: version
-        run: echo "snapshot=$(sbt -no-colors 'print version' | tail -n 1)" >> $GITHUB_OUTPUT
-
-      - name: Show Version
-        run: echo $(sbt -no-colors 'print version' | tail -n 1)
-
-      - name: Set Version in ENV
-        run:
-          echo "PROJECT_VERSION=${{ steps.version.outputs.snapshot }}" >> $GITHUB_ENV
-
-      - name: Add Version to summary
-        run: echo "${{ steps.version.outputs.snapshot }}" >> $GITHUB_STEP_SUMMARY
-
   build-natives:
     name: ${{ matrix.arch }} build
     runs-on: ${{ matrix.os }}
     env:
-      CARGO_TERM_COLOR: always
       TARGET_TRIPLE: ${{ matrix.arch }}
       NATIVE_LIB_LOCATION: /tmp/native-libs/
     strategy:
@@ -80,7 +52,6 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
-          cache: 'sbt'
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -98,7 +69,6 @@ jobs:
         run: |
           rustup target add ${{ matrix.arch }}
           sbt generateNativeLibrary
-          ls -R /tmp/native-libs/
 
       - name: Temporarily save native library for ${{ matrix.arch }}
         uses: actions/upload-artifact@v3
@@ -111,7 +81,7 @@ jobs:
   test-build:
     name: ${{ matrix.os }} test
     runs-on: ${{ matrix.os }}
-    needs: [ build-natives, get-version ]
+    needs: [ build-natives ]
     env:
       NATIVE_LIB_LOCATION: /tmp/native-libs/
       SKIP_NATIVE_GENERATION: true
@@ -133,7 +103,10 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
-          cache: 'sbt'
+
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: ${{ matrix.arch }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v3
@@ -163,7 +136,10 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
-          cache: 'sbt'
+
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: ${{ matrix.arch }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v3
