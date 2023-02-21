@@ -6,9 +6,6 @@
 .idea/
 *.iml
 
-# Rust specific
-Cargo.lock
-
 # SBT specific
 .bsp/
 coverage.xml
