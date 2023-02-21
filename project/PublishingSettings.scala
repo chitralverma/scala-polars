@@ -7,9 +7,9 @@ object PublishingSettings {
     publish / skip := false,
     publishArtifact := true,
     publishMavenStyle := true,
-    externalResolvers += "GitHub Package Registry" at "https://maven.pkg.github.com/chitralverma/test-native-proj",
+    externalResolvers += "GitHub Package Registry" at "https://maven.pkg.github.com/chitralverma/scala-polars",
     publishTo := Some(
-      "GitHub Package Registry" at "https://maven.pkg.github.com/chitralverma/test-native-proj"
+      "GitHub Package Registry" at "https://maven.pkg.github.com/chitralverma/scala-polars"
     ),
     credentials += Credentials(
       realm = "GitHub Package Registry",
