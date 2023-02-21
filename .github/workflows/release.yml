@@ -86,9 +86,13 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - uses: coursier/cache-action@v6
+        with:
+          extraKey: ${{ matrix.arch }}
 
       - uses: Swatinem/rust-cache@v2
-        working-directory: ./native
+        with:
+          workspaces: native
+          prefix-key: ${{ matrix.arch }}
 
       - name: Cross publish artifacts containing native library
         run: |
