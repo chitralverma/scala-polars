@@ -39,6 +39,7 @@ jobs:
     name: ${{ matrix.arch }} build
     runs-on: ${{ matrix.os }}
     env:
+      CARGO_TERM_COLOR: always
       TARGET_TRIPLE: ${{ matrix.arch }}
       NATIVE_LIB_LOCATION: /tmp/native-libs/
     strategy:
@@ -69,6 +70,9 @@ jobs:
             arch: aarch64-apple-darwin
             packages: ""
     steps:
+      - name: Install system packages
+        run: ${{ matrix.packages }}
+
       - uses: actions/checkout@v3
 
       - name: Set up JDK
@@ -78,25 +82,13 @@ jobs:
           distribution: 'temurin'
           cache: 'sbt'
 
-      - name: Install system packages
-        run: ${{ matrix.packages }}
-
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
 
-      - uses: actions/cache@v3
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/
-            /target/
-            native/target/
-            core/target/
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.cache/coursier
-          key: ${{ runner.arch }}-${{ runner.os }}-cache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.arch }}-${{ runner.os }}-cargo-
+      - uses: coursier/cache-action@v6
+
+      - uses: Swatinem/rust-cache@v2
+        working-directory: ./native
 
       - name: Cross publish artifacts containing native library
         run: |
