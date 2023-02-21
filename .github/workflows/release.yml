@@ -2,7 +2,7 @@ name: Publish Artifacts
 on:
   push:
     branches:
-      - test-release-workflow
+      - main
 
 permissions:
   contents: read
