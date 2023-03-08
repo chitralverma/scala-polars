@@ -10,6 +10,8 @@ pub mod internal_jni;
 pub mod j_data_frame;
 pub mod j_expr;
 pub mod j_lazy_frame;
+mod storage_config;
+pub mod utils;
 
 const POLARS_VERSION: &str = "0.26.1";
 
