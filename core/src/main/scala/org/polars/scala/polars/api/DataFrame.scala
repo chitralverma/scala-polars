@@ -1,6 +1,7 @@
 package org.polars.scala.polars.api
 
 import org.polars.scala.polars.api.expressions.Expression
+import org.polars.scala.polars.api.io.Writeable
 import org.polars.scala.polars.api.types.Schema
 import org.polars.scala.polars.internal.jni.data_frame
 
@@ -32,6 +33,7 @@ class DataFrame private (private[polars] val ptr: Long) {
   def show(): Unit = data_frame.show(ptr)
 
   def count(): Long = data_frame.count(ptr)
+  def write(): Writeable = new Writeable(ptr)
 
 }
 
