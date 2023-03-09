@@ -1968,15 +1968,13 @@ dependencies = [
 [[package]]
 name = "ring"
 version = "0.16.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
+source = "git+https://github.com/awakecoding/ring?branch=0.16.20_alpha#ec78aff5b5c4734957522f092590e0b58a3161cf"
 dependencies = [
  "cc",
  "libc",
  "once_cell",
  "spin",
  "untrusted",
- "web-sys",
  "winapi",
 ]
 
@@ -2267,9 +2265,9 @@ dependencies = [
 
 [[package]]
 name = "spin"
-version = "0.5.2"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
+checksum = "7dccf47db1b41fa1573ed27ccf5e08e3ca771cb994f776668c5ebda893b248fc"
 
 [[package]]
 name = "static_assertions"
