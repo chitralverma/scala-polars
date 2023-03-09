@@ -23,7 +23,13 @@ object Utils {
   ): Unit = {
     val exitCode =
       Process(cmd, cwd, extraEnv: _*).run(getProcessLogger(logger, infoOnly)).exitValue()
-    logger.info(s"Executed command `$cmd` with exit code $exitCode.")
+
+    if (exitCode != 0) {
+      logger.error(s"Failed to executed command `$cmd` with exit code $exitCode.")
+      System.exit(exitCode)
+    } else {
+      logger.success(s"Successfully executed command `$cmd` with exit code $exitCode.")
+    }
   }
 
   def priorTo213(scalaVersion: String): Boolean =
