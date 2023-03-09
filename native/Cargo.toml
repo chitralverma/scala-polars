@@ -53,11 +53,6 @@ features = [
     "azure"
 ]
 
-# object_store brings in ring which causes problems on win-64 builds
-# See https://github.com/briansmith/ring/issues/1167#issuecomment-1258564864
-[patch.crates-io]
-ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_alpha" }
-
 [profile.release]
 codegen-units = 1
 lto = true
