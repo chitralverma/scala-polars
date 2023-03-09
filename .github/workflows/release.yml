@@ -87,7 +87,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: [ build-natives ]
     env:
-      JAVA_OPTS: "-XX:+UseG1GC"
+      JAVA_OPTS: -XX:+UseG1GC -Xms2048M -Xmx5120M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
       SBT_OPTS: "-Dsbt.ci=true"
       NATIVE_LIB_LOCATION: /tmp/native-libs/
       SKIP_NATIVE_GENERATION: true
