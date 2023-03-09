@@ -14,4 +14,12 @@ private[polars] object write extends Natively {
       writeMode: String
   ): Unit
 
+  @native def writeIPC(
+      ptr: Long,
+      filePath: String,
+      compression: String,
+      options: String,
+      writeMode: String
+  ): Unit
+
 }

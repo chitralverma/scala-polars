@@ -18,6 +18,7 @@ jni_fn = { git = "https://gitlab.com/antonok/jni_fn.git", branch = "scala-class-
 num = "0.4.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
+arrow2 = { version = "0.16.0", features=["io_ipc_write_async"]}
 polars-core = { version = "0.27.2", default-features = false }
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }

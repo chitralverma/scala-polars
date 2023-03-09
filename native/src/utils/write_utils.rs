@@ -1,20 +1,20 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
+use arrow2::datatypes::PhysicalType;
+use arrow2::io::parquet::write::{transverse, Encoding};
+use jni::objects::JString;
+use jni::JNIEnv;
 use object_store::aws::AmazonS3Builder;
 use object_store::azure::MicrosoftAzureBuilder;
 use object_store::gcp::GoogleCloudStorageBuilder;
 use object_store::local::LocalFileSystem;
 use object_store::path::Path;
-use object_store::DynObjectStore;
-use polars::export::arrow::datatypes::PhysicalType;
-use polars::export::arrow::io::parquet::write::{transverse, Encoding};
-use polars::export::arrow::io::parquet::write::{
-    BrotliLevel, CompressionOptions, GzipLevel, ZstdLevel,
-};
+use object_store::{DynObjectStore, ObjectMeta};
 use polars::prelude::{ArrowDataType, ArrowSchema};
 use url::Url;
 
-use crate::internal_jni::utils::normalize_path;
+use crate::internal_jni::utils::{get_string, normalize_path};
 use crate::storage_config::StorageOptions;
 use crate::utils::{PathError, WriteModes};
 
@@ -135,49 +135,23 @@ pub fn parse_write_mode(write_mode: &str) -> Result<WriteModes, PathError> {
     Ok(parsed)
 }
 
-pub fn parse_parquet_compression(
-    compression: &str,
-    compression_level: Option<i32>,
-) -> Result<CompressionOptions, PathError> {
-    let parsed = match compression {
-        "uncompressed" => CompressionOptions::Uncompressed,
+pub fn ensure_write_mode(
+    meta: object_store::Result<ObjectMeta>,
+    url: Url,
+    write_mode: WriteModes,
+) -> Result<(), PathError> {
+    if meta.is_ok() && write_mode == WriteModes::ErrorIfExists {
+        Err(PathError::FileAlreadyExists(String::from(url.as_str())))
+    } else {
+        Ok(())
+    }
+}
 
-        "snappy" => CompressionOptions::Snappy,
-
-        "lz4" => CompressionOptions::Lz4Raw,
-
-        "lzo" => CompressionOptions::Lzo,
-
-        "gzip" => CompressionOptions::Gzip(
-            compression_level
-                .map(|lvl| {
-                    GzipLevel::try_new(lvl as u8).map_err(|e| PathError::Generic(format!("{e:?}")))
-                })
-                .transpose()?,
-        ),
-
-        "brotli" => CompressionOptions::Brotli(
-            compression_level
-                .map(|lvl| {
-                    BrotliLevel::try_new(lvl as u32)
-                        .map_err(|e| PathError::Generic(format!("{e:?}")))
-                })
-                .transpose()?,
-        ),
-
-        "zstd" => CompressionOptions::Zstd(
-            compression_level
-                .map(|lvl| {
-                    ZstdLevel::try_new(lvl).map_err(|e| PathError::Generic(format!("{e:?}")))
-                })
-                .transpose()?,
-        ),
-
-        e => {
-            return Err(PathError::Generic(format!(
-                "Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}",
-            )));
-        }
-    };
-    Ok(parsed)
+pub fn parse_json_to_storage_options(env: JNIEnv, options: JString) -> StorageOptions {
+    if options.is_null() {
+        StorageOptions(HashMap::new())
+    } else {
+        let json = get_string(env, options, "Unable to get/ convert storage options");
+        StorageOptions::fromJSON(json)
+    }
 }

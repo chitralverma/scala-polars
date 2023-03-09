@@ -14,7 +14,8 @@ object WriteCompressions extends Enumeration {
   private lazy val stringMap: Map[String, WriteCompression] =
     values.map(v => (v.toString.toLowerCase(Locale.ROOT), v)).toMap
 
-  def fromString(str: String): Option[WriteCompression] = stringMap.get(str)
+  def fromString(str: String): Option[WriteCompression] =
+    stringMap.get(str.toLowerCase(Locale.ROOT))
 
   val lz4, uncompressed, snappy, gzip, lzo, brotli, zstd = Value
 }
@@ -25,7 +26,8 @@ object WriteModes extends Enumeration {
   private lazy val stringMap: Map[String, WriteMode] =
     values.map(v => (v.toString.toLowerCase(Locale.ROOT), v)).toMap
 
-  def fromString(str: String): Option[WriteMode] = stringMap.get(str)
+  def fromString(str: String): Option[WriteMode] =
+    stringMap.get(str.toLowerCase(Locale.ROOT))
 
   val ErrorIfExists, Overwrite = Value
 }
@@ -34,7 +36,7 @@ class Writeable private[polars] (ptr: Long) {
   import org.polars.scala.polars.formats
 
   private var _mode: String = WriteModes.ErrorIfExists.toString
-  private var _compression: String = WriteCompressions.snappy.toString
+  private var _compression: String = WriteCompressions.zstd.toString
   private var _compressionLevel: Int = -1
   private val _options: MutableMap[String, String] = MutableMap.empty
 
@@ -107,9 +109,7 @@ class Writeable private[polars] (ptr: Long) {
     this
   }
 
-  def parquet(
-      filePath: String,
-      writeStats: Boolean = false): Unit =
+  def parquet(filePath: String, writeStats: Boolean = false): Unit =
     writeParquet(
       ptr = ptr,
       filePath = filePath,
@@ -119,4 +119,22 @@ class Writeable private[polars] (ptr: Long) {
       options = Serialization.write(_options),
       writeMode = _mode
     )
+
+  def ipc(filePath: String): Unit = {
+    WriteCompressions.fromString(_compression).get match {
+      case WriteCompressions.zstd | WriteCompressions.uncompressed | WriteCompressions.lz4 =>
+      case v =>
+        throw new IllegalArgumentException(
+          s"Compression for IPC format must be one of {{'uncompressed', 'lz4', 'zstd'}}, got $v"
+        )
+    }
+
+    writeIPC(
+      ptr = ptr,
+      filePath = filePath,
+      compression = _compression,
+      options = Serialization.write(_options),
+      writeMode = _mode
+    )
+  }
 }

@@ -20,6 +20,11 @@ pub(crate) fn str_is_truthy(val: &str) -> bool {
 }
 
 impl StorageOptions {
+    pub fn fromJSON(json: String) -> Self {
+        let options_map: HashMap<String, String> = serde_json::from_str(&json).unwrap();
+        StorageOptions(options_map)
+    }
+
     /// Create a new instance of [`StorageOptions`]
     pub fn new(options: HashMap<String, String>) -> Self {
         let mut options = options;
