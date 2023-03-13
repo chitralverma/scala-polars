@@ -30,6 +30,8 @@ class DataFrame private (private[polars] val ptr: Long) {
     DataFrame.withPtr(ldfPtr)
   }
 
+  def toLazy(): LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
+
   def show(): Unit = data_frame.show(ptr)
 
   def count(): Long = data_frame.count(ptr)
