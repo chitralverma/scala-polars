@@ -16,4 +16,12 @@ object CommonUtils {
     target.toAbsolutePath.toString
   }
 
+  def getOutputLocation(path: String): String = {
+    val target =
+      Files.createTempFile("tmp-resource-", s"-${Paths.get(path).getFileName.toString}")
+    Files.deleteIfExists(target)
+
+    target.toAbsolutePath.toString
+  }
+
 }

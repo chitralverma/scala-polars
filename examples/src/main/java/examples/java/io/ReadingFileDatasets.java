@@ -6,15 +6,15 @@ import org.polars.scala.polars.api.DataFrame;
 import org.polars.scala.polars.api.LazyFrame;
 
 /**
- * Polars supports various input format like the following,
+ * Polars supports various input file formats like the following,
  * <ul>
  *  <li>{@link Polars#csv() CSV} (delimited format like CSV, TSV, etc.) </li>
  *  <li>{@link Polars#parquet() Apache Parquet}</li>
  *  <li>{@link Polars#ipc() Apache Arrow IPC}</li>
  *  <li>{@link Polars#ndJson() New line delimited JSON}</li>
- *
+ * </ul>
  * <p>
- * All the above formats are compatible with the lazy or eager input AP and users can supply 1 or
+ * All the above formats are compatible with the lazy or eager input API and users can supply 1 or
  * more file paths which will be read in parallel to return a {@link LazyFrame} or a {@link DataFrame}.
  * <p>
  * Since each format may have its own additional options (example: delimiter for CSV format),
@@ -26,7 +26,7 @@ import org.polars.scala.polars.api.LazyFrame;
  * Some additional examples may also be found in {@link LazyAndEagerAPI}.
  */
 
-public class WorkingWithFileInputs {
+public class ReadingFileDatasets {
 
     public static void main(String[] args) {
 
