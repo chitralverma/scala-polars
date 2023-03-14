@@ -1,4 +1,4 @@
-package org.polars.examples.java.configuration;
+package examples.java.configuration;
 
 import org.polars.scala.polars.Polars;
 

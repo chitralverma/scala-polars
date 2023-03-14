@@ -1,4 +1,4 @@
-package org.polars.examples.scala.configuration
+package examples.scala.configuration
 
 import java.io.File
 import java.nio.file.{Files, Path}
