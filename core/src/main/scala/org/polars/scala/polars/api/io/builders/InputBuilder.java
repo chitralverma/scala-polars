@@ -3,7 +3,7 @@ package org.polars.scala.polars.api.io.builders;
 import org.polars.scala.polars.Polars;
 import org.polars.scala.polars.api.DataFrame;
 import org.polars.scala.polars.api.LazyFrame;
-import scala.jdk.CollectionConverters;
+import scala.jdk.javaapi.CollectionConverters;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +51,7 @@ public abstract class InputBuilder<B extends InputBuilder<B>> {
         List<LazyFrame> lazyFrames = Arrays.stream(paths).parallel().map(this::scanImpl).collect(Collectors.toList());
 
         return Polars.concat(ldf,
-                CollectionConverters.IterableHasAsScala(lazyFrames).asScala().toSeq(),
+                CollectionConverters.asScala(lazyFrames).toSeq(),
                 reChunk,
                 true);
     }

@@ -13,7 +13,6 @@ use polars_core::utils::concat_df;
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
-use crate::j_lazy_frame::JLazyFrame;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn schemaString(env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {

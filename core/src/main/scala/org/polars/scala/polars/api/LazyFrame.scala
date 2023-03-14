@@ -1,10 +1,10 @@
 package org.polars.scala.polars.api
 
+import scala.annotation.varargs
+
 import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.api.types.Schema
 import org.polars.scala.polars.internal.jni.lazy_frame
-
-import scala.annotation.varargs
 
 class LazyFrame private (private[polars] val ptr: Long) {
 

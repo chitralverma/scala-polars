@@ -11,8 +11,9 @@ import examples.scala.utils.CommonUtils
   *   - [[Polars.ipc Apache Arrow IPC]]
   *   - [[Polars.ndJson New line delimited JSON]]
   *
-  * All the above formats are compatible with the lazy or eager input API and users can supply 1 or
-  * more file paths which will be read in parallel to return a [[LazyFrame]] or a [[DataFrame]].
+  * All the above formats are compatible with the lazy or eager input API and users can supply 1
+  * or more file paths which will be read in parallel to return a [[LazyFrame]] or a
+  * [[DataFrame]].
   *
   * Since each format may have its own additional options (example: delimiter for CSV format),
   * Polars allows a simple builder pattern which can be used to supply these options.
