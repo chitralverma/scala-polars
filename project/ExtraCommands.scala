@@ -16,8 +16,11 @@ object ExtraCommands {
   lazy val commandAliases: Seq[Setting[_]] = Seq(
     addCommandAlias("cleanAll", ";cleanHeaders; clean; cleanFiles; reload"),
     addCommandAlias("genHeaders", ";cleanHeaders; javah"),
-    addCommandAlias("fmtAll", ";scalafmtAll; scalafmtSbt; cargoFmt; reload"),
-    addCommandAlias("fmtCheckAll", ";scalafmtCheckAll; scalafmtSbtCheck; cargoCheck")
+    addCommandAlias("fmtAll", ";scalafmtAll; scalafmtSbt; javafmtAll; cargoFmt; reload"),
+    addCommandAlias(
+      "fmtCheckAll",
+      ";scalafmtCheckAll; scalafmtSbtCheck; javafmtCheckAll; cargoCheck"
+    )
   ).flatten
 
   lazy val commands: Seq[Setting[_]] = Seq(
