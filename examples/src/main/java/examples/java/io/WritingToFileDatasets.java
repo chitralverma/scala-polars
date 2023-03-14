@@ -32,7 +32,7 @@ public class WritingToFileDatasets {
         String path = CommonUtils.getResource("/files/web-ds/data.ipc");
         DataFrame df = Polars.ipc().read(path);
 
-        System.out.println("Showing parquet file as a DataFrame to stdout.");
+        System.out.println("Showing ipc file as a DataFrame to stdout.");
         df.show();
 
         System.out.printf("Total rows: %s%n%n", df.count());

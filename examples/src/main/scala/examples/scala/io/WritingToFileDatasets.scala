@@ -21,12 +21,12 @@ import examples.scala.utils.CommonUtils
 object WritingToFileDatasets {
 
   def main(args: Array[String]): Unit = {
-    /* Read a dataset as a DataFrame lazily or eagerly */
 
+    /* Read a dataset as a DataFrame lazily or eagerly */
     val path = CommonUtils.getResource("/files/web-ds/data.ipc")
     val df = Polars.ipc.read(path)
 
-    println("Showing parquet file as a DataFrame to stdout.")
+    println("Showing ipc file as a DataFrame to stdout.")
     df.show()
 
     printf("Total rows: %s%n%n", df.count())

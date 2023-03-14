@@ -32,9 +32,7 @@ public class ReadingFileDatasets {
 
         /* For one Parquet file */
         String path = CommonUtils.getResource("/files/web-ds/data.parquet");
-        DataFrame df = Polars.parquet()
-                .scan(path)
-                .collect();
+        DataFrame df = Polars.parquet().scan(path).collect();
 
         System.out.println("Showing parquet file as a DataFrame to stdout.");
         df.show();
