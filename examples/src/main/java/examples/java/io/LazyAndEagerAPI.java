@@ -41,7 +41,7 @@ public class LazyAndEagerAPI {
         /* Materialize LazyFrame to DataFrame */
         DataFrame df = ldf.collect();
 
-        System.out.println("Showing CSV files as a DataFrame to stdout");
+        System.out.println("Showing CSV file as a DataFrame to stdout");
         df.show();
 
         System.out.printf("Total rows: %s%n%n", df.count());
@@ -58,7 +58,7 @@ public class LazyAndEagerAPI {
         /* Eagerly read data from file based datasets */
         df = Polars.csv().read(path);
 
-        System.out.println("Showing CSV files as a DataFrame to stdout");
+        System.out.println("Showing CSV file as a DataFrame to stdout");
         df.show();
     }
 }

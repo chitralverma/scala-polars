@@ -34,7 +34,7 @@ object LazyAndEagerAPI {
     /* Materialize LazyFrame to DataFrame */
     var df: DataFrame = ldf.collect()
 
-    println("Showing CSV files as a DataFrame to stdout")
+    println("Showing CSV file as a DataFrame to stdout.")
     df.show()
 
     printf("Total rows: %s%n%n", df.count())
@@ -51,7 +51,7 @@ object LazyAndEagerAPI {
     /* Eagerly read data from file based datasets */
     df = Polars.csv.read(path)
 
-    println("Showing CSV files as a DataFrame to stdout")
+    println("Showing CSV file as a DataFrame to stdout")
     df.show()
 
   }
