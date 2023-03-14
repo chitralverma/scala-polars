@@ -1,6 +1,6 @@
 package org.polars.scala.polars
 
-import org.polars.scala.polars.api.io.{Readable, Scannable}
+import org.polars.scala.polars.api.io.builders._
 import org.polars.scala.polars.api.{DataFrame, LazyFrame}
 import org.polars.scala.polars.config.Config
 import org.polars.scala.polars.internal.jni.{common, data_frame, lazy_frame}
@@ -11,9 +11,13 @@ object Polars {
 
   def version(): String = common.version()
 
-  def scan: Scannable = new Scannable
+  def csv: CSVInputBuilder = new CSVInputBuilder()
 
-  def read: Readable = new Readable
+  def parquet: ParquetInputBuilder = new ParquetInputBuilder()
+
+  def ipc: IPCInputBuilder = new IPCInputBuilder()
+
+  def ndJson: NdJsonInputBuilder = new NdJsonInputBuilder()
 
   def concat(
       lazyFrame: LazyFrame,
