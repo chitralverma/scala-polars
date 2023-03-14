@@ -23,6 +23,11 @@ Polars is a blazingly fast DataFrames library implemented in Rust using
 
 _TODO_
 
+### Examples
+
+- [Java Examples](examples/src/main/java/examples/java/)
+- [Scala Examples](examples/src/main/scala/examples/scala/)
+
 ## Compatibility
 
 - JDK version `>=8`

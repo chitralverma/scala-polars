@@ -13,7 +13,7 @@ pub mod j_lazy_frame;
 mod storage_config;
 pub mod utils;
 
-const POLARS_VERSION: &str = "0.26.1";
+const POLARS_VERSION: &str = "0.27.2";
 
 #[jni_fn("org.polars.scala.polars.internal.jni.common$")]
 pub fn version(env: JNIEnv, _object: JObject) -> jstring {

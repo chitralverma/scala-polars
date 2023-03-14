@@ -12,9 +12,8 @@ object GeneralSettings {
   val defaultScalaVersion: String = scala213
   val supportedScalaVersions: Seq[String] = Seq(scala212, scala213)
 
-  lazy val settings: Seq[Setting[_]] = Seq(
+  lazy val commonSettings = Seq(
     organization := "org.polars",
-    name := "scala-polars",
     versionScheme := Some("early-semver"),
     licenses := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
@@ -27,8 +26,6 @@ object GeneralSettings {
     ),
     scalaVersion := defaultScalaVersion,
     crossScalaVersions := supportedScalaVersions,
-    fork := true,
-    turbo := true,
     scalacOptions ++= Seq(
       "-encoding",
       "utf8",
@@ -43,6 +40,12 @@ object GeneralSettings {
       "-Xfatal-warnings"
     ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
           else Seq("-release", "8")),
+    fork := true,
+    turbo := true
+  )
+
+  lazy val settings: Seq[Setting[_]] = Seq(
+    name := "scala-polars",
     nativeRoot := baseDirectory.value.toPath.resolveSibling("native").toFile
   )
 

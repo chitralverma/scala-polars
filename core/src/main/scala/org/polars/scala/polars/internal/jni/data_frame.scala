@@ -12,6 +12,8 @@ private[polars] object data_frame extends Natively {
 
   @native def filterFromExprs(ldfPtr: Long, exprPtr: Long): Long
 
+  @native def toLazy(ptr: Long): Long
+
   @native def show(ptr: Long): Unit
 
   @native def count(ptr: Long): Long

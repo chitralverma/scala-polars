@@ -28,7 +28,7 @@ object Utils {
       logger.error(s"Failed to executed command `$cmd` with exit code $exitCode.")
       System.exit(exitCode)
     } else {
-      logger.success(s"Successfully executed command `$cmd` with exit code $exitCode.")
+      logger.success(s"Successfully executed command `$cmd`.")
     }
   }
 

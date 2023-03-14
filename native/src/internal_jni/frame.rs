@@ -13,6 +13,7 @@ use polars_core::utils::concat_df;
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
+use crate::j_lazy_frame::JLazyFrame;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn schemaString(env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
@@ -108,4 +109,12 @@ pub fn concatDataFrames(env: JNIEnv, object: JObject, inputs: jlongArray) -> jlo
 
     let concat_ldf = concat_df(vec.as_slice());
     df_to_ptr(env, object, concat_ldf)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn toLazy(env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
+    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
+    let ldf = j_df.df.clone().lazy();
+
+    ldf_to_ptr(env, object, Ok(ldf))
 }
