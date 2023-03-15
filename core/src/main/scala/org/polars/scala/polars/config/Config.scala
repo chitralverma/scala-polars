@@ -20,7 +20,7 @@ class Config private (val options: Map[String, String]) {
   class ConfigUpdateBuilder private[config] () {
     private[this] val options = new java.util.HashMap[String, String]()
 
-    /** Sets a configs from an [[java.util.Map]] of key and value pairs.
+    /** Sets a configs from a Java Map.
       *
       * For more details, see
       * [[https://pola-rs.github.io/polars/py-polars/html/reference/config.html this.]]
@@ -31,7 +31,7 @@ class Config private (val options: Map[String, String]) {
       this
     }
 
-    /** Sets a configs from an [[Iterable]] of key and value pairs.
+    /** Sets a configs from an Iterable of key and value pairs.
       *
       * For more details, see
       * [[https://pola-rs.github.io/polars/py-polars/html/reference/config.html this.]]

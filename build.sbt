@@ -11,6 +11,7 @@ ThisBuild / publishArtifact := false
 
 lazy val core = project
   .in(file("core"))
+  .withId("scala-polars")
   .settings(name := "scala-polars")
   .settings(ProjectDependencies.dependencies)
   .settings(GeneralSettings.commonSettings)
@@ -30,6 +31,12 @@ lazy val core = project
 
 lazy val examples = project
   .in(file("examples"))
+  .withId("scala-polars-examples")
   .settings(name := "scala-polars-examples")
   .settings(GeneralSettings.commonSettings)
+  .settings(
+    Compile / packageBin / publishArtifact := false,
+    Compile / packageDoc / publishArtifact := false,
+    Compile / packageSrc / publishArtifact := false
+  )
   .dependsOn(core)
