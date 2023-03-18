@@ -1,4 +1,4 @@
-addSbtPlugin("com.github.sbt" % "sbt-jni" % "1.5.4")
+addSbtPlugin("com.github.sbt" % "sbt-jni" % "1.6.0")
 
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.8.0")
 
