@@ -5,7 +5,7 @@ import Utils._
 
 object GeneralSettings {
 
-  val scala212 = "2.12.17"
+  val scala212 = "2.12.18"
   val scala213 = "2.13.11"
   val scala32 = "3.2.1"
 
