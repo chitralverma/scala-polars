@@ -123,6 +123,13 @@ pub fn concatLazyFrames(
             .collect()
     };
 
-    let concat_ldf = concat(vec, re_chunk == JNI_TRUE, parallel == JNI_TRUE);
+    let concat_ldf = concat(
+        vec,
+        UnionArgs {
+            rechunk: re_chunk == JNI_TRUE,
+            parallel: parallel == JNI_TRUE,
+            ..Default::default()
+        },
+    );
     ldf_to_ptr(env, object, concat_ldf)
 }
