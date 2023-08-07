@@ -7,7 +7,6 @@ use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use object_store::path::Path;
-use object_store::DynObjectStore;
 use polars::prelude::*;
 use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
@@ -16,15 +15,14 @@ use write_ipc::{Compression, WriteOptions};
 
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
-use crate::storage_config::StorageOptions;
 use crate::utils::write_utils::{
-    build_storage, ensure_write_mode, parse_json_to_storage_options, parse_write_mode,
+    build_storage, ensure_write_mode, parse_json_to_options, parse_write_mode, ObjectStoreRef,
 };
 use crate::utils::{PathError, WriteModes};
 
 #[tokio::main(flavor = "current_thread")]
 async fn write_files(
-    object_store: &DynObjectStore,
+    object_store: ObjectStoreRef,
     prefix: Path,
     url: Url,
     write_opts: WriteOptions,
@@ -34,19 +32,18 @@ async fn write_files(
     let meta = object_store.head(&prefix).await;
     ensure_write_mode(meta, url, write_mode).expect("Error encountered");
 
-    data_frame.rechunk();
+    let re_chunked_df = data_frame.align_chunks();
 
-    let schema = data_frame.schema().to_arrow();
-    let mut iter = data_frame.iter_chunks();
+    let schema = re_chunked_df.schema().to_arrow();
+    let mut iter = re_chunked_df.iter_chunks();
 
     let (_id, writer) = object_store
-        .clone()
         .put_multipart(&prefix.clone())
         .await
         .expect("Error encountered while opening destination");
 
     let mut sink =
-        write_ipc::file_async::FileSink::new(writer.compat_write(), &schema, None, write_opts);
+        write_ipc::file_async::FileSink::new(writer.compat_write(), schema, None, write_opts);
 
     while let Some(chunk) = iter.next() {
         sink.feed(chunk.into())
@@ -89,20 +86,20 @@ pub fn writeIPC(
     let write_mode = parse_write_mode(&write_mode_str)
         .expect("Unable to parse the provided write mode argument");
 
-    let options: StorageOptions = parse_json_to_storage_options(env, options);
+    let options = parse_json_to_options(env, options);
 
     let write_options = WriteOptions { compression };
 
     let j_df = unsafe { &mut *(df_ptr as *mut JDataFrame) };
     let data_frame = j_df.to_owned().df;
 
-    let object_store = build_storage(this_path.clone(), options)
+    let (object_store_ref, url, path) = build_storage(this_path.clone(), options)
         .expect("Unable to instantiate object store from provided path");
 
     write_files(
-        object_store.storage.as_ref(),
-        object_store.path,
-        object_store.url,
+        object_store_ref,
+        path,
+        url,
         write_options,
         data_frame,
         write_mode,
