@@ -13,7 +13,6 @@ crate_type = ["cdylib"]
 
 [dependencies]
 arrow2 = { version = "0.17", features = ["io_ipc_write_async"] }
-cargo-sort = "1.0.9"
 futures = "0.3.25"
 jni = "0.20"
 jni_fn = { git = "https://gitlab.com/antonok/jni_fn.git", branch = "scala-class-dollars" }
@@ -21,7 +20,7 @@ num = "0.4.0"
 num-derive = "0.4"
 num-traits = "0.2.15"
 object_store = { version = "0.6", features = ["aws", "azure", "gcp"] }
-polars-core = { version = "0.31", default-features = false }
+polars-core = { version = "0.32", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
@@ -30,7 +29,7 @@ tokio-util = { version = "0.7.7", features = ["compat"] }
 url = "2.3"
 
 [dependencies.polars]
-version = "0.31"
+version = "0.32"
 default-features = false
 features = [
     "ipc",
