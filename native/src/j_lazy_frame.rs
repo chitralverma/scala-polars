@@ -37,4 +37,36 @@ impl JLazyFrame {
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
+
+    pub fn sort(
+        &self,
+        env: &mut JNIEnv,
+        callback_obj: JObject,
+        exprs: Vec<Expr>,
+        null_last: bool,
+        maintain_order: bool,
+    ) -> jlong {
+        let mut desc: Vec<bool> = Vec::new();
+        let mut new_exprs: Vec<Expr> = Vec::new();
+
+        for expr in &exprs {
+            match expr {
+                Expr::Sort { expr, options } => {
+                    desc.push(options.descending);
+                    new_exprs.push(*expr.clone());
+                },
+                e => {
+                    desc.push(false) ;
+                    new_exprs.push(e.clone());
+                },
+            }
+        }
+
+        let ldf = self
+            .ldf
+            .clone()
+            .sort_by_exprs(new_exprs, desc, null_last, maintain_order);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
 }

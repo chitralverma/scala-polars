@@ -9,7 +9,6 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-
 use polars::prelude::*;
 
 use crate::internal_jni::utils::{expr_to_ptr, get_string};
@@ -54,6 +53,46 @@ pub fn column(mut env: JNIEnv, object: JObject, col_name: JString) -> jlong {
     );
 
     let expr = col(name.as_str());
+    expr_to_ptr(&mut env, object, expr)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+pub fn sort_column_by_name(
+    mut env: JNIEnv,
+    object: JObject,
+    col_name: JString,
+    descending: bool,
+) -> jlong {
+    let name = get_string(
+        &mut env,
+        col_name,
+        "Unable to get/ convert column name to UTF8.",
+    );
+
+    let expr = Expr::Sort {
+        expr: Box::new(col(name.as_str())),
+        options: SortOptions {
+            descending,
+            ..Default::default()
+        },
+    };
+
+    expr_to_ptr(&mut env, object, expr)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+pub fn sort_expr(mut env: JNIEnv, object: JObject, ptr: jlong, descending: bool) -> jlong {
+    let expr = unsafe { &mut *(ptr as *mut JExpr) };
+    let expr = expr.expr.clone();
+
+    let expr = Expr::Sort {
+        expr: Box::new(expr),
+        options: SortOptions {
+            descending,
+            ..Default::default()
+        },
+    };
+
     expr_to_ptr(&mut env, object, expr)
 }
 

@@ -12,6 +12,13 @@ private[polars] object lazy_frame extends Natively {
 
   @native def filterFromExprs(ldfPtr: Long, exprPtr: Long): Long
 
+  @native def sortFromExprs(
+      ldfPtr: Long,
+      exprPtrs: Array[Long],
+      null_last: Boolean,
+      maintain_order: Boolean
+  ): Long
+
   @native def withColumn(ldfPtr: Long, name: String, exprPtr: Long): Long
 
   @native def collect(ptr: Long): Long
