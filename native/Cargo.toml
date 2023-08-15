@@ -14,8 +14,8 @@ crate_type = ["cdylib"]
 [dependencies]
 arrow2 = { version = "0.17", features = ["io_ipc_write_async"] }
 futures = "0.3.25"
-jni = "0.20"
-jni_fn = { git = "https://gitlab.com/antonok/jni_fn.git", branch = "scala-class-dollars" }
+jni = "0.21.1"
+jni_fn = "0.1"
 num = "0.4.0"
 num-derive = "0.4"
 num-traits = "0.2.15"
@@ -27,6 +27,7 @@ thiserror = "1"
 tokio = { version = "1.18", features = ["sync", "macros", "rt", "time", "io-util", "net", "rt-multi-thread"] }
 tokio-util = { version = "0.7.7", features = ["compat"] }
 url = "2.3"
+toml = "0.7"
 
 [dependencies.polars]
 version = "0.32"

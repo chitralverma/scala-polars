@@ -19,20 +19,20 @@ impl JLazyFrame {
         }
     }
 
-    pub fn collect(&self, env: JNIEnv, callback_obj: JObject) -> jlong {
+    pub fn collect(&self, env: &mut JNIEnv, callback_obj: JObject) -> jlong {
         let ldf = self.ldf.clone();
         let df = ldf.collect();
 
         df_to_ptr(env, callback_obj, df)
     }
 
-    pub fn select(&self, env: JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
+    pub fn select(&self, env: &mut JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
         let ldf = self.ldf.clone().select(exprs);
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
 
-    pub fn filter(&self, env: JNIEnv, callback_obj: JObject, expr: Expr) -> jlong {
+    pub fn filter(&self, env: &mut JNIEnv, callback_obj: JObject, expr: Expr) -> jlong {
         let ldf = self.ldf.clone().filter(expr);
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
