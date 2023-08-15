@@ -89,7 +89,7 @@ pub fn ensure_write_mode(
     }
 }
 
-pub fn parse_json_to_options(env: JNIEnv, options: JString) -> HashMap<String, String> {
+pub fn parse_json_to_options(env: &mut JNIEnv, options: JString) -> HashMap<String, String> {
     if options.is_null() {
         HashMap::new()
     } else {

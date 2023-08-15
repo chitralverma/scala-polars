@@ -46,15 +46,19 @@ pub enum UnaryOperator {
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn column(env: JNIEnv, object: JObject, col_name: JString) -> jlong {
-    let name = get_string(env, col_name, "Unable to get/ convert column name to UTF8.");
+pub fn column(mut env: JNIEnv, object: JObject, col_name: JString) -> jlong {
+    let name = get_string(
+        &mut env,
+        col_name,
+        "Unable to get/ convert column name to UTF8.",
+    );
 
     let expr = col(name.as_str());
-    expr_to_ptr(env, object, expr)
+    expr_to_ptr(&mut env, object, expr)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn applyUnary(env: JNIEnv, object: JObject, ptr: jlong, operator: jint) -> jlong {
+pub fn applyUnary(mut env: JNIEnv, object: JObject, ptr: jlong, operator: jint) -> jlong {
     let left_expr = unsafe { &mut *(ptr as *mut JExpr) };
 
     let option = UnaryOperator::from_i32(operator)
@@ -74,12 +78,12 @@ pub fn applyUnary(env: JNIEnv, object: JObject, ptr: jlong, operator: jint) -> j
     let expr = expr_opt
         .unwrap_or_else(|| panic!("Unsupported unary operator with ID `{operator}` provided."));
 
-    expr_to_ptr(env, object, expr)
+    expr_to_ptr(&mut env, object, expr)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
 pub fn applyBinary(
-    env: JNIEnv,
+    mut env: JNIEnv,
     object: JObject,
     left_ptr: jlong,
     right_ptr: jlong,
@@ -110,5 +114,5 @@ pub fn applyBinary(
         BinaryOperator::Modulus => l_copy.rem(r_copy),
     };
 
-    expr_to_ptr(env, object, expr)
+    expr_to_ptr(&mut env, object, expr)
 }

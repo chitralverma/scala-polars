@@ -22,7 +22,7 @@ impl JDataFrame {
         println!("{:?}", self.df)
     }
 
-    pub fn select(&self, env: JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
+    pub fn select(&self, env: &mut JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
         let df_res = self
             .df
             .clone()
@@ -34,7 +34,7 @@ impl JDataFrame {
         df_to_ptr(env, callback_obj, df_res)
     }
 
-    pub fn filter(&self, env: JNIEnv, callback_obj: JObject, predicate: Expr) -> jlong {
+    pub fn filter(&self, env: &mut JNIEnv, callback_obj: JObject, predicate: Expr) -> jlong {
         let df_res = self
             .df
             .clone()

@@ -35,7 +35,7 @@ async fn write_files(
     let re_chunked_df = data_frame.align_chunks();
 
     let schema = re_chunked_df.schema().to_arrow();
-    let mut iter = re_chunked_df.iter_chunks();
+    let iter = re_chunked_df.iter_chunks();
 
     let (_id, writer) = object_store
         .put_multipart(&prefix.clone())
@@ -45,7 +45,7 @@ async fn write_files(
     let mut sink =
         write_ipc::file_async::FileSink::new(writer.compat_write(), schema, None, write_opts);
 
-    while let Some(chunk) = iter.next() {
+    for chunk in iter {
         sink.feed(chunk.into())
             .await
             .expect("Error encountered while feeding chunk")
@@ -58,7 +58,7 @@ async fn write_files(
 
 #[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
 pub fn writeIPC(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _object: JObject,
     df_ptr: jlong,
     filePath: JString,
@@ -66,10 +66,10 @@ pub fn writeIPC(
     options: JString,
     writeMode: JString,
 ) {
-    let this_path = get_file_path(env, filePath);
+    let this_path = get_file_path(&mut env, filePath);
 
     let compression_str = get_string(
-        env,
+        &mut env,
         compression,
         "Unable to get/ convert compression string to UTF8.",
     );
@@ -78,7 +78,7 @@ pub fn writeIPC(
         .expect("Unable to parse the provided compression argument(s)");
 
     let write_mode_str = get_string(
-        env,
+        &mut env,
         writeMode,
         "Unable to get/ convert write mode string to UTF8.",
     );
@@ -86,7 +86,7 @@ pub fn writeIPC(
     let write_mode = parse_write_mode(&write_mode_str)
         .expect("Unable to parse the provided write mode argument");
 
-    let options = parse_json_to_options(env, options);
+    let options = parse_json_to_options(&mut env, options);
 
     let write_options = WriteOptions { compression };
 

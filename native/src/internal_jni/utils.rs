@@ -37,11 +37,11 @@ pub fn normalize_path(path: &std::path::Path) -> PathBuf {
     ret
 }
 
-pub fn get_string(env: JNIEnv, string: JString, error_msg: &str) -> String {
-    env.get_string(string).expect(error_msg).into()
+pub fn get_string(env: &mut JNIEnv, string: JString, error_msg: &str) -> String {
+    env.get_string(&string).expect(error_msg).into()
 }
 
-pub fn get_file_path(env: JNIEnv, file_path: JString) -> String {
+pub fn get_file_path(env: &mut JNIEnv, file_path: JString) -> String {
     get_string(env, file_path, "Unable to get/ convert raw path to UTF8.")
 }
 
@@ -54,14 +54,14 @@ pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
 }
 
 pub fn get_row_count(
-    env: JNIEnv,
+    env: &mut JNIEnv,
     row_count_col_name: JString,
     row_count_col_offset: jint,
 ) -> Option<RowCount> {
     if !row_count_col_name.is_null() {
         Some(RowCount {
             name: env
-                .get_string(row_count_col_name)
+                .get_string(&row_count_col_name)
                 .expect("Unable to get/ convert row column name to UTF8.")
                 .into(),
             offset: if row_count_col_offset.is_positive() {
@@ -75,7 +75,7 @@ pub fn get_row_count(
     }
 }
 
-pub fn ldf_to_ptr(env: JNIEnv, object: JObject, ldf_res: PolarsResult<LazyFrame>) -> jlong {
+pub fn ldf_to_ptr(env: &mut JNIEnv, object: JObject, ldf_res: PolarsResult<LazyFrame>) -> jlong {
     let ldf = ldf_res.expect("Cannot create LazyFrame from provided arguments.");
 
     let global_ref = env.new_global_ref(object).unwrap();
@@ -84,7 +84,7 @@ pub fn ldf_to_ptr(env: JNIEnv, object: JObject, ldf_res: PolarsResult<LazyFrame>
     Box::into_raw(Box::new(j_ldf)) as jlong
 }
 
-pub fn df_to_ptr(env: JNIEnv, object: JObject, df_res: PolarsResult<DataFrame>) -> jlong {
+pub fn df_to_ptr(env: &mut JNIEnv, object: JObject, df_res: PolarsResult<DataFrame>) -> jlong {
     let df = df_res.expect("Cannot create LazyFrame from provided arguments.");
 
     let global_ref = env.new_global_ref(object).unwrap();
@@ -93,7 +93,7 @@ pub fn df_to_ptr(env: JNIEnv, object: JObject, df_res: PolarsResult<DataFrame>) 
     Box::into_raw(Box::new(j_ldf)) as jlong
 }
 
-pub fn expr_to_ptr(env: JNIEnv, object: JObject, expr: Expr) -> jlong {
+pub fn expr_to_ptr(env: &mut JNIEnv, object: JObject, expr: Expr) -> jlong {
     let global_ref = env.new_global_ref(object).unwrap();
     let j_expr = JExpr::new(expr, global_ref);
 
