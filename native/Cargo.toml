@@ -14,7 +14,7 @@ crate_type = ["cdylib"]
 [dependencies]
 arrow2 = { version = "0.17", features = ["io_ipc_write_async"] }
 futures = "0.3.25"
-jni = "0.20"
+jni = "0.21.1"
 jni_fn = { git = "https://gitlab.com/antonok/jni_fn.git", branch = "scala-class-dollars" }
 num = "0.4.0"
 num-derive = "0.4"
