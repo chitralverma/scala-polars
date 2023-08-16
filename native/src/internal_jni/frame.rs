@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use jni::objects::ReleaseMode::NoCopyBack;
-use jni::objects::{JLongArray, JObject, JObjectArray, JString};
+use jni::objects::{JLongArray, JObject};
 use jni::sys::{jlong, jstring};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
@@ -12,7 +12,6 @@ use polars_core::utils::concat_df;
 
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
-use crate::j_expr::JExpr;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
@@ -22,59 +21,6 @@ pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstri
     _env.new_string(schema_string)
         .expect("Unable to get/ convert Schema to UTF8.")
         .into_raw()
-}
-
-#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn selectFromStrings(
-    mut _env: JNIEnv,
-    _object: JObject,
-    ptr: jlong,
-    expr_strs: JObjectArray,
-) -> jlong {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-    let num_expr = _env.get_array_length(&expr_strs).unwrap();
-
-    let mut exprs: Vec<Expr> = Vec::new();
-
-    for i in 0..num_expr {
-        let result = _env
-            .get_object_array_element(&expr_strs, i)
-            .map(JString::from)
-            .unwrap();
-        let expr_str = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
-
-        exprs.push(col(expr_str.as_str()))
-    }
-
-    j_df.select(&mut _env, _object, exprs)
-}
-
-#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn selectFromExprs(mut env: JNIEnv, object: JObject, ptr: jlong, inputs: JLongArray) -> jlong {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-
-    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
-    let exprs: Vec<Expr> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_ldf = &mut *(ptr as *mut JExpr);
-                j_ldf.to_owned().expr
-            })
-            .collect()
-    };
-
-    j_df.select(&mut env, object, exprs)
-}
-
-#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn filterFromExprs(mut env: JNIEnv, object: JObject, ldf_ptr: jlong, expr_ptr: jlong) -> jlong {
-    let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
-    let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
-
-    j_df.filter(&mut env, object, j_expr.expr.clone())
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]

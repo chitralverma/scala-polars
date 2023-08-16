@@ -12,23 +12,14 @@ class DataFrame private (private[polars] val ptr: Long) {
     Schema.from(schemaString)
   }
 
-  def select(colName: String, colNames: String*): DataFrame = {
-    val dfPtr = data_frame.selectFromStrings(ptr, colNames.+:(colName).distinct.toArray)
+  def select(colName: String, colNames: String*): DataFrame =
+    toLazy.select(colName, colNames: _*).collect(noOptimization = true)
 
-    DataFrame.withPtr(dfPtr)
-  }
+  def select(column: Expression, columns: Expression*): DataFrame =
+    toLazy.select(column, columns: _*).collect(noOptimization = true)
 
-  def select(column: Expression, columns: Expression*): DataFrame = {
-    val ldfPtr = data_frame.selectFromExprs(ptr, columns.+:(column).map(_.ptr).distinct.toArray)
-
-    DataFrame.withPtr(ldfPtr)
-  }
-
-  def filter(predicate: Expression): DataFrame = {
-    val ldfPtr = data_frame.filterFromExprs(ptr, predicate.ptr)
-
-    DataFrame.withPtr(ldfPtr)
-  }
+  def filter(predicate: Expression): DataFrame =
+    toLazy.filter(predicate).collect(noOptimization = true)
 
   def sort(
       cols: Seq[String],
