@@ -37,8 +37,8 @@ class LazyFrame private (private[polars] val ptr: Long) {
   def sort(
       cols: Seq[String],
       descending: Seq[Boolean],
-      null_last: Boolean,
-      maintain_order: Boolean
+      nullLast: Boolean,
+      maintainOrder: Boolean
   ): LazyFrame = {
     assert(
       cols.size == descending.size,
@@ -49,16 +49,16 @@ class LazyFrame private (private[polars] val ptr: Long) {
       Expression.withPtr(column_expr.sort_column_by_name(column, bool))
     }
 
-    sort(exprs, null_last = null_last, maintain_order = maintain_order)
+    sort(exprs, null_last = nullLast, maintain_order = maintainOrder)
   }
 
   def sort(
       expr: String,
       descending: Boolean,
-      null_last: Boolean,
-      maintain_order: Boolean
+      nullLast: Boolean,
+      maintainOrder: Boolean
   ): LazyFrame =
-    sort(Seq(expr), Seq(descending), null_last = null_last, maintain_order = maintain_order)
+    sort(Seq(expr), Seq(descending), nullLast = nullLast, maintainOrder = maintainOrder)
 
   def sort(exprs: Seq[Expression], null_last: Boolean, maintain_order: Boolean): LazyFrame = {
     val ldfPtr =
@@ -67,14 +67,16 @@ class LazyFrame private (private[polars] val ptr: Long) {
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def sort(expr: Expression, null_last: Boolean, maintain_order: Boolean): LazyFrame =
-    sort(Seq(expr), null_last = null_last, maintain_order = maintain_order)
+  def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
+    sort(Seq(expr), null_last = nullLast, maintain_order = maintainOrder)
 
   def withColumn(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
 
     LazyFrame.withPtr(ldfPtr)
   }
+
+  def collect: DataFrame = collect()
 
   def collect(
       typeCoercion: Boolean = true,

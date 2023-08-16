@@ -24,6 +24,7 @@ public class ApplyingSimpleExpressions {
             .filter(col("lower_than_four"))
             .withColumn("long_value", lit(new Random().nextLong()))
             .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
+            .sort(asc("name"), false, false)
             .collect();
 
     System.out.println("Showing resultant DataFrame to stdout.");

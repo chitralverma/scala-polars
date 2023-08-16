@@ -30,11 +30,43 @@ class DataFrame private (private[polars] val ptr: Long) {
     DataFrame.withPtr(ldfPtr)
   }
 
-  def toLazy(): LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
+  def sort(
+      cols: Seq[String],
+      descending: Seq[Boolean],
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): DataFrame =
+    toLazy.sort(cols, descending, nullLast, maintainOrder).collect(noOptimization = true)
+
+  def sort(
+      expr: String,
+      descending: Boolean,
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): DataFrame =
+    toLazy
+      .sort(
+        cols = Seq(expr),
+        descending = Seq(descending),
+        nullLast = nullLast,
+        maintainOrder = maintainOrder
+      )
+      .collect(noOptimization = true)
+
+  def sort(exprs: Seq[Expression], null_last: Boolean, maintain_order: Boolean): DataFrame =
+    toLazy.sort(exprs, null_last, maintain_order).collect(noOptimization = true)
+
+  def sort(expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
+    toLazy
+      .sort(Seq(expr), null_last = null_last, maintain_order = maintain_order)
+      .collect(noOptimization = true)
+
+  def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
 
   def show(): Unit = data_frame.show(ptr)
 
   def count(): Long = data_frame.count(ptr)
+
   def write(): Writeable = new Writeable(ptr)
 
 }

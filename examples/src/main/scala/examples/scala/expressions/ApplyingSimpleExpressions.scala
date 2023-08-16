@@ -24,7 +24,7 @@ object ApplyingSimpleExpressions {
       .filter(col("lower_than_four"))
       .withColumn("long_value", lit(Random.nextLong()))
       .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
-      .sort(asc("name"), null_last = false, maintain_order = false)
+      .sort(asc("name"), nullLast = false, maintainOrder = false)
       .collect()
 
     println("Showing resultant DataFrame to stdout.")
