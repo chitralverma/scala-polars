@@ -56,7 +56,11 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   def head(n: Long): DataFrame = limit(n)
 
+  def first(): DataFrame = limit(1)
+
   def tail(n: Long): DataFrame = DataFrame.withPtr(data_frame.tail(ptr, n))
+
+  def last(): DataFrame = tail(1)
 
   def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
 
