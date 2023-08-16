@@ -77,17 +77,23 @@ impl JLazyFrame {
         let mut desc: Vec<bool> = Vec::new();
         let mut new_exprs: Vec<Expr> = Vec::new();
 
-        for expr in &exprs {
+        fn get_non_sort_expr(expr: &Expr, direction: bool, set: bool) -> (Expr, bool) {
             match expr {
                 Expr::Sort { expr, options } => {
-                    desc.push(options.descending);
-                    new_exprs.push(*expr.clone());
+                    if set {
+                        get_non_sort_expr(&expr.clone(), direction,  true)
+                    } else {
+                        get_non_sort_expr(&expr.clone(), options.descending , true)
+                    }
                 }
-                e => {
-                    desc.push(false);
-                    new_exprs.push(e.clone());
-                }
+                e => return (e.clone(), direction),
             }
+        }
+
+        for expr in &exprs {
+            let (expr, direction) = get_non_sort_expr(expr, false, false);
+            desc.push(direction);
+            new_exprs.push(expr);
         }
 
         let ldf = self

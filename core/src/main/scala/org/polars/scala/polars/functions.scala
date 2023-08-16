@@ -40,18 +40,8 @@ object functions {
     Expression.withPtr(ptr)
   }
 
-  def desc(expr: Expression): Expression = {
-    val ptr = column_expr.sort_expr(expr.ptr, descending = true)
-    Expression.withPtr(ptr)
-  }
-
   def asc(col_name: String): Expression = {
     val ptr = column_expr.sort_column_by_name(col_name, descending = false)
-    Expression.withPtr(ptr)
-  }
-
-  def asc(expr: Expression): Expression = {
-    val ptr = column_expr.sort_expr(expr.ptr, descending = false)
     Expression.withPtr(ptr)
   }
 
