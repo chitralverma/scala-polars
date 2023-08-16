@@ -159,6 +159,12 @@ pub fn optimization_toggle(
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn cache(mut env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    j_ldf.cache(&mut env, object)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
 pub fn collect(mut env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
     let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
     j_ldf.collect(&mut env, object)

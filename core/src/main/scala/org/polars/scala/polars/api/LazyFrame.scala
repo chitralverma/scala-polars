@@ -109,6 +109,12 @@ class LazyFrame private (private[polars] val ptr: Long) {
     LazyFrame.withPtr(ldfPtr)
   }
 
+  def cache: LazyFrame = {
+    val ldfPtr = lazy_frame.cache(ptr)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
   def collect: DataFrame = collect()
 
   def collect(

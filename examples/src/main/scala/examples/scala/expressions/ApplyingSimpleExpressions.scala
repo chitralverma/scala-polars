@@ -18,7 +18,7 @@ object ApplyingSimpleExpressions {
     val ldf = Polars.ndJson.scan(path)
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
-    val df = ldf
+    val df = ldf.cache
       .select("id", "name")
       .withColumn("lower_than_four", col("id") <= 4)
       .filter(col("lower_than_four"))

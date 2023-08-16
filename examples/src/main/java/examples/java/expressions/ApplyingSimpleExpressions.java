@@ -20,6 +20,7 @@ public class ApplyingSimpleExpressions {
     /* Apply multiple operations on the LazyFrame or DataFrame */
     DataFrame df =
         ldf.select("id", "name")
+            .cache()
             .withColumn("lower_than_four", col("id").lessThanEqualTo(4))
             .filter(col("lower_than_four"))
             .withColumn("long_value", lit(new Random().nextLong()))

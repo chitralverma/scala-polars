@@ -47,6 +47,12 @@ impl JLazyFrame {
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
 
+    pub fn cache(&self, env: &mut JNIEnv, callback_obj: JObject) -> jlong {
+        let ldf = self.ldf.clone().cache();
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
+
     pub fn collect(&self, env: &mut JNIEnv, callback_obj: JObject) -> jlong {
         let ldf = self.ldf.clone();
         let df = ldf.collect();
