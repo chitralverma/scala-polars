@@ -230,3 +230,36 @@ pub fn drop(mut _env: JNIEnv, _object: JObject, ptr: jlong, col_names: JObjectAr
 
     j_ldf.drop(&mut _env, _object, cols)
 }
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn rename(mut _env: JNIEnv, object: JObject, ldf_ptr: jlong, options: JObject) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+
+    let opts = _env
+        .get_map(&options)
+        .expect("Unable to get provided mapping.");
+
+    let mut iterator = opts
+        .iter(&mut _env)
+        .expect("The provided mapping are not iterable.");
+
+    let mut old_vec: Vec<String> = Vec::new();
+    let mut new_vec: Vec<String> = Vec::new();
+
+    while let Ok(Some((new, old))) = iterator.next(&mut _env) {
+        let key_str: String = _env
+            .get_string(&JString::from(new))
+            .expect("Invalid old column name.")
+            .into();
+
+        let value_str: String = _env
+            .get_string(&JString::from(old))
+            .expect("Invalid new column name.")
+            .into();
+
+        old_vec.push(key_str);
+        new_vec.push(value_str);
+    }
+
+    j_ldf.rename(&mut _env, object, old_vec, new_vec)
+}

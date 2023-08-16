@@ -121,4 +121,16 @@ impl JLazyFrame {
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
+
+    pub fn rename(
+        &self,
+        env: &mut JNIEnv,
+        callback_obj: JObject,
+        old: Vec<String>,
+        new: Vec<String>,
+    ) -> jlong {
+        let ldf = self.ldf.clone().rename(old, new);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
 }

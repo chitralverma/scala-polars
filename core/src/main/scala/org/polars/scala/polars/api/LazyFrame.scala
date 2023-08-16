@@ -1,6 +1,9 @@
 package org.polars.scala.polars.api
 
+import java.util.Collections
+
 import scala.annotation.varargs
+import scala.jdk.CollectionConverters._
 
 import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.api.types.Schema
@@ -91,6 +94,17 @@ class LazyFrame private (private[polars] val ptr: Long) {
 
   def withColumn(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
+  def rename(oldName: String, newName: String): LazyFrame =
+    rename(Collections.singletonMap(oldName, newName))
+
+  def rename(mapping: Map[String, String]): LazyFrame = rename(mapping.asJava)
+
+  def rename(mapping: java.util.Map[String, String]): LazyFrame = {
+    val ldfPtr = lazy_frame.rename(ptr, mapping)
 
     LazyFrame.withPtr(ldfPtr)
   }

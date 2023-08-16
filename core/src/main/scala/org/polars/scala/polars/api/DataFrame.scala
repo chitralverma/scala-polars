@@ -1,6 +1,9 @@
 package org.polars.scala.polars.api
 
+import java.util.Collections
+
 import scala.annotation.varargs
+import scala.jdk.CollectionConverters._
 
 import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.api.io.Writeable
@@ -75,6 +78,15 @@ class DataFrame private (private[polars] val ptr: Long) {
   @varargs
   def drop(colName: String, colNames: String*): DataFrame =
     toLazy.drop(colName, colNames: _*).collect(noOptimization = true)
+
+  def rename(oldName: String, newName: String): DataFrame =
+    rename(Collections.singletonMap(oldName, newName))
+
+  def rename(mapping: Map[String, String]): DataFrame =
+    rename(mapping.asJava)
+
+  def rename(mapping: java.util.Map[String, String]): DataFrame =
+    toLazy.rename(mapping).collect(noOptimization = true)
 
   def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
 

@@ -28,6 +28,7 @@ public class ApplyingSimpleExpressions {
             .limit(2) // .head(2)
             .tail(1)
             .drop("current_ts", "long_value")
+            .rename("lower_than_four", "less_than_four")
             .collect();
 
     System.out.println("Showing resultant DataFrame to stdout.");
