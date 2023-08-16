@@ -45,10 +45,8 @@ class LazyFrame private (private[polars] val ptr: Long) {
       "Length of provided list columns and their sorting direction is not equal."
     )
 
-    val exprs = cols.zip(descending).map { case (column, bool) => {
-      println("sort_column_by_name  ",(column, bool))
+    val exprs = cols.zip(descending).map { case (column, bool) =>
       Expression.withPtr(column_expr.sort_column_by_name(column, bool))
-    }
     }
 
     sort(exprs, null_last = null_last, maintain_order = maintain_order)
@@ -78,8 +76,32 @@ class LazyFrame private (private[polars] val ptr: Long) {
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def collect(): DataFrame = {
-    val dfPtr = lazy_frame.collect(ptr)
+  def collect(
+      typeCoercion: Boolean = true,
+      predicatePushdown: Boolean = true,
+      projectionPushdown: Boolean = true,
+      simplifyExpression: Boolean = true,
+      noOptimization: Boolean = false,
+      slicePushdown: Boolean = true,
+      commSubplanElim: Boolean = true,
+      commSubexprElim: Boolean = true,
+      streaming: Boolean = false
+  ): DataFrame = {
+    val ldf = LazyFrame.withPtr(
+      lazy_frame.optimization_toggle(
+        ptr,
+        typeCoercion = typeCoercion,
+        predicatePushdown = if (noOptimization) false else predicatePushdown,
+        projectionPushdown = if (noOptimization) false else projectionPushdown,
+        simplifyExpr = simplifyExpression,
+        slicePushdown = if (noOptimization) false else slicePushdown,
+        commSubplanElim = if (noOptimization || streaming) false else commSubplanElim,
+        commSubexprElim = if (noOptimization) false else commSubexprElim,
+        streaming = streaming
+      )
+    )
+
+    val dfPtr = lazy_frame.collect(ldf.ptr)
     DataFrame.withPtr(dfPtr)
   }
 

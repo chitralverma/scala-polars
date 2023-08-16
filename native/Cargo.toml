@@ -43,6 +43,7 @@ features = [
     "performant",
     "temporal",
     "dtype-categorical",
+    "streaming",
     "strings",
     "serde",
     "serde-lazy",

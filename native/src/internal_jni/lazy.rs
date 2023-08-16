@@ -81,8 +81,8 @@ pub fn sortFromExprs(
     object: JObject,
     ldf_ptr: jlong,
     inputs: JLongArray,
-    null_last: bool,
-    maintain_order: bool,
+    nullLast: jboolean,
+    maintainOrder: jboolean,
 ) -> jlong {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
 
@@ -99,7 +99,13 @@ pub fn sortFromExprs(
             .collect()
     };
 
-    j_ldf.sort(&mut env, object, exprs, null_last, maintain_order)
+    j_ldf.sort(
+        &mut env,
+        object,
+        exprs,
+        nullLast == JNI_TRUE,
+        maintainOrder == JNI_TRUE,
+    )
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
@@ -120,6 +126,36 @@ pub fn withColumn(
         .with_column(j_expr.expr.clone().alias(name.as_str()));
 
     ldf_to_ptr(&mut env, object, Ok(ldf))
+}
+
+#[allow(clippy::too_many_arguments)]
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn optimization_toggle(
+    mut env: JNIEnv,
+    object: JObject,
+    ptr: jlong,
+    typeCoercion: jboolean,
+    predicatePushdown: jboolean,
+    projectionPushdown: jboolean,
+    simplifyExpr: jboolean,
+    slicePushdown: jboolean,
+    commSubplanElim: jboolean,
+    commSubexprElim: jboolean,
+    streaming: jboolean,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    j_ldf.optimization_toggle(
+        &mut env,
+        object,
+        typeCoercion == JNI_TRUE,
+        predicatePushdown == JNI_TRUE,
+        projectionPushdown == JNI_TRUE,
+        simplifyExpr == JNI_TRUE,
+        slicePushdown == JNI_TRUE,
+        commSubplanElim == JNI_TRUE,
+        commSubexprElim == JNI_TRUE,
+        streaming == JNI_TRUE,
+    )
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
