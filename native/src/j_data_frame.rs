@@ -28,4 +28,10 @@ impl JDataFrame {
 
         df_to_ptr(env, callback_obj, Ok(df))
     }
+
+    pub fn tail(&self, env: &mut JNIEnv, callback_obj: JObject, n: usize) -> jlong {
+        let df = self.df.clone().tail(Some(n));
+
+        df_to_ptr(env, callback_obj, Ok(df))
+    }
 }

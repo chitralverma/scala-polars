@@ -70,3 +70,10 @@ pub fn limit(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
 
     j_df.limit(&mut env, object, n as usize)
 }
+
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn tail(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
+    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
+
+    j_df.tail(&mut env, object, n as usize)
+}

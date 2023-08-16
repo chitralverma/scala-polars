@@ -74,6 +74,8 @@ class LazyFrame private (private[polars] val ptr: Long) {
 
   def head(n: Long): LazyFrame = limit(n)
 
+  def tail(n: Long): LazyFrame = LazyFrame.withPtr(lazy_frame.tail(ptr, n))
+
   def withColumn(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
 

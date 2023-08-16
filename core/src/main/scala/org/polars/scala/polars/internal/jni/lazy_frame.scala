@@ -14,6 +14,8 @@ private[polars] object lazy_frame extends Natively {
 
   @native def limit(ptr: Long, n: Long): Long
 
+  @native def tail(ptr: Long, n: Long): Long
+
   @native def sortFromExprs(
       ldfPtr: Long,
       exprPtrs: Array[Long],

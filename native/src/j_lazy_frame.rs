@@ -109,4 +109,10 @@ impl JLazyFrame {
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
+
+    pub fn tail(&self, env: &mut JNIEnv, callback_obj: JObject, n: IdxSize) -> jlong {
+        let ldf = self.ldf.clone().tail(n);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
 }

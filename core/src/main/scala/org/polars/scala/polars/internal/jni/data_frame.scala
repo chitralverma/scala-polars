@@ -14,4 +14,6 @@ private[polars] object data_frame extends Natively {
 
   @native def limit(ptr: Long, n: Long): Long
 
+  @native def tail(ptr: Long, n: Long): Long
+
 }

@@ -26,6 +26,7 @@ public class ApplyingSimpleExpressions {
             .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
             .sort(asc("name"), false, false)
             .limit(2) // .head(2)
+            .tail(1)
             .collect();
 
     System.out.println("Showing resultant DataFrame to stdout.");
