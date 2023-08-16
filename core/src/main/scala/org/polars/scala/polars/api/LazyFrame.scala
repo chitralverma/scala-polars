@@ -14,6 +14,8 @@ class LazyFrame private (private[polars] val ptr: Long) {
     Schema.from(schemaString)
   }
 
+  val width: Int = schema.getFields.length
+
   @varargs
   def select(colName: String, colNames: String*): LazyFrame = {
     val ldfPtr = lazy_frame.selectFromStrings(ptr, colNames.+:(colName).distinct.toArray)

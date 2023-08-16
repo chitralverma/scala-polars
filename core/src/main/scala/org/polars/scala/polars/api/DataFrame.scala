@@ -14,6 +14,12 @@ class DataFrame private (private[polars] val ptr: Long) {
     Schema.from(schemaString)
   }
 
+  val width: Int = schema.getFields.length
+
+  val height: Long = count()
+
+  val shape: (Long, Int) = (height, width)
+
   @varargs
   def select(colName: String, colNames: String*): DataFrame =
     toLazy.select(colName, colNames: _*).collect(noOptimization = true)
