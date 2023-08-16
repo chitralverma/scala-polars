@@ -27,6 +27,7 @@ object ApplyingSimpleExpressions {
       .sort(asc("name"), nullLast = false, maintainOrder = false)
       .limit(2) // .head(2)
       .tail(1)
+      .drop("current_ts", "long_value")
       .collect()
 
     println("Showing resultant DataFrame to stdout.")

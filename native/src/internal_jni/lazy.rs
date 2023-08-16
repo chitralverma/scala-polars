@@ -210,3 +210,23 @@ pub fn tail(mut env: JNIEnv, object: JObject, ldf_ptr: jlong, n: jlong) -> jlong
 
     j_ldf.tail(&mut env, object, n as IdxSize)
 }
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn drop(mut _env: JNIEnv, _object: JObject, ptr: jlong, col_names: JObjectArray) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    let num_expr = _env.get_array_length(&col_names).unwrap();
+
+    let mut cols: Vec<String> = Vec::new();
+
+    for i in 0..num_expr {
+        let result = _env
+            .get_object_array_element(&col_names, i)
+            .map(JString::from)
+            .unwrap();
+        let col_name = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
+
+        cols.push(col_name)
+    }
+
+    j_ldf.drop(&mut _env, _object, cols)
+}

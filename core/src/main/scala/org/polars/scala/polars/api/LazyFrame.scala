@@ -80,6 +80,13 @@ class LazyFrame private (private[polars] val ptr: Long) {
 
   def last(): LazyFrame = tail(1)
 
+  @varargs
+  def drop(colName: String, colNames: String*): LazyFrame = {
+    val ldfPtr = lazy_frame.drop(ptr, colNames.+:(colName).distinct.toArray)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
   def withColumn(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
 

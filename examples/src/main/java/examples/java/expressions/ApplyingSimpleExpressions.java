@@ -27,6 +27,7 @@ public class ApplyingSimpleExpressions {
             .sort(asc("name"), false, false)
             .limit(2) // .head(2)
             .tail(1)
+            .drop("current_ts", "long_value")
             .collect();
 
     System.out.println("Showing resultant DataFrame to stdout.");

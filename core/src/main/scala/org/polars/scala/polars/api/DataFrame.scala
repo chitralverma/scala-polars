@@ -1,5 +1,7 @@
 package org.polars.scala.polars.api
 
+import scala.annotation.varargs
+
 import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.api.io.Writeable
 import org.polars.scala.polars.api.types.Schema
@@ -12,9 +14,11 @@ class DataFrame private (private[polars] val ptr: Long) {
     Schema.from(schemaString)
   }
 
+  @varargs
   def select(colName: String, colNames: String*): DataFrame =
     toLazy.select(colName, colNames: _*).collect(noOptimization = true)
 
+  @varargs
   def select(column: Expression, columns: Expression*): DataFrame =
     toLazy.select(column, columns: _*).collect(noOptimization = true)
 
@@ -61,6 +65,10 @@ class DataFrame private (private[polars] val ptr: Long) {
   def tail(n: Long): DataFrame = DataFrame.withPtr(data_frame.tail(ptr, n))
 
   def last(): DataFrame = tail(1)
+
+  @varargs
+  def drop(colName: String, colNames: String*): DataFrame =
+    toLazy.drop(colName, colNames: _*).collect(noOptimization = true)
 
   def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
 

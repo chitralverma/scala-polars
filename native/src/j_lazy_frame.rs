@@ -115,4 +115,10 @@ impl JLazyFrame {
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
+
+    pub fn drop(&self, env: &mut JNIEnv, callback_obj: JObject, cols: Vec<String>) -> jlong {
+        let ldf = self.ldf.clone().drop_columns(cols);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
 }
