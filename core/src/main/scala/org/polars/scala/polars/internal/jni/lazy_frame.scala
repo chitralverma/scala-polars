@@ -29,6 +29,8 @@ private[polars] object lazy_frame extends Natively {
 
   @native def withColumn(ldfPtr: Long, name: String, exprPtr: Long): Long
 
+  @native def explain(ptr: Long, optimized: Boolean): String
+
   @native def cache(ptr: Long): Long
 
   @native def collect(ptr: Long): Long

@@ -109,6 +109,39 @@ class LazyFrame private (private[polars] val ptr: Long) {
     LazyFrame.withPtr(ldfPtr)
   }
 
+  def explain: Unit = explain()
+
+  def explain(
+      optimized: Boolean = true,
+      typeCoercion: Boolean = true,
+      predicatePushdown: Boolean = true,
+      projectionPushdown: Boolean = true,
+      simplifyExpression: Boolean = true,
+      slicePushdown: Boolean = true,
+      commSubplanElim: Boolean = true,
+      commSubexprElim: Boolean = true,
+      streaming: Boolean = false
+  ): Unit = {
+    val planStr = if (optimized) {
+      lazy_frame.explain(
+        lazy_frame.optimization_toggle(
+          ptr,
+          typeCoercion = typeCoercion,
+          predicatePushdown = predicatePushdown,
+          projectionPushdown = projectionPushdown,
+          simplifyExpr = simplifyExpression,
+          slicePushdown = slicePushdown,
+          commSubplanElim = commSubplanElim,
+          commSubexprElim = commSubexprElim,
+          streaming = streaming
+        ),
+        optimized = true
+      )
+    } else lazy_frame.explain(ptr, optimized = false)
+
+    println(planStr)
+  }
+
   def cache: LazyFrame = {
     val ldfPtr = lazy_frame.cache(ptr)
 

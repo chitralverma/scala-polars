@@ -15,12 +15,13 @@ public class ApplyingSimpleExpressions {
 
     /* Read a dataset as a DataFrame lazily or eagerly */
     String path = CommonUtils.getResource("/files/web-ds/data.json");
-    LazyFrame ldf = Polars.ndJson().scan(path);
+    LazyFrame input = Polars.ndJson().scan(path);
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
-    DataFrame df =
-        ldf.select("id", "name")
+    LazyFrame ldf =
+        input
             .cache()
+            .select("id", "name")
             .withColumn("lower_than_four", col("id").lessThanEqualTo(4))
             .filter(col("lower_than_four"))
             .withColumn("long_value", lit(new Random().nextLong()))
@@ -29,8 +30,12 @@ public class ApplyingSimpleExpressions {
             .limit(2) // .head(2)
             .tail(1)
             .drop("current_ts", "long_value")
-            .rename("lower_than_four", "less_than_four")
-            .collect();
+            .rename("lower_than_four", "less_than_four");
+
+    System.out.println("Showing LazyFrame plan to stdout.");
+    ldf.explain();
+
+    DataFrame df = ldf.collect();
 
     System.out.println("Showing resultant DataFrame to stdout.");
     df.show();

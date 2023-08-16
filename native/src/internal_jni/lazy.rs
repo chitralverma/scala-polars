@@ -17,9 +17,11 @@ pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstri
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
     let schema_string = serde_json::to_string(&j_ldf.ldf.schema().unwrap()).unwrap();
 
-    _env.new_string(schema_string)
-        .expect("Unable to get/ convert Schema to UTF8.")
-        .into_raw()
+    to_jstring(
+        &mut _env,
+        schema_string,
+        "Unable to get/ convert Schema to UTF8.",
+    )
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
@@ -268,4 +270,17 @@ pub fn rename(mut _env: JNIEnv, object: JObject, ldf_ptr: jlong, options: JObjec
     }
 
     j_ldf.rename(&mut _env, object, old_vec, new_vec)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn explain(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong, optimized: jboolean) -> jstring {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let plan_str = if optimized == JNI_TRUE {
+        j_ldf.ldf.describe_optimized_plan()
+    } else {
+        Ok(j_ldf.ldf.describe_plan())
+    }
+    .expect("Unable to describe plan.");
+
+    to_jstring(&mut _env, plan_str, "Unable to get/ convert plan to UTF8.")
 }

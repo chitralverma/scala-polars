@@ -15,10 +15,10 @@ object ApplyingSimpleExpressions {
 
     /* Read a dataset as a DataFrame lazily or eagerly */
     val path = CommonUtils.getResource("/files/web-ds/data.json")
-    val ldf = Polars.ndJson.scan(path)
+    val input = Polars.ndJson.scan(path)
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
-    val df = ldf.cache
+    val ldf = input.cache
       .select("id", "name")
       .withColumn("lower_than_four", col("id") <= 4)
       .filter(col("lower_than_four"))
@@ -29,7 +29,11 @@ object ApplyingSimpleExpressions {
       .tail(1)
       .drop("current_ts", "long_value")
       .rename("lower_than_four", "less_than_four")
-      .collect()
+
+    println("Showing LazyFrame plan to stdout.")
+    ldf.explain()
+
+    val df = ldf.collect()
 
     println("Showing resultant DataFrame to stdout.")
     df.show()
