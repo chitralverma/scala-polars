@@ -63,3 +63,10 @@ pub fn toLazy(mut env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
 
     ldf_to_ptr(&mut env, object, Ok(ldf))
 }
+
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn limit(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
+    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
+
+    j_df.limit(&mut env, object, n as usize)
+}

@@ -52,6 +52,10 @@ class DataFrame private (private[polars] val ptr: Long) {
       .sort(Seq(expr), null_last = null_last, maintain_order = maintain_order)
       .collect(noOptimization = true)
 
+  def limit(n: Long): DataFrame = DataFrame.withPtr(data_frame.limit(ptr, n))
+
+  def head(n: Long): DataFrame = limit(n)
+
   def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
 
   def show(): Unit = data_frame.show(ptr)

@@ -25,6 +25,7 @@ object ApplyingSimpleExpressions {
       .withColumn("long_value", lit(Random.nextLong()))
       .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
       .sort(asc("name"), nullLast = false, maintainOrder = false)
+      .limit(2) // .head(2)
       .collect()
 
     println("Showing resultant DataFrame to stdout.")

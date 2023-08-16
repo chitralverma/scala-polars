@@ -196,3 +196,10 @@ pub fn concatLazyFrames(
     );
     ldf_to_ptr(&mut env, object, concat_ldf)
 }
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn limit(mut env: JNIEnv, object: JObject, ldf_ptr: jlong, n: jlong) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+
+    j_ldf.limit(&mut env, object, n as IdxSize)
+}

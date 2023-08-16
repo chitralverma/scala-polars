@@ -12,4 +12,6 @@ private[polars] object data_frame extends Natively {
 
   @native def count(ptr: Long): Long
 
+  @native def limit(ptr: Long, n: Long): Long
+
 }

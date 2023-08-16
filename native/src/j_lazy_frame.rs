@@ -1,7 +1,7 @@
 use jni::objects::{GlobalRef, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
-use polars::prelude::{Expr, LazyFrame};
+use polars::prelude::{Expr, IdxSize, LazyFrame};
 
 use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr};
 
@@ -81,9 +81,9 @@ impl JLazyFrame {
             match expr {
                 Expr::Sort { expr, options } => {
                     if set {
-                        get_non_sort_expr(&expr.clone(), direction,  true)
+                        get_non_sort_expr(&expr.clone(), direction, true)
                     } else {
-                        get_non_sort_expr(&expr.clone(), options.descending , true)
+                        get_non_sort_expr(&expr.clone(), options.descending, true)
                     }
                 }
                 e => return (e.clone(), direction),
@@ -100,6 +100,12 @@ impl JLazyFrame {
             .ldf
             .clone()
             .sort_by_exprs(new_exprs, desc, null_last, maintain_order);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
+
+    pub fn limit(&self, env: &mut JNIEnv, callback_obj: JObject, n: IdxSize) -> jlong {
+        let ldf = self.ldf.clone().limit(n);
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }

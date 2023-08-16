@@ -70,6 +70,10 @@ class LazyFrame private (private[polars] val ptr: Long) {
   def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
     sort(Seq(expr), null_last = nullLast, maintain_order = maintainOrder)
 
+  def limit(n: Long): LazyFrame = LazyFrame.withPtr(lazy_frame.limit(ptr, n))
+
+  def head(n: Long): LazyFrame = limit(n)
+
   def withColumn(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
 
