@@ -35,8 +35,8 @@ class DataFrame private (private[polars] val ptr: Long) {
     toLazy.filter(predicate).collect(noOptimization = true)
 
   def sort(
-      cols: Seq[String],
-      descending: Seq[Boolean],
+      cols: Array[String],
+      descending: Array[Boolean],
       nullLast: Boolean,
       maintainOrder: Boolean
   ): DataFrame =
@@ -50,19 +50,19 @@ class DataFrame private (private[polars] val ptr: Long) {
   ): DataFrame =
     toLazy
       .sort(
-        cols = Seq(expr),
-        descending = Seq(descending),
+        cols = Array(expr),
+        descending = Array(descending),
         nullLast = nullLast,
         maintainOrder = maintainOrder
       )
       .collect(noOptimization = true)
 
-  def sort(exprs: Seq[Expression], null_last: Boolean, maintain_order: Boolean): DataFrame =
+  def sort(exprs: Array[Expression], null_last: Boolean, maintain_order: Boolean): DataFrame =
     toLazy.sort(exprs, null_last, maintain_order).collect(noOptimization = true)
 
   def sort(expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
     toLazy
-      .sort(Seq(expr), null_last = null_last, maintain_order = maintain_order)
+      .sort(Array(expr), null_last = null_last, maintainOrder = maintain_order)
       .collect(noOptimization = true)
 
   def limit(n: Long): DataFrame = DataFrame.withPtr(data_frame.limit(ptr, n))

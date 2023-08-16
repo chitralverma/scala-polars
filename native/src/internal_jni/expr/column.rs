@@ -81,22 +81,6 @@ pub fn sort_column_by_name(
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn sort_expr(mut env: JNIEnv, object: JObject, ptr: jlong, descending: bool) -> jlong {
-    let expr = unsafe { &mut *(ptr as *mut JExpr) };
-    let expr = expr.expr.clone();
-
-    let expr = Expr::Sort {
-        expr: Box::new(expr),
-        options: SortOptions {
-            descending,
-            ..Default::default()
-        },
-    };
-
-    expr_to_ptr(&mut env, object, expr)
-}
-
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
 pub fn applyUnary(mut env: JNIEnv, object: JObject, ptr: jlong, operator: jint) -> jlong {
     let left_expr = unsafe { &mut *(ptr as *mut JExpr) };
 

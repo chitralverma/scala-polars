@@ -40,13 +40,13 @@ class LazyFrame private (private[polars] val ptr: Long) {
   }
 
   def sort(
-      cols: Seq[String],
-      descending: Seq[Boolean],
+      cols: Array[String],
+      descending: Array[Boolean],
       nullLast: Boolean,
       maintainOrder: Boolean
   ): LazyFrame = {
     assert(
-      cols.size == descending.size,
+      cols.length == descending.length,
       "Length of provided list columns and their sorting direction is not equal."
     )
 
@@ -54,7 +54,7 @@ class LazyFrame private (private[polars] val ptr: Long) {
       Expression.withPtr(column_expr.sort_column_by_name(column, bool))
     }
 
-    sort(exprs, null_last = nullLast, maintain_order = maintainOrder)
+    sort(exprs, null_last = nullLast, maintainOrder = maintainOrder)
   }
 
   def sort(
@@ -63,17 +63,17 @@ class LazyFrame private (private[polars] val ptr: Long) {
       nullLast: Boolean,
       maintainOrder: Boolean
   ): LazyFrame =
-    sort(Seq(expr), Seq(descending), nullLast = nullLast, maintainOrder = maintainOrder)
+    sort(Array(expr), Array(descending), nullLast = nullLast, maintainOrder = maintainOrder)
 
-  def sort(exprs: Seq[Expression], null_last: Boolean, maintain_order: Boolean): LazyFrame = {
+  def sort(exprs: Array[Expression], null_last: Boolean, maintainOrder: Boolean): LazyFrame = {
     val ldfPtr =
-      lazy_frame.sortFromExprs(ptr, exprs.map(_.ptr).distinct.toArray, null_last, maintain_order)
+      lazy_frame.sortFromExprs(ptr, exprs.map(_.ptr).distinct, null_last, maintainOrder)
 
     LazyFrame.withPtr(ldfPtr)
   }
 
   def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
-    sort(Seq(expr), null_last = nullLast, maintain_order = maintainOrder)
+    sort(Array(expr), null_last = nullLast, maintainOrder = maintainOrder)
 
   def limit(n: Long): LazyFrame = LazyFrame.withPtr(lazy_frame.limit(ptr, n))
 
