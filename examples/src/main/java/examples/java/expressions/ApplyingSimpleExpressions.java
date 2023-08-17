@@ -22,10 +22,10 @@ public class ApplyingSimpleExpressions {
         input
             .cache()
             .select("id", "name")
-            .withColumn("lower_than_four", col("id").lessThanEqualTo(4))
+            .with_column("lower_than_four", col("id").lessThanEqualTo(4))
             .filter(col("lower_than_four"))
-            .withColumn("long_value", lit(new Random().nextLong()))
-            .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
+            .with_column("long_value", lit(new Random().nextLong()))
+            .with_column("current_ts", lit(Timestamp.from(Instant.now())))
             .sort(asc("name"), true, false)
             .limit(2) // .head(2)
             .tail(1)

@@ -93,7 +93,7 @@ class LazyFrame private (private[polars] val ptr: Long) {
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def withColumn(name: String, expr: Expression): LazyFrame = {
+  def with_column(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
 
     LazyFrame.withPtr(ldfPtr)

@@ -20,10 +20,10 @@ object ApplyingSimpleExpressions {
     /* Apply multiple operations on the LazyFrame or DataFrame */
     var ldf = input.cache
       .select("id", "name")
-      .withColumn("lower_than_four", col("id") <= 4)
+      .with_column("lower_than_four", col("id") <= 4)
       .filter(col("lower_than_four"))
-      .withColumn("long_value", lit(Random.nextLong()))
-      .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
+      .with_column("long_value", lit(Random.nextLong()))
+      .with_column("current_ts", lit(Timestamp.from(Instant.now())))
       .sort(asc("name"), nullLast = true, maintainOrder = false)
       .limit(2) // .head(2)
       .tail(1)

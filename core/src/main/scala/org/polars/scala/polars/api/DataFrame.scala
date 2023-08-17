@@ -76,8 +76,8 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   def last(): DataFrame = tail(1)
 
-  def withColumn(name: String, expr: Expression): DataFrame =
-    toLazy.withColumn(name, expr).collect(noOptimization = true)
+  def with_column(name: String, expr: Expression): DataFrame =
+    toLazy.with_column(name, expr).collect(noOptimization = true)
 
   @varargs
   def drop(colName: String, colNames: String*): DataFrame =
