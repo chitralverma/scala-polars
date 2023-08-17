@@ -66,6 +66,12 @@ class DataFrame private (private[polars] val ptr: Long) {
       .sort(Array(expr), null_last = null_last, maintainOrder = maintain_order)
       .collect(noOptimization = true)
 
+  def set_sorted(mapping: Map[String, Boolean]): DataFrame =
+    set_sorted(mapping.asJava)
+
+  def set_sorted(mapping: java.util.Map[String, Boolean]): DataFrame =
+    toLazy.set_sorted(mapping).collect(noOptimization = true)
+
   def top_k(
       k: Int,
       cols: Array[String],
@@ -73,9 +79,9 @@ class DataFrame private (private[polars] val ptr: Long) {
       nullLast: Boolean,
       maintainOrder: Boolean
   ): DataFrame =
-    toLazy.top_k(k, cols, descending, nullLast, maintainOrder).collect(projectionPushdown = false,
-      predicatePushdown = false,
-      commSubplanElim = false)
+    toLazy
+      .top_k(k, cols, descending, nullLast, maintainOrder)
+      .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
   def top_k(
       k: Int,
@@ -92,9 +98,7 @@ class DataFrame private (private[polars] val ptr: Long) {
         nullLast = nullLast,
         maintainOrder = maintainOrder
       )
-      .collect(projectionPushdown = false,
-        predicatePushdown = false,
-        commSubplanElim = false)
+      .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
   def top_k(
       k: Int,
@@ -102,16 +106,14 @@ class DataFrame private (private[polars] val ptr: Long) {
       null_last: Boolean,
       maintain_order: Boolean
   ): DataFrame =
-    toLazy.top_k(k, exprs, null_last, maintain_order).collect(projectionPushdown = false,
-      predicatePushdown = false,
-      commSubplanElim = false)
+    toLazy
+      .top_k(k, exprs, null_last, maintain_order)
+      .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
   def top_k(k: Int, expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
     toLazy
       .top_k(k, Array(expr), null_last = null_last, maintainOrder = maintain_order)
-      .collect(projectionPushdown = false,
-        predicatePushdown = false,
-        commSubplanElim = false)
+      .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
   def limit(n: Long): DataFrame = DataFrame.withPtr(data_frame.limit(ptr, n))
 

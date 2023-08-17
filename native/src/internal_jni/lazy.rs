@@ -8,6 +8,7 @@ use jni_fn::jni_fn;
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 use polars_core::prelude::UniqueKeepStrategy;
+use polars_core::series::IsSorted;
 
 use crate::internal_jni::utils::*;
 use crate::j_expr::JExpr;
@@ -380,4 +381,39 @@ pub fn drop_nulls(mut _env: JNIEnv, _object: JObject, ptr: jlong, subset: JObjec
     let sub: Option<Vec<Expr>> = if exprs.is_empty() { None } else { Some(exprs) };
 
     j_ldf.drop_nulls(&mut _env, _object, sub)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn set_sorted(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong, mapping: JObject) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+
+    let map = _env
+        .get_map(&mapping)
+        .expect("Unable to get provided mapping.");
+
+    let mut iterator = map
+        .iter(&mut _env)
+        .expect("The provided mapping are not iterable.");
+
+    let mut exprs: Vec<Expr> = Vec::new();
+
+    while let Ok(Some((col_name, is_descending))) = iterator.next(&mut _env) {
+        let key_str: String = _env
+            .get_string(&JString::from(col_name))
+            .expect("Invalid old column name.")
+            .into();
+
+        let col_expr = col(key_str.as_str());
+        let descending = unsafe { *(is_descending.cast::<jboolean>()) };
+
+        let is_sorted = match descending == JNI_TRUE {
+            true => IsSorted::Descending,
+            false => IsSorted::Ascending,
+        };
+
+        exprs.push(col_expr.set_sorted_flag(is_sorted));
+    }
+
+    let ldf = j_ldf.ldf.clone().with_columns(exprs);
+    ldf_to_ptr(&mut _env, _object, Ok(ldf))
 }

@@ -25,6 +25,7 @@ object ApplyingSimpleExpressions {
       .with_column("long_value", lit(Random.nextLong()))
       .with_column("current_ts", lit(Timestamp.from(Instant.now())))
       .sort(asc("name"), nullLast = true, maintainOrder = false)
+      .set_sorted(Map("name" -> false))
       .top_k(2, "id", descending = true, nullLast = true, maintainOrder = false)
       .limit(2) // .head(2)
       .tail(2)

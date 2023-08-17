@@ -43,6 +43,8 @@ private[polars] object lazy_frame extends Natively {
 
   @native def explain(ptr: Long, optimized: Boolean): String
 
+  @native def set_sorted(ptr: Long, mapping: java.util.Map[String, Boolean]): Long
+
   @native def cache(ptr: Long): Long
 
   @native def collect(ptr: Long): Long

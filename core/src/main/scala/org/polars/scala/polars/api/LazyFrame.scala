@@ -77,6 +77,15 @@ class LazyFrame private (private[polars] val ptr: Long) {
   def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
     sort(Array(expr), null_last = nullLast, maintainOrder = maintainOrder)
 
+  def set_sorted(mapping: Map[String, Boolean]): LazyFrame =
+    set_sorted(mapping.asJava)
+
+  def set_sorted(mapping: java.util.Map[String, Boolean]): LazyFrame = {
+    val ldfPtr = lazy_frame.set_sorted(ptr, mapping)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
   def top_k(
       k: Int,
       exprs: Array[Expression],

@@ -5,6 +5,7 @@ import static org.polars.scala.polars.functions.*;
 import examples.scala.utils.CommonUtils;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Random;
 import org.polars.scala.polars.Polars;
 import org.polars.scala.polars.api.DataFrame;
@@ -27,6 +28,7 @@ public class ApplyingSimpleExpressions {
             .with_column("long_value", lit(new Random().nextLong()))
             .with_column("current_ts", lit(Timestamp.from(Instant.now())))
             .sort(asc("name"), true, false)
+            .set_sorted(Collections.singletonMap("name", false))
             .top_k(2, "id", true, true, false)
             .limit(2) // .head(2)
             .tail(2)
