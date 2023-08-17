@@ -48,12 +48,9 @@ public abstract class InputBuilder<B extends InputBuilder<B>> {
 
     public final LazyFrame scan(String path, String... paths) {
         LazyFrame ldf = scanImpl(path);
-        List<LazyFrame> lazyFrames = Arrays.stream(paths).parallel().map(this::scanImpl).collect(Collectors.toList());
+        LazyFrame[] lazyFrames = Arrays.stream(paths).parallel().map(this::scanImpl).toArray(LazyFrame[]::new);
 
-        return Polars.concat(ldf,
-                CollectionConverters.asScala(lazyFrames).toSeq(),
-                reChunk,
-                true);
+        return Polars.concat(ldf, lazyFrames, reChunk, true);
     }
 
     public final DataFrame read(String path, String... paths) {

@@ -45,7 +45,7 @@ object LazyAndEagerAPI {
     printf("Total rows: %s%n%n", df.count())
 
     /* Convert DataFrame back to LazyFrame */
-    val backToLdf: LazyFrame = df.toLazy()
+    val backToLdf: LazyFrame = df.toLazy
     printf("Show schema: %s%n%n", backToLdf.schema)
 
     /* Eagerly read data from file based datasets */

@@ -15,16 +15,31 @@ object ApplyingSimpleExpressions {
 
     /* Read a dataset as a DataFrame lazily or eagerly */
     val path = CommonUtils.getResource("/files/web-ds/data.json")
-    val ldf = Polars.ndJson.scan(path)
+    val input = Polars.ndJson.scan(path)
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
-    val df = ldf
+    var ldf = input.cache
       .select("id", "name")
-      .withColumn("lower_than_four", col("id") <= 4)
+      .with_column("lower_than_four", col("id") <= 4)
       .filter(col("lower_than_four"))
-      .withColumn("long_value", lit(Random.nextLong()))
-      .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
-      .collect()
+      .with_column("long_value", lit(Random.nextLong()))
+      .with_column("current_ts", lit(Timestamp.from(Instant.now())))
+      .sort(asc("name"), nullLast = true, maintainOrder = false)
+      .set_sorted(Map("name" -> false))
+      .top_k(2, "id", descending = true, nullLast = true, maintainOrder = false)
+      .limit(2) // .head(2)
+      .tail(2)
+      .drop("current_ts", "long_value")
+      .rename("lower_than_four", "less_than_four")
+      .drop_nulls()
+
+    ldf = Polars.concat(ldf, Array(ldf, ldf))
+    ldf = ldf.unique()
+
+    println("Showing LazyFrame plan to stdout.")
+    ldf.explain()
+
+    val df = ldf.collect()
 
     println("Showing resultant DataFrame to stdout.")
     df.show()

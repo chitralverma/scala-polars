@@ -19,15 +19,20 @@ object Polars {
 
   def ndJson: NdJsonInputBuilder = new NdJsonInputBuilder()
 
+  def concat(lazyFrame: LazyFrame, lazyFrames: Array[LazyFrame]): LazyFrame =
+    concat(lazyFrame, lazyFrames, reChunk = false, parallel = true)
+
   def concat(
       lazyFrame: LazyFrame,
-      lazyFrames: LazyFrame*
-  )(reChunk: Boolean = false, parallel: Boolean = true): LazyFrame =
+      lazyFrames: Array[LazyFrame],
+      reChunk: Boolean = false,
+      parallel: Boolean = true
+  ): LazyFrame =
     if (lazyFrames.isEmpty) lazyFrame
     else {
       val ptr =
         lazy_frame.concatLazyFrames(
-          lazyFrames.+:(lazyFrame).map(_.ptr).toArray,
+          lazyFrames.+:(lazyFrame).map(_.ptr),
           reChunk = reChunk,
           parallel = parallel
         )
@@ -35,10 +40,10 @@ object Polars {
       LazyFrame.withPtr(ptr)
     }
 
-  def concat(dataFrame: DataFrame, dataFrames: DataFrame*): DataFrame =
+  def concat(dataFrame: DataFrame, dataFrames: Array[DataFrame]): DataFrame =
     if (dataFrames.isEmpty) dataFrame
     else {
-      val ptr = data_frame.concatDataFrames(dataFrames.+:(dataFrame).map(_.ptr).toArray)
+      val ptr = data_frame.concatDataFrames(dataFrames.+:(dataFrame).map(_.ptr))
 
       DataFrame.withPtr(ptr)
     }

@@ -12,8 +12,53 @@ private[polars] object lazy_frame extends Natively {
 
   @native def filterFromExprs(ldfPtr: Long, exprPtr: Long): Long
 
+  @native def limit(ptr: Long, n: Long): Long
+
+  @native def tail(ptr: Long, n: Long): Long
+
+  @native def drop(ptr: Long, cols: Array[String]): Long
+
+  @native def drop_nulls(ptr: Long, subset: Array[String]): Long
+
+  @native def rename(ptr: Long, mapping: java.util.Map[String, String]): Long
+
+  @native def sortFromExprs(
+      ldfPtr: Long,
+      exprPtrs: Array[Long],
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): Long
+
+  @native def topKFromExprs(
+      ldfPtr: Long,
+      k: Int,
+      exprPtrs: Array[Long],
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): Long
+
   @native def withColumn(ldfPtr: Long, name: String, exprPtr: Long): Long
 
+  @native def unique(ptr: Long, subset: Array[String], keep: String, maintainOrder: Boolean): Long
+
+  @native def explain(ptr: Long, optimized: Boolean): String
+
+  @native def set_sorted(ptr: Long, mapping: java.util.Map[String, Boolean]): Long
+
+  @native def cache(ptr: Long): Long
+
   @native def collect(ptr: Long): Long
+
+  @native def optimization_toggle(
+      ptr: Long,
+      typeCoercion: Boolean,
+      predicatePushdown: Boolean,
+      projectionPushdown: Boolean,
+      simplifyExpr: Boolean,
+      slicePushdown: Boolean,
+      commSubplanElim: Boolean,
+      commSubexprElim: Boolean,
+      streaming: Boolean
+  ): Long
 
 }

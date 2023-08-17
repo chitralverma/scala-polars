@@ -4,7 +4,7 @@ import java.sql.{Date, Timestamp}
 import java.time.format.DateTimeFormatter
 
 import org.polars.scala.polars.api.expressions.{Column, Expression}
-import org.polars.scala.polars.internal.jni.expressions.literal_expr
+import org.polars.scala.polars.internal.jni.expressions.{column_expr, literal_expr}
 
 object functions {
 
@@ -34,4 +34,15 @@ object functions {
 
     Expression.withPtr(ptr)
   }
+
+  def desc(col_name: String): Expression = {
+    val ptr = column_expr.sort_column_by_name(col_name, descending = true)
+    Expression.withPtr(ptr)
+  }
+
+  def asc(col_name: String): Expression = {
+    val ptr = column_expr.sort_column_by_name(col_name, descending = false)
+    Expression.withPtr(ptr)
+  }
+
 }

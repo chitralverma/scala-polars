@@ -1,7 +1,8 @@
 use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
 use jni::objects::{JObject, JString};
-use jni::sys::{jint, jlong};
+use jni::strings::JNIString;
+use jni::sys::{jint, jlong, jstring};
 use jni::JNIEnv;
 use polars::io::RowCount;
 use polars::prelude::*;
@@ -39,6 +40,10 @@ pub fn normalize_path(path: &std::path::Path) -> PathBuf {
 
 pub fn get_string(env: &mut JNIEnv, string: JString, error_msg: &str) -> String {
     env.get_string(&string).expect(error_msg).into()
+}
+
+pub fn to_jstring<S: Into<JNIString>>(env: &mut JNIEnv, string: S, error_msg: &str) -> jstring {
+    env.new_string(string).expect(error_msg).into_raw()
 }
 
 pub fn get_file_path(env: &mut JNIEnv, file_path: JString) -> String {
