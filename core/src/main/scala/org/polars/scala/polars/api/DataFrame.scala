@@ -8,6 +8,7 @@ import scala.jdk.CollectionConverters._
 import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.api.io.Writeable
 import org.polars.scala.polars.api.types.Schema
+import org.polars.scala.polars.config.UniqueKeepStrategies
 import org.polars.scala.polars.internal.jni.data_frame
 
 class DataFrame private (private[polars] val ptr: Long) {
@@ -90,6 +91,15 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   def rename(mapping: java.util.Map[String, String]): DataFrame =
     toLazy.rename(mapping).collect(noOptimization = true)
+
+  def unique: DataFrame = unique()
+
+  def unique(
+      subset: Array[String] = Array.empty,
+      keep: UniqueKeepStrategies.UniqueKeepStrategy = UniqueKeepStrategies.any,
+      maintainOrder: Boolean = false
+  ): DataFrame =
+    toLazy.unique(subset, keep, maintainOrder).collect(noOptimization = true)
 
   def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
 

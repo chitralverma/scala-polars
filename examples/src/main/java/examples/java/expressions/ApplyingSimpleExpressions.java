@@ -32,6 +32,9 @@ public class ApplyingSimpleExpressions {
             .drop("current_ts", "long_value")
             .rename("lower_than_four", "less_than_four");
 
+    ldf = Polars.concat(ldf, new LazyFrame[] {ldf, ldf});
+    ldf = ldf.unique();
+
     System.out.println("Showing LazyFrame plan to stdout.");
     ldf.explain();
 

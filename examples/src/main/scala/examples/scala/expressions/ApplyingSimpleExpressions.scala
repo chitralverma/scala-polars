@@ -18,7 +18,7 @@ object ApplyingSimpleExpressions {
     val input = Polars.ndJson.scan(path)
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
-    val ldf = input.cache
+    var ldf = input.cache
       .select("id", "name")
       .withColumn("lower_than_four", col("id") <= 4)
       .filter(col("lower_than_four"))
@@ -29,6 +29,9 @@ object ApplyingSimpleExpressions {
       .tail(1)
       .drop("current_ts", "long_value")
       .rename("lower_than_four", "less_than_four")
+
+    ldf = Polars.concat(ldf, Array(ldf, ldf))
+    ldf = ldf.unique()
 
     println("Showing LazyFrame plan to stdout.")
     ldf.explain()

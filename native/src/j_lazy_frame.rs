@@ -2,6 +2,7 @@ use jni::objects::{GlobalRef, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
 use polars::prelude::{Expr, IdxSize, LazyFrame};
+use polars_core::prelude::UniqueKeepStrategy;
 
 use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr};
 
@@ -136,6 +137,22 @@ impl JLazyFrame {
         new: Vec<String>,
     ) -> jlong {
         let ldf = self.ldf.clone().rename(old, new);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
+
+    pub fn unique(
+        &self,
+        env: &mut JNIEnv,
+        callback_obj: JObject,
+        subset: Option<Vec<String>>,
+        keep: UniqueKeepStrategy,
+        maintain_order: bool,
+    ) -> jlong {
+        let ldf = match maintain_order {
+            true => self.ldf.clone().unique_stable(subset, keep),
+            false => self.ldf.clone().unique(subset, keep),
+        };
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }

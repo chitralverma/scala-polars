@@ -7,6 +7,7 @@ import scala.jdk.CollectionConverters._
 
 import org.polars.scala.polars.api.expressions.Expression
 import org.polars.scala.polars.api.types.Schema
+import org.polars.scala.polars.config.UniqueKeepStrategies
 import org.polars.scala.polars.internal.jni.expressions.column_expr
 import org.polars.scala.polars.internal.jni.lazy_frame
 
@@ -105,6 +106,18 @@ class LazyFrame private (private[polars] val ptr: Long) {
 
   def rename(mapping: java.util.Map[String, String]): LazyFrame = {
     val ldfPtr = lazy_frame.rename(ptr, mapping)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
+  def unique: LazyFrame = unique()
+
+  def unique(
+      subset: Array[String] = Array.empty,
+      keep: UniqueKeepStrategies.UniqueKeepStrategy = UniqueKeepStrategies.any,
+      maintainOrder: Boolean = false
+  ): LazyFrame = {
+    val ldfPtr = lazy_frame.unique(ptr, subset, keep.toString, maintainOrder)
 
     LazyFrame.withPtr(ldfPtr)
   }

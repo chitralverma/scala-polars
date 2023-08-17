@@ -7,6 +7,7 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
+use polars_core::prelude::UniqueKeepStrategy;
 
 use crate::internal_jni::utils::*;
 use crate::j_expr::JExpr;
@@ -283,4 +284,43 @@ pub fn explain(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong, optimized: jb
     .expect("Unable to describe plan.");
 
     to_jstring(&mut _env, plan_str, "Unable to get/ convert plan to UTF8.")
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn unique(
+    mut _env: JNIEnv,
+    _object: JObject,
+    ptr: jlong,
+    subset: JObjectArray,
+    keep: JString,
+    maintainOrder: jboolean,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    let num_expr = _env.get_array_length(&subset).unwrap();
+
+    let mut cols: Vec<String> = Vec::new();
+
+    for i in 0..num_expr {
+        let result = _env
+            .get_object_array_element(&subset, i)
+            .map(JString::from)
+            .unwrap();
+        let col_name = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
+
+        cols.push(col_name)
+    }
+
+    let keep = get_string(&mut _env, keep, "Unable to get/ convert value to UTF8.");
+    let sub: Option<Vec<String>> = if cols.is_empty() { None } else { Some(cols) };
+
+    let keep = match keep.as_str() {
+        "any" => Ok(UniqueKeepStrategy::Any),
+        "none" => Ok(UniqueKeepStrategy::None),
+        "first" => Ok(UniqueKeepStrategy::First),
+        "last" => Ok(UniqueKeepStrategy::Last),
+        _ => Err(()),
+    }
+    .expect("Unable to get/ convert value to UniqueKeepStrategy.");
+
+    j_ldf.unique(&mut _env, _object, sub, keep, maintainOrder == JNI_TRUE)
 }
