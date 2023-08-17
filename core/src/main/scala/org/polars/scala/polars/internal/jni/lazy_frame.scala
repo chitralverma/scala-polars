@@ -18,6 +18,8 @@ private[polars] object lazy_frame extends Natively {
 
   @native def drop(ptr: Long, cols: Array[String]): Long
 
+  @native def drop_nulls(ptr: Long, subset: Array[String]): Long
+
   @native def rename(ptr: Long, mapping: java.util.Map[String, String]): Long
 
   @native def sortFromExprs(

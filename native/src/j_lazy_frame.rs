@@ -156,4 +156,15 @@ impl JLazyFrame {
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
+
+    pub fn drop_nulls(
+        &self,
+        env: &mut JNIEnv,
+        callback_obj: JObject,
+        subset: Option<Vec<Expr>>,
+    ) -> jlong {
+        let ldf = self.ldf.clone().drop_nulls(subset);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
 }

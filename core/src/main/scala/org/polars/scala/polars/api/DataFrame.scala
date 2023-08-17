@@ -83,6 +83,13 @@ class DataFrame private (private[polars] val ptr: Long) {
   def drop(colName: String, colNames: String*): DataFrame =
     toLazy.drop(colName, colNames: _*).collect(noOptimization = true)
 
+  def drop_nulls: DataFrame = drop_nulls()
+
+  def drop_nulls(
+      subset: Array[String] = Array.empty
+  ): DataFrame =
+    toLazy.drop_nulls(subset).collect(noOptimization = true)
+
   def rename(oldName: String, newName: String): DataFrame =
     rename(Collections.singletonMap(oldName, newName))
 

@@ -122,6 +122,16 @@ class LazyFrame private (private[polars] val ptr: Long) {
     LazyFrame.withPtr(ldfPtr)
   }
 
+  def drop_nulls: LazyFrame = drop_nulls()
+
+  def drop_nulls(
+      subset: Array[String] = Array.empty
+  ): LazyFrame = {
+    val ldfPtr = lazy_frame.drop_nulls(ptr, subset)
+
+    LazyFrame.withPtr(ldfPtr)
+  }
+
   def explain: Unit = explain()
 
   def explain(

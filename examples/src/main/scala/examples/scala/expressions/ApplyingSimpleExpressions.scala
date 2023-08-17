@@ -24,11 +24,12 @@ object ApplyingSimpleExpressions {
       .filter(col("lower_than_four"))
       .withColumn("long_value", lit(Random.nextLong()))
       .withColumn("current_ts", lit(Timestamp.from(Instant.now())))
-      .sort(asc("name"), nullLast = false, maintainOrder = false)
+      .sort(asc("name"), nullLast = true, maintainOrder = false)
       .limit(2) // .head(2)
       .tail(1)
       .drop("current_ts", "long_value")
       .rename("lower_than_four", "less_than_four")
+      .drop_nulls()
 
     ldf = Polars.concat(ldf, Array(ldf, ldf))
     ldf = ldf.unique()

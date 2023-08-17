@@ -53,6 +53,6 @@ features = [
     "azure"
 ]
 
-[profile.release]
-codegen-units = 1
-lto = true
+#[profile.release]
+#codegen-units = 1
+#lto = true

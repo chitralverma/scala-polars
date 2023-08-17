@@ -324,3 +324,25 @@ pub fn unique(
 
     j_ldf.unique(&mut _env, _object, sub, keep, maintainOrder == JNI_TRUE)
 }
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn drop_nulls(mut _env: JNIEnv, _object: JObject, ptr: jlong, subset: JObjectArray) -> jlong {
+    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
+    let num_expr = _env.get_array_length(&subset).unwrap();
+
+    let mut exprs: Vec<Expr> = Vec::new();
+
+    for i in 0..num_expr {
+        let result = _env
+            .get_object_array_element(&subset, i)
+            .map(JString::from)
+            .unwrap();
+        let expr_str = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
+
+        exprs.push(col(expr_str.as_str()))
+    }
+
+    let sub: Option<Vec<Expr>> = if exprs.is_empty() { None } else { Some(exprs) };
+
+    j_ldf.drop_nulls(&mut _env, _object, sub)
+}
