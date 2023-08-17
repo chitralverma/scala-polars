@@ -29,6 +29,14 @@ private[polars] object lazy_frame extends Natively {
       maintainOrder: Boolean
   ): Long
 
+  @native def topKFromExprs(
+      ldfPtr: Long,
+      k: Int,
+      exprPtrs: Array[Long],
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): Long
+
   @native def withColumn(ldfPtr: Long, name: String, exprPtr: Long): Long
 
   @native def unique(ptr: Long, subset: Array[String], keep: String, maintainOrder: Boolean): Long

@@ -27,8 +27,9 @@ public class ApplyingSimpleExpressions {
             .with_column("long_value", lit(new Random().nextLong()))
             .with_column("current_ts", lit(Timestamp.from(Instant.now())))
             .sort(asc("name"), true, false)
+            .top_k(2, "id", true, true, false)
             .limit(2) // .head(2)
-            .tail(1)
+            .tail(2)
             .drop("current_ts", "long_value")
             .rename("lower_than_four", "less_than_four")
             .drop_nulls();

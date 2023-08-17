@@ -66,6 +66,53 @@ class DataFrame private (private[polars] val ptr: Long) {
       .sort(Array(expr), null_last = null_last, maintainOrder = maintain_order)
       .collect(noOptimization = true)
 
+  def top_k(
+      k: Int,
+      cols: Array[String],
+      descending: Array[Boolean],
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): DataFrame =
+    toLazy.top_k(k, cols, descending, nullLast, maintainOrder).collect(projectionPushdown = false,
+      predicatePushdown = false,
+      commSubplanElim = false)
+
+  def top_k(
+      k: Int,
+      expr: String,
+      descending: Boolean,
+      nullLast: Boolean,
+      maintainOrder: Boolean
+  ): DataFrame =
+    toLazy
+      .top_k(
+        k = k,
+        cols = Array(expr),
+        descending = Array(descending),
+        nullLast = nullLast,
+        maintainOrder = maintainOrder
+      )
+      .collect(projectionPushdown = false,
+        predicatePushdown = false,
+        commSubplanElim = false)
+
+  def top_k(
+      k: Int,
+      exprs: Array[Expression],
+      null_last: Boolean,
+      maintain_order: Boolean
+  ): DataFrame =
+    toLazy.top_k(k, exprs, null_last, maintain_order).collect(projectionPushdown = false,
+      predicatePushdown = false,
+      commSubplanElim = false)
+
+  def top_k(k: Int, expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
+    toLazy
+      .top_k(k, Array(expr), null_last = null_last, maintainOrder = maintain_order)
+      .collect(projectionPushdown = false,
+        predicatePushdown = false,
+        commSubplanElim = false)
+
   def limit(n: Long): DataFrame = DataFrame.withPtr(data_frame.limit(ptr, n))
 
   def head(n: Long): DataFrame = limit(n)

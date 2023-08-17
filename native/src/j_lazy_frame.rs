@@ -111,6 +111,45 @@ impl JLazyFrame {
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
 
+    pub fn top_k(
+        &self,
+        env: &mut JNIEnv,
+        callback_obj: JObject,
+        k: IdxSize,
+        exprs: Vec<Expr>,
+        null_last: bool,
+        maintain_order: bool,
+    ) -> jlong {
+        let mut desc: Vec<bool> = Vec::new();
+        let mut new_exprs: Vec<Expr> = Vec::new();
+
+        fn get_non_sort_expr(expr: &Expr, direction: bool, set: bool) -> (Expr, bool) {
+            match expr {
+                Expr::Sort { expr, options } => {
+                    if set {
+                        get_non_sort_expr(&expr.clone(), direction, true)
+                    } else {
+                        get_non_sort_expr(&expr.clone(), options.descending, true)
+                    }
+                }
+                e => return (e.clone(), direction),
+            }
+        }
+
+        for expr in &exprs {
+            let (expr, direction) = get_non_sort_expr(expr, false, false);
+            desc.push(direction);
+            new_exprs.push(expr);
+        }
+
+        let ldf = self
+            .ldf
+            .clone()
+            .top_k(k, new_exprs, desc, null_last, maintain_order);
+
+        ldf_to_ptr(env, callback_obj, Ok(ldf))
+    }
+
     pub fn limit(&self, env: &mut JNIEnv, callback_obj: JObject, n: IdxSize) -> jlong {
         let ldf = self.ldf.clone().limit(n);
 

@@ -2,7 +2,7 @@
 
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{JLongArray, JObject, JObjectArray, JString};
-use jni::sys::{jboolean, jlong, jstring, JNI_TRUE};
+use jni::sys::{jboolean, jint, jlong, jstring, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::export::num::ToPrimitive;
@@ -105,6 +105,41 @@ pub fn sortFromExprs(
     j_ldf.sort(
         &mut env,
         object,
+        exprs,
+        nullLast == JNI_TRUE,
+        maintainOrder == JNI_TRUE,
+    )
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub fn topKFromExprs(
+    mut env: JNIEnv,
+    object: JObject,
+    ldf_ptr: jlong,
+    k: jint,
+    inputs: JLongArray,
+    nullLast: jboolean,
+    maintainOrder: jboolean,
+) -> jlong {
+    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+
+    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
+    let exprs: Vec<Expr> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_ldf = &mut *(ptr as *mut JExpr);
+                j_ldf.to_owned().expr
+            })
+            .collect()
+    };
+
+    j_ldf.top_k(
+        &mut env,
+        object,
+        k as IdxSize,
         exprs,
         nullLast == JNI_TRUE,
         maintainOrder == JNI_TRUE,
