@@ -12,7 +12,7 @@ name = "scala_polars"
 crate_type = ["cdylib"]
 
 [dependencies]
-arrow2 = { version = "0.17", features = ["io_ipc_write_async"] }
+arrow2 = { version = "0.17", features = ["io_ipc_write_async", "io_csv_write", "io_avro_async"] }
 futures = "0.3.25"
 jni = "0.21.1"
 jni_fn = "0.1"
