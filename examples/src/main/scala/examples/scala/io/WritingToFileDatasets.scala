@@ -8,6 +8,7 @@ import examples.scala.utils.CommonUtils
 /** Polars supports various output file formats like the following,
   *   - [[org.polars.scala.polars.api.io.Writeable.parquet Apache Parquet]]
   *   - [[org.polars.scala.polars.api.io.Writeable.ipc Apache Arrow IPC]]
+  *   - [[org.polars.scala.polars.api.io.Writeable.avro Apache Avro]]
   *
   * A [[org.polars.scala.polars.api.DataFrame DataFrame]] can be written to an object storage as a
   * file in one of the supported formats mentioned above.

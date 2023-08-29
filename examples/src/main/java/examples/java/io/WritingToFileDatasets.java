@@ -13,6 +13,7 @@ import scala.Some;
  * <ul>
  *   <li>{@link org.polars.scala.polars.api.io.Writeable#parquet(String, boolean) Apache Parquet}
  *   <li>{@link org.polars.scala.polars.api.io.Writeable#ipc(String) Apache Arrow IPC}
+ *   <li>{@link org.polars.scala.polars.api.io.Writeable#avro(String) Apache Avro}
  * </ul>
  *
  * <p>A {@link DataFrame} can be written to an object storage as a file in one of the supported

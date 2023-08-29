@@ -87,14 +87,7 @@ pub fn writeParquet(
     let compression = parse_parquet_compression(&compression_str, compression_level)
         .expect("Unable to parse the provided compression argument(s)");
 
-    let write_mode_str = get_string(
-        &mut env,
-        writeMode,
-        "Unable to get/ convert write mode string to UTF8.",
-    );
-
-    let write_mode = parse_write_mode(&write_mode_str)
-        .expect("Unable to parse the provided write mode argument");
+    let write_mode = parse_write_mode(&mut env, writeMode);
 
     let options = parse_json_to_options(&mut env, options);
 
