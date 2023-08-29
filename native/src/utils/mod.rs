@@ -36,6 +36,12 @@ impl From<std::io::Error> for PathError {
     }
 }
 
+impl From<polars::error::PolarsError> for PathError {
+    fn from(error: polars::error::PolarsError) -> Self {
+        Self::Generic(error.to_string())
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum WriteModes {
     ErrorIfExists,

@@ -144,7 +144,7 @@ class Writeable private[polars] (ptr: Long) {
           WriteCompressions.snappy =>
       case v =>
         throw new IllegalArgumentException(
-          s"Compression for IPC format must be one of {{'uncompressed', 'deflate', 'snappy'}}, got $v"
+          s"Compression for Avro format must be one of {{'uncompressed', 'deflate', 'snappy'}}, got $v"
         )
     }
 

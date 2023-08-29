@@ -1,14 +1,11 @@
 #![allow(non_snake_case)]
 
-use arrow2::array::*;
-use arrow2::chunk::Chunk;
-use arrow2::error::Result as ArrowResult;
 use arrow2::io::avro as arrow2_avro;
 use arrow2_avro::avro_schema::file::{Block, CompressedBlock, Compression};
-use arrow2_avro::avro_schema::schema::Record;
 use arrow2_avro::avro_schema::write::compress;
 use arrow2_avro::avro_schema::write_async::{write_block, write_metadata};
 use arrow2_avro::write as write_avro;
+use futures::io::AsyncWriteExt;
 use jni::objects::{JObject, JString};
 use jni::sys::jlong;
 use jni::JNIEnv;
@@ -16,7 +13,7 @@ use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
 use tokio;
-use tokio::io::AsyncWriteExt;
+use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;
 
 use crate::internal_jni::utils::*;
@@ -38,49 +35,49 @@ async fn write_files(
     let meta = object_store.head(&prefix).await;
     ensure_write_mode(meta, url, write_mode)?;
 
-    let re_chunked_df = data_frame.align_chunks();
+    let re_chunked_df = data_frame.as_single_chunk_par();
 
     let schema = re_chunked_df.schema().to_arrow();
     let record = write_avro::to_record(&schema)?;
-    let iter = re_chunked_df.iter_chunks();
 
-    let (_, mut writer) = object_store.put_multipart(&prefix.clone()).await?;
+    let (_, writer) = object_store.put_multipart(&prefix.clone()).await?;
 
-    for chunk in iter {
-        let compressed_block = serialize_to_block(&chunk, &record, compression)?;
-        let mut buffer = vec![];
+    let mut data = vec![];
+    let mut compressed_block = CompressedBlock::default();
+    let mut_writer = &mut writer.compat_write();
 
-        write_metadata(&mut buffer, record.clone(), compression).await?;
-        write_block(&mut buffer, &compressed_block).await?;
+    for chunk in re_chunked_df.iter_chunks() {
+        let mut serializers = chunk
+            .iter()
+            .zip(record.fields.iter())
+            .map(|(array, field)| write_avro::new_serializer(array.as_ref(), &field.schema))
+            .collect::<Vec<_>>();
 
-        writer.write_all(&buffer).await?;
-        buffer.clear();
+        let mut block = Block::new(chunk.arrays()[0].len(), std::mem::take(&mut data));
+
+        write_avro::serialize(&mut serializers, &mut block);
+
+        let _was_compressed =
+            compress(&mut block, &mut compressed_block, compression).map_err(PathError::from)?;
+
+        write_metadata(mut_writer, record.clone(), compression)
+            .await
+            .map_err(PathError::from)?;
+
+        write_block(mut_writer, &compressed_block)
+            .await
+            .map_err(PathError::from)?;
+
+        // reuse blocks for next iteration.
+        data = block.data;
+        data.clear();
+
+        compressed_block.data.clear();
+        compressed_block.number_of_rows = 0
     }
 
-    writer.shutdown().await.map_err(PathError::from)
-}
-
-pub(super) fn serialize_to_block<R: AsRef<dyn Array>>(
-    columns: &Chunk<R>,
-    record: &Record,
-    compression: Option<Compression>,
-) -> ArrowResult<CompressedBlock> {
-    let mut serializers = columns
-        .arrays()
-        .iter()
-        .map(|x| x.as_ref())
-        .zip(record.fields.iter())
-        .map(|(array, field)| write_avro::new_serializer(array, &field.schema))
-        .collect::<Vec<_>>();
-    let mut block = Block::new(columns.len(), vec![]);
-
-    write_avro::serialize(&mut serializers, &mut block);
-
-    let mut compressed_block = CompressedBlock::default();
-
-    compress(&mut block, &mut compressed_block, compression)?;
-
-    Ok(compressed_block)
+    mut_writer.flush().await?;
+    mut_writer.close().await.map_err(PathError::from)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
