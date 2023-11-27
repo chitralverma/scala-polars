@@ -12,6 +12,30 @@ pub enum PathError {
     FileAlreadyExists(String),
 }
 
+impl From<polars_arrow::io::avro::avro_schema::error::Error> for PathError {
+    fn from(error: polars_arrow::io::avro::avro_schema::error::Error) -> Self {
+        Self::Generic(error.to_string())
+    }
+}
+
+impl From<object_store::Error> for PathError {
+    fn from(error: object_store::Error) -> Self {
+        Self::Generic(error.to_string())
+    }
+}
+
+impl From<std::io::Error> for PathError {
+    fn from(error: std::io::Error) -> Self {
+        Self::Generic(error.to_string())
+    }
+}
+
+impl From<polars::error::PolarsError> for PathError {
+    fn from(error: polars::error::PolarsError) -> Self {
+        Self::Generic(error.to_string())
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum WriteModes {
     ErrorIfExists,

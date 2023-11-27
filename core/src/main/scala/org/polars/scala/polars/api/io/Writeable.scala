@@ -17,7 +17,7 @@ object WriteCompressions extends Enumeration {
   def fromString(str: String): Option[WriteCompression] =
     stringMap.get(str.toLowerCase(Locale.ROOT))
 
-  val lz4, uncompressed, snappy, gzip, lzo, brotli, zstd = Value
+  val lz4, uncompressed, snappy, gzip, lzo, brotli, zstd, deflate = Value
 }
 
 object WriteModes extends Enumeration {
@@ -130,6 +130,25 @@ class Writeable private[polars] (ptr: Long) {
     }
 
     writeIPC(
+      ptr = ptr,
+      filePath = filePath,
+      compression = _compression,
+      options = Serialization.write(_options),
+      writeMode = _mode
+    )
+  }
+
+  def avro(filePath: String): Unit = {
+    WriteCompressions.fromString(_compression).get match {
+      case WriteCompressions.uncompressed | WriteCompressions.deflate |
+          WriteCompressions.snappy =>
+      case v =>
+        throw new IllegalArgumentException(
+          s"Compression for Avro format must be one of {{'uncompressed', 'deflate', 'snappy'}}, got $v"
+        )
+    }
+
+    writeAvro(
       ptr = ptr,
       filePath = filePath,
       compression = _compression,

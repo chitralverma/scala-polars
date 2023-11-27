@@ -13,6 +13,13 @@ public final class ParquetInputBuilder extends InputBuilder<ParquetInputBuilder>
         return self();
     }
 
+    boolean hivePartitioning = false;
+
+    public final ParquetInputBuilder hivePartitioning(boolean hivePartitioning) {
+        this.hivePartitioning = hivePartitioning;
+        return self();
+    }
+
     @Override
     LazyFrame scanImpl(String path) {
         long ptr = scan.scanParquet(
@@ -21,6 +28,7 @@ public final class ParquetInputBuilder extends InputBuilder<ParquetInputBuilder>
                 cache,
                 reChunk,
                 lowMemory,
+                hivePartitioning,
                 rowCountColName,
                 rowCountColOffset
         );

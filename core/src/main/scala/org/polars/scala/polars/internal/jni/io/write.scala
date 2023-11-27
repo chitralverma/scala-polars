@@ -22,4 +22,12 @@ private[polars] object write extends Natively {
       writeMode: String
   ): Unit
 
+  @native def writeAvro(
+      ptr: Long,
+      filePath: String,
+      compression: String,
+      options: String,
+      writeMode: String
+  ): Unit
+
 }

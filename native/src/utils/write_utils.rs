@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use arrow2::datatypes::PhysicalType;
-use arrow2::io::parquet::write::{transverse, Encoding};
 use jni::objects::JString;
 use jni::JNIEnv;
 use object_store::parse_url_opts;
@@ -9,6 +7,8 @@ use object_store::path::Error::InvalidPath;
 use object_store::path::Path;
 use object_store::{DynObjectStore, ObjectMeta};
 use polars::prelude::{ArrowDataType, ArrowSchema};
+use polars_arrow::datatypes::PhysicalType;
+use polars_parquet::write::{transverse, Encoding};
 use url::Url;
 
 use crate::internal_jni::utils::get_string;
@@ -69,12 +69,17 @@ pub fn get_encodings(schema: &ArrowSchema) -> Vec<Vec<Encoding>> {
         .collect()
 }
 
-pub fn parse_write_mode(write_mode: &str) -> Result<WriteModes, PathError> {
-    let parsed = match write_mode {
+pub fn parse_write_mode(env: &mut JNIEnv, writeMode: JString) -> WriteModes {
+    let write_mode_str = get_string(
+        env,
+        writeMode,
+        "Unable to get/ convert write mode string to UTF8.",
+    );
+
+    match write_mode_str.as_str() {
         "Overwrite" => WriteModes::Overwrite,
         _ => WriteModes::ErrorIfExists,
-    };
-    Ok(parsed)
+    }
 }
 
 pub fn ensure_write_mode(

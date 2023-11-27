@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use arrow2::io::ipc::write as write_ipc;
 use futures::SinkExt;
 use jni::objects::{JObject, JString};
 use jni::sys::jlong;
@@ -8,6 +7,7 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
+use polars_arrow::io::ipc::write as write_ipc;
 use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;
@@ -77,14 +77,7 @@ pub fn writeIPC(
     let compression = parse_ipc_compression(&compression_str)
         .expect("Unable to parse the provided compression argument(s)");
 
-    let write_mode_str = get_string(
-        &mut env,
-        writeMode,
-        "Unable to get/ convert write mode string to UTF8.",
-    );
-
-    let write_mode = parse_write_mode(&write_mode_str)
-        .expect("Unable to parse the provided write mode argument");
+    let write_mode = parse_write_mode(&mut env, writeMode);
 
     let options = parse_json_to_options(&mut env, options);
 

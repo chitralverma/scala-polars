@@ -19,6 +19,7 @@ pub fn scanParquet(
     cache: jboolean,
     reChunk: jboolean,
     lowMemory: jboolean,
+    hivePartitioning: jboolean,
     rowCountColName: JString,
     rowCountColOffset: jint,
 ) -> jlong {
@@ -35,6 +36,7 @@ pub fn scanParquet(
         low_memory: lowMemory == JNI_TRUE,
         cloud_options: None,
         use_statistics: true,
+        hive_partitioning: hivePartitioning == JNI_TRUE,
     };
 
     let j_ldf = LazyFrame::scan_parquet(this_path, scan_args);
@@ -64,7 +66,7 @@ pub fn scanCSV(
 
     let j_ldf = LazyCsvReader::new(this_path)
         .with_n_rows(n_rows)
-        .with_delimiter(delimiter as u8)
+        .with_separator(delimiter as u8)
         .has_header(hasHeader == JNI_TRUE)
         .with_ignore_errors(ignoreErrors == JNI_TRUE)
         .with_row_count(row_count)
