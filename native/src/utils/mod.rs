@@ -12,7 +12,6 @@ pub enum PathError {
     FileAlreadyExists(String),
 }
 
-
 impl From<polars_arrow::io::avro::avro_schema::error::Error> for PathError {
     fn from(error: polars_arrow::io::avro::avro_schema::error::Error) -> Self {
         Self::Generic(error.to_string())
