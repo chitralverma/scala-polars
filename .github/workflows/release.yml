@@ -28,11 +28,9 @@ jobs:
             arch: x86_64-unknown-linux-gnu
             packages: ""
 
-#           object_store brings in ring which causes problems on win-64 builds
-#           See https://github.com/briansmith/ring/issues/1167#issuecomment-1258564864
-#          - os: windows-latest
-#            arch: aarch64-pc-windows-msvc
-#            packages: ""
+          - os: windows-latest
+            arch: aarch64-pc-windows-msvc
+            packages: ""
 
           - os: windows-latest
             arch: x86_64-pc-windows-msvc
