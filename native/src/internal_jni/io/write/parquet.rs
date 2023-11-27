@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use arrow2::io::parquet::write as write_parquet;
 use futures::SinkExt;
 use jni::objects::{JObject, JString};
 use jni::sys::{jboolean, jint, jlong, JNI_TRUE};
@@ -8,6 +7,7 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
+use polars_parquet::write as write_parquet;
 use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;

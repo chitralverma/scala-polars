@@ -12,14 +12,9 @@ pub enum PathError {
     FileAlreadyExists(String),
 }
 
-impl From<arrow2::error::Error> for PathError {
-    fn from(error: arrow2::error::Error) -> Self {
-        Self::Generic(error.to_string())
-    }
-}
 
-impl From<arrow2::io::avro::avro_schema::error::Error> for PathError {
-    fn from(error: arrow2::io::avro::avro_schema::error::Error) -> Self {
+impl From<polars_arrow::io::avro::avro_schema::error::Error> for PathError {
+    fn from(error: polars_arrow::io::avro::avro_schema::error::Error) -> Self {
         Self::Generic(error.to_string())
     }
 }

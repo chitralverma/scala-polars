@@ -10,6 +10,7 @@ private[polars] object scan extends Natively {
       cache: Boolean,
       reChunk: Boolean,
       lowMemory: Boolean,
+      hivePartitioning: Boolean,
       rowCountColName: String,
       rowCountColOffset: Int
   ): Long

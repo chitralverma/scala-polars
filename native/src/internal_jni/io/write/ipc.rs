@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use arrow2::io::ipc::write as write_ipc;
 use futures::SinkExt;
 use jni::objects::{JObject, JString};
 use jni::sys::jlong;
@@ -8,6 +7,7 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
+use polars_arrow::io::ipc::write as write_ipc;
 use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;

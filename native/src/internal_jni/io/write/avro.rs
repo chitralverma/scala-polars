@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use arrow2::io::avro as arrow2_avro;
 use arrow2_avro::avro_schema::file::{Block, CompressedBlock, Compression};
 use arrow2_avro::avro_schema::write::compress;
 use arrow2_avro::avro_schema::write_async::{write_block, write_metadata};
@@ -12,6 +11,7 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
+use polars_arrow::io::avro as arrow2_avro;
 use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;
@@ -38,7 +38,7 @@ async fn write_files(
     let re_chunked_df = data_frame.as_single_chunk_par();
 
     let schema = re_chunked_df.schema().to_arrow();
-    let record = write_avro::to_record(&schema)?;
+    let record = write_avro::to_record(&schema, "".to_string())?;
 
     let (_, writer) = object_store.put_multipart(&prefix.clone()).await?;
 

@@ -12,25 +12,26 @@ name = "scala_polars"
 crate_type = ["cdylib"]
 
 [dependencies]
-arrow2 = { version = "0.17", features = ["io_ipc_write_async", "io_csv_write", "io_avro_async"] }
 futures = "0.3.25"
 jni = "0.21.1"
 jni_fn = "0.1"
 num = "0.4.0"
 num-derive = "0.4"
 num-traits = "0.2.15"
-object_store = { version = "0.6", features = ["aws", "azure", "gcp"] }
-polars-core = { version = "0.32", default-features = false }
+object_store = { version = "0.8", features = ["aws", "azure", "gcp"] }
+polars-arrow = { version = "0.35", features = ["io_ipc_write_async", "io_avro_async"] }
+polars-core = { version = "0.35", default-features = false }
+polars-parquet = { version = "0.35", features = ["async", "compression"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
 tokio = { version = "1.18", features = ["sync", "macros", "rt", "time", "io-util", "net", "rt-multi-thread"] }
 tokio-util = { version = "0.7.7", features = ["compat"] }
-toml = "0.7"
+toml = "0.8"
 url = "2.3"
 
 [dependencies.polars]
-version = "0.32"
+version = "0.35"
 default-features = false
 features = [
     "ipc",
