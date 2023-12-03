@@ -25,5 +25,5 @@ object ProjectDependencies {
 object Versions {
   val scalaCollectionCompat = "2.11.0"
   val scalaParallelCollections = "1.0.4"
-  val json4sVersion = "4.0.6"
+  val json4sVersion = "4.0.7"
 }
