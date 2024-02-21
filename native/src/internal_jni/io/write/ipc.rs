@@ -34,8 +34,8 @@ async fn write_files(
 
     let re_chunked_df = data_frame.align_chunks();
 
-    let schema = re_chunked_df.schema().to_arrow();
-    let iter = re_chunked_df.iter_chunks();
+    let schema = re_chunked_df.schema().to_arrow(true);
+    let iter = re_chunked_df.iter_chunks(true);
 
     let (_id, writer) = object_store
         .put_multipart(&prefix.clone())

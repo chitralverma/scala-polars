@@ -37,7 +37,7 @@ async fn write_files(
 
     let re_chunked_df = data_frame.as_single_chunk_par();
 
-    let schema = re_chunked_df.schema().to_arrow();
+    let schema = re_chunked_df.schema().to_arrow(true);
     let record = write_avro::to_record(&schema, "".to_string())?;
 
     let (_, writer) = object_store.put_multipart(&prefix.clone()).await?;
@@ -46,7 +46,7 @@ async fn write_files(
     let mut compressed_block = CompressedBlock::default();
     let mut_writer = &mut writer.compat_write();
 
-    for chunk in re_chunked_df.iter_chunks() {
+    for chunk in re_chunked_df.iter_chunks(true) {
         let mut serializers = chunk
             .iter()
             .zip(record.fields.iter())

@@ -25,11 +25,11 @@ pub fn scanParquet(
 ) -> jlong {
     let this_path = get_file_path(&mut env, filePath);
     let n_rows = get_n_rows(nRows);
-    let row_count = get_row_count(&mut env, rowCountColName, rowCountColOffset);
+    let row_index = get_row_index(&mut env, rowCountColName, rowCountColOffset);
 
     let scan_args = ScanArgsParquet {
         n_rows,
-        row_count,
+        row_index,
         parallel: Default::default(),
         cache: cache == JNI_TRUE,
         rechunk: reChunk == JNI_TRUE,
@@ -62,14 +62,14 @@ pub fn scanCSV(
 ) -> jlong {
     let this_path = get_file_path(&mut env, filePath);
     let n_rows = get_n_rows(nRows);
-    let row_count = get_row_count(&mut env, rowCountColName, rowCountColOffset);
+    let row_index = get_row_index(&mut env, rowCountColName, rowCountColOffset);
 
     let j_ldf = LazyCsvReader::new(this_path)
         .with_n_rows(n_rows)
         .with_separator(delimiter as u8)
         .has_header(hasHeader == JNI_TRUE)
         .with_ignore_errors(ignoreErrors == JNI_TRUE)
-        .with_row_count(row_count)
+        .with_row_index(row_index)
         .with_infer_schema_length(Some(inferSchemaRows as usize))
         .with_try_parse_dates(parseDates == JNI_TRUE)
         .with_cache(cache == JNI_TRUE)
@@ -95,11 +95,11 @@ pub fn scanNdJson(
 ) -> jlong {
     let this_path = get_file_path(&mut env, filePath);
     let n_rows = get_n_rows(nRows);
-    let row_count = get_row_count(&mut env, rowCountColName, rowCountColOffset);
+    let row_index = get_row_index(&mut env, rowCountColName, rowCountColOffset);
 
     let j_ldf = LazyJsonLineReader::new(this_path)
         .with_n_rows(n_rows)
-        .with_row_count(row_count)
+        .with_row_index(row_index)
         .with_infer_schema_length(Some(inferSchemaRows as usize))
         .with_rechunk(reChunk == JNI_TRUE)
         .low_memory(lowMemory == JNI_TRUE)
@@ -126,13 +126,13 @@ pub fn scanIPC(
 ) -> jlong {
     let this_path = get_file_path(&mut env, filePath);
     let n_rows = get_n_rows(nRows);
-    let row_count = get_row_count(&mut env, rowCountColName, rowCountColOffset);
+    let row_index = get_row_index(&mut env, rowCountColName, rowCountColOffset);
 
     let scan_args = ScanArgsIpc {
         n_rows,
         cache: cache == JNI_TRUE,
         rechunk: re_chunk == JNI_TRUE,
-        row_count,
+        row_index,
         memmap: mem_map == JNI_TRUE,
     };
 
