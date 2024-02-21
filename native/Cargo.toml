@@ -15,23 +15,23 @@ crate_type = ["cdylib"]
 futures = "0.3.25"
 jni = "0.21.1"
 jni_fn = "0.1"
-num = "0.4.0"
+num = "0.4"
 num-derive = "0.4"
-num-traits = "0.2.15"
-object_store = { version = "0.8", features = ["aws", "azure", "gcp"] }
-polars-arrow = { version = "0.35", features = ["io_ipc_write_async", "io_avro_async"] }
-polars-core = { version = "0.35", default-features = false }
-polars-parquet = { version = "0.35", features = ["async", "compression"] }
+num-traits = "0.2"
+object_store = { version = "0.9", features = ["aws", "azure", "gcp"] }
+polars-arrow = { version = "0.37", features = ["io_ipc_write_async", "io_avro_async"] }
+polars-core = { version = "0.37", default-features = false }
+polars-parquet = { version = "0.37", features = ["async", "compression"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
-tokio = { version = "1.18", features = ["sync", "macros", "rt", "time", "io-util", "net", "rt-multi-thread"] }
-tokio-util = { version = "0.7.7", features = ["compat"] }
+tokio = { version = "1.26", features = ["sync", "macros", "rt", "time", "io-util", "net", "rt-multi-thread"] }
+tokio-util = { version = "0.7.8", features = ["compat"] }
 toml = "0.8"
-url = "2.3"
+url = "2.4"
 
 [dependencies.polars]
-version = "0.35"
+version = "0.37"
 default-features = false
 features = [
     "ipc",
@@ -51,7 +51,8 @@ features = [
     "async",
     "aws",
     "gcp",
-    "azure"
+    "azure",
+    "regex"
 ]
 
 [profile.release]

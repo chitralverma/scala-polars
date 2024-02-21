@@ -4,7 +4,7 @@ use jni::objects::{JObject, JString};
 use jni::strings::JNIString;
 use jni::sys::{jint, jlong, jstring};
 use jni::JNIEnv;
-use polars::io::RowCount;
+use polars::io::RowIndex;
 use polars::prelude::*;
 use std::path::{Component, PathBuf};
 
@@ -58,13 +58,13 @@ pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
     }
 }
 
-pub fn get_row_count(
+pub fn get_row_index(
     env: &mut JNIEnv,
     row_count_col_name: JString,
     row_count_col_offset: jint,
-) -> Option<RowCount> {
+) -> Option<RowIndex> {
     if !row_count_col_name.is_null() {
-        Some(RowCount {
+        Some(RowIndex {
             name: env
                 .get_string(&row_count_col_name)
                 .expect("Unable to get/ convert row column name to UTF8.")

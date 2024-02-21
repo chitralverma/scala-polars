@@ -54,7 +54,7 @@ case class StructType(fields: Seq[Field]) extends DataType {
 
 object DataType {
 
-  private[polars] final val StringRegex: Regex = """^(?i)Utf8|LargeUtf8$""".r
+  private[polars] final val StringRegex: Regex = """^(?i)Utf8|LargeUtf8|String$""".r
   private[polars] final val BooleanRegex: Regex = """^(?i)Boolean$""".r
   private[polars] final val IntRegex: Regex = """^(?i)Int8|Int16|Int32|UInt8|UInt16|UInt32$""".r
   private[polars] final val LongRegex: Regex = """^(?i)Int64|UInt64$""".r
