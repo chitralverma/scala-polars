@@ -1,5 +1,5 @@
-import sbt.Keys._
-import sbt._
+import sbt.*
+import sbt.Keys.*
 
 object PublishingSettings {
 

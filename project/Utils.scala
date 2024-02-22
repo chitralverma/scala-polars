@@ -1,6 +1,6 @@
-import sbt._
+import sbt.*
 
-import scala.sys.process._
+import scala.sys.process.*
 
 object Utils {
 

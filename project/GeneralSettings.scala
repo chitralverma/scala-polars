@@ -1,7 +1,7 @@
-import sbt.Keys._
-import sbt._
-
-import Utils._
+import sbt.*
+import sbt.Keys.*
+import Utils.*
+import sbtassembly.AssemblyPlugin.autoImport.*
 
 object GeneralSettings {
 
@@ -41,7 +41,11 @@ object GeneralSettings {
     ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
           else Seq("-release", "8")),
     fork := true,
-    turbo := true
+    turbo := true,
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case x => MergeStrategy.first
+    }
   )
 
   lazy val settings: Seq[Setting[_]] = Seq(

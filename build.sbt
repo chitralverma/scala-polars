@@ -1,4 +1,4 @@
-import Utils._
+import Utils.*
 
 ThisBuild / publish / skip := true
 ThisBuild / publishArtifact := false
