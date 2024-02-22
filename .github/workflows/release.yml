@@ -75,7 +75,7 @@ jobs:
       - name: Temporarily save native library for ${{ matrix.arch }}
         uses: actions/upload-artifact@v4
         with:
-          name: native_libs-${{ matrix.runs-on }}
+          name: native_libs-${{ matrix.arch }}
           path: /tmp/native-libs/
           retention-days: 1
           if-no-files-found: error
