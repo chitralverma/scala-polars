@@ -3,11 +3,8 @@ package org.polars.scala.polars.api.io.builders;
 import org.polars.scala.polars.Polars;
 import org.polars.scala.polars.api.DataFrame;
 import org.polars.scala.polars.api.LazyFrame;
-import scala.jdk.javaapi.CollectionConverters;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class InputBuilder<B extends InputBuilder<B>> {
 

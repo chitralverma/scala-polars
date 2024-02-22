@@ -1,8 +1,7 @@
-import sbt.Keys._
-import sbt._
-
-import Utils._
-import Versions._
+import sbt.*
+import sbt.Keys.*
+import Utils.*
+import Versions.*
 
 object ProjectDependencies {
 
