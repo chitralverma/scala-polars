@@ -75,7 +75,7 @@ jobs:
       - name: Temporarily save native library for ${{ matrix.arch }}
         uses: actions/upload-artifact@v4
         with:
-          name: native_libs
+          name: native_libs-${{ matrix.runs-on }}
           path: /tmp/native-libs/
           retention-days: 1
           if-no-files-found: error
@@ -115,8 +115,9 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: native_libs
+          pattern: native_libs-*
           path: /tmp/native-libs/
+          merge-multiple: true
 
       - name: Test for ${{ matrix.os }}
         run: |
@@ -149,8 +150,9 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: native_libs
+          pattern: native_libs-*
           path: /tmp/native-libs/
+          merge-multiple: true
 
       - name: List the built artifacts
         run: ls -lhtR
