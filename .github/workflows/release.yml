@@ -47,10 +47,10 @@ jobs:
       - name: Install system packages
         run: ${{ matrix.packages }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: "8"
           distribution: 'temurin'
@@ -73,7 +73,7 @@ jobs:
           sbt generateNativeLibrary
 
       - name: Temporarily save native library for ${{ matrix.arch }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: native_libs
           path: /tmp/native-libs/
@@ -100,10 +100,10 @@ jobs:
           - os: macos-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: "8"
           distribution: 'temurin'
@@ -113,7 +113,7 @@ jobs:
           extraKey: ${{ matrix.arch }}
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: native_libs
           path: /tmp/native-libs/
@@ -123,6 +123,7 @@ jobs:
           sbt +assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+          java -cp ./examples/target/scala-3.3.1/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
 
   publish:
     timeout-minutes: 15
@@ -133,10 +134,10 @@ jobs:
       SKIP_NATIVE_GENERATION: true
     needs: [ test-build ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: "8"
           distribution: 'temurin'
@@ -146,13 +147,13 @@ jobs:
           extraKey: ${{ matrix.arch }}
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: native_libs
           path: /tmp/native-libs/
 
       - name: List the built artifacts
-        run: ls -R
+        run: ls -lhtR
         working-directory: /tmp/native-libs/
 
       - name: Publish Artifacts
