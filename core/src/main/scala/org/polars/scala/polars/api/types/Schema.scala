@@ -4,11 +4,13 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-import org.json4s._
-import org.json4s.native.JsonMethods.parseOpt
-import org.polars.scala.polars.formats
+import org.polars.scala.polars.jsonMapper
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.JsonNodeType
 
 case class Field(name: String, dataType: DataType) {
 
@@ -45,14 +47,16 @@ class Schema private (private[polars] val json: String) {
 
   deserialize()
 
-  private def toField(field: JField): Field = field match {
+  def toField(field: (String, JsonNode, JsonNodeType)): Field = field match {
     // For Basic Types
-    case (name, _ @JString(t)) =>
-      Field(name, DataType.fromBasicType(t))
+    case (name, node, _ @JsonNodeType.STRING) =>
+      Field(name, DataType.fromBasicType(node.textValue()))
 
     // For DateTime Type
-    case (name, _ @JObject(Seq(JField("Datetime", v)))) =>
-      val (tu, tz) = v.extract[Seq[String]] match {
+    case (name, node, _ @JsonNodeType.OBJECT) if node.has("Datetime") =>
+      val dtNode = node.get("Datetime")
+
+      val (tu, tz) = dtNode.iterator().asScala.map(_.textValue()).toSeq match {
         case Seq(null, null) =>
           (TimeUnit.MICROSECONDS, ZoneId.of("UTC"))
         case Seq(null, tz) if tz.nonEmpty =>
@@ -68,18 +72,27 @@ class Schema private (private[polars] val json: String) {
       Field(name, DateTimeType(tu, tz))
 
     // For (Nested) List Type
-    case (name, _ @JObject(Seq(JField("List", v)))) =>
-      Field(name, ListType(toField(JField(name, v)).dataType))
+    case (name, node, _ @JsonNodeType.OBJECT) if node.has("List") =>
+      val listNode = node.get("List")
+      Field(name, ListType(toField((name, listNode, listNode.getNodeType)).dataType))
 
     // For (Nested) Struct Type
-    case (name, _ @JObject(Seq(JField("Struct", JArray(structFields))))) =>
+    case (name, node, _ @JsonNodeType.OBJECT) if node.has("Struct") =>
+      val structNode = node.get("Struct")
+      val structFields = structNode.iterator().asScala
       val sf = structFields.map {
-        case JObject(Seq(JField("name", JString(structFieldName)), JField("dtype", v))) =>
-          Field(structFieldName, toField(JField(name, v)).dataType)
+        case node: JsonNode if node.fieldNames().asScala.toSet == Set("name", "dtype") =>
+          val structFieldName: String = node.get("name").textValue()
+          val structFieldType: JsonNode = node.get("dtype")
+
+          Field(
+            structFieldName,
+            toField(name, structFieldType, structFieldType.getNodeType).dataType
+          )
 
         case _ =>
           throw new IllegalArgumentException("Invalid struct cannot be parsed as a JSON.")
-      }
+      }.toSeq
 
       Field(name, StructType(sf))
 
@@ -87,13 +100,14 @@ class Schema private (private[polars] val json: String) {
       throw new IllegalArgumentException("Invalid field cannot be parsed as a JSON.")
   }
 
-  private def deserialize(): Unit = parseOpt(json) match {
+  private def deserialize(): Unit = Try(jsonMapper.reader.readTree(json)).toOption match {
     case None =>
       throw new IllegalArgumentException("Provided schema string cannot be parsed as a JSON.")
 
-    case Some(JObject(Seq(("inner", _ @JObject(fields))))) =>
-      _fields = fields.map(toField).toArray
-      _fieldNames = _fields.map(_.name)
+    case Some(node: JsonNode) if node.has("inner") =>
+      val fields = node.get("inner").fields().asScala
+      _fields = fields.map(f => toField(f.getKey, f.getValue, f.getValue.getNodeType)).toArray
+      _fieldNames = node.fieldNames().asScala.toArray
 
     case _ =>
       throw new IllegalArgumentException("Provided schema string is an invalid JSON.")

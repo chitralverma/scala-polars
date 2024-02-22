@@ -4,7 +4,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.{Failure, Success, Try}
 
-import org.json4s.DefaultFormats
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
 
 package object polars {
 
@@ -13,7 +14,8 @@ package object polars {
   private[polars] val libraryLoaded =
     new AtomicReference[LibraryStates.LibraryState](LibraryStates.NOT_LOADED)
 
-  implicit val formats: DefaultFormats.type = DefaultFormats
+  final val jsonMapper =
+    JsonMapper.builder().addModule(DefaultScalaModule).build() :: ClassTagExtensions
 
   private[polars] def loadLibraryIfRequired(): Unit = {
     if (libraryLoaded.get() == LibraryStates.LOADED)

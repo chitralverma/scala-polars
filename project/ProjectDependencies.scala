@@ -10,7 +10,8 @@ object ProjectDependencies {
     libraryDependencies ++= {
       Seq(
         "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompat,
-        "org.json4s" %% "json4s-native" % json4sVersion
+        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
       ) ++
         (if (!priorTo213(scalaVersion.value))
            Seq(
@@ -25,5 +26,5 @@ object ProjectDependencies {
 object Versions {
   val scalaCollectionCompat = "2.11.0"
   val scalaParallelCollections = "1.0.4"
-  val json4sVersion = "4.0.7"
+  val jacksonVersion = "2.16.1"
 }
