@@ -5,7 +5,6 @@ import java.util.Locale
 import scala.collection.mutable.{Map => MutableMap}
 import scala.jdk.CollectionConverters._
 
-import org.json4s.native.Serialization
 import org.polars.scala.polars.internal.jni.io.write._
 
 object WriteCompressions extends Enumeration {
@@ -33,7 +32,7 @@ object WriteModes extends Enumeration {
 }
 
 class Writeable private[polars] (ptr: Long) {
-  import org.polars.scala.polars.formats
+  import org.polars.scala.polars.objectMapper
 
   private var _mode: String = WriteModes.ErrorIfExists.toString
   private var _compression: String = WriteCompressions.zstd.toString
@@ -116,7 +115,7 @@ class Writeable private[polars] (ptr: Long) {
       writeStats = writeStats,
       compression = _compression,
       compressionLevel = _compressionLevel,
-      options = Serialization.write(_options),
+      options = objectMapper.writeValueAsString(_options),
       writeMode = _mode
     )
 
@@ -133,7 +132,7 @@ class Writeable private[polars] (ptr: Long) {
       ptr = ptr,
       filePath = filePath,
       compression = _compression,
-      options = Serialization.write(_options),
+      options = objectMapper.writeValueAsString(_options),
       writeMode = _mode
     )
   }
@@ -152,7 +151,7 @@ class Writeable private[polars] (ptr: Long) {
       ptr = ptr,
       filePath = filePath,
       compression = _compression,
-      options = Serialization.write(_options),
+      options = objectMapper.writeValueAsString(_options),
       writeMode = _mode
     )
   }
