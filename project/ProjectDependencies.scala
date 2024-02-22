@@ -10,7 +10,8 @@ object ProjectDependencies {
     libraryDependencies ++= {
       Seq(
         "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompat,
-        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion
+        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
       ) ++
         (if (!priorTo213(scalaVersion.value))
            Seq(

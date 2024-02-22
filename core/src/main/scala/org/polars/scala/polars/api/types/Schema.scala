@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-import org.polars.scala.polars.objectMapper
+import org.polars.scala.polars.jsonMapper
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeType
@@ -100,7 +100,7 @@ class Schema private (private[polars] val json: String) {
       throw new IllegalArgumentException("Invalid field cannot be parsed as a JSON.")
   }
 
-  private def deserialize(): Unit = Try(objectMapper.reader.readTree(json)).toOption match {
+  private def deserialize(): Unit = Try(jsonMapper.reader.readTree(json)).toOption match {
     case None =>
       throw new IllegalArgumentException("Provided schema string cannot be parsed as a JSON.")
 

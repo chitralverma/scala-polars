@@ -32,7 +32,7 @@ object WriteModes extends Enumeration {
 }
 
 class Writeable private[polars] (ptr: Long) {
-  import org.polars.scala.polars.objectMapper
+  import org.polars.scala.polars.jsonMapper
 
   private var _mode: String = WriteModes.ErrorIfExists.toString
   private var _compression: String = WriteCompressions.zstd.toString
@@ -115,7 +115,7 @@ class Writeable private[polars] (ptr: Long) {
       writeStats = writeStats,
       compression = _compression,
       compressionLevel = _compressionLevel,
-      options = objectMapper.writeValueAsString(_options),
+      options = jsonMapper.writeValueAsString(_options),
       writeMode = _mode
     )
 
@@ -132,7 +132,7 @@ class Writeable private[polars] (ptr: Long) {
       ptr = ptr,
       filePath = filePath,
       compression = _compression,
-      options = objectMapper.writeValueAsString(_options),
+      options = jsonMapper.writeValueAsString(_options),
       writeMode = _mode
     )
   }
@@ -151,7 +151,7 @@ class Writeable private[polars] (ptr: Long) {
       ptr = ptr,
       filePath = filePath,
       compression = _compression,
-      options = objectMapper.writeValueAsString(_options),
+      options = jsonMapper.writeValueAsString(_options),
       writeMode = _mode
     )
   }

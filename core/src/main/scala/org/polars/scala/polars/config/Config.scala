@@ -7,7 +7,7 @@ import java.nio.file.{Files, Paths, StandardOpenOption}
 import scala.jdk.CollectionConverters._
 
 import org.polars.scala.polars.internal.jni.common
-import org.polars.scala.polars.objectMapper
+import org.polars.scala.polars.jsonMapper
 
 private case class ConfigExport(
     environment: Map[String, String],
@@ -78,7 +78,7 @@ class Config private (val options: Map[String, String]) {
 
     /** Sets a configs from a JSON config string. */
     def fromString(configStr: String): ConfigUpdateBuilder = synchronized {
-      val config = objectMapper.readValue(configStr, classOf[ConfigExport])
+      val config = jsonMapper.readValue(configStr, classOf[ConfigExport])
 
       withOptions(config.environment)
       this
@@ -170,7 +170,7 @@ class Config private (val options: Map[String, String]) {
   }
 
   override def toString: String =
-    objectMapper.writeValueAsString(ConfigExport(environment = options))
+    jsonMapper.writeValueAsString(ConfigExport(environment = options))
 }
 
 object Config {
