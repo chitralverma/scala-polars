@@ -1,5 +1,6 @@
 import sbt.*
 import sbt.Keys.*
+
 import Utils.*
 import Versions.*
 
@@ -25,5 +26,5 @@ object ProjectDependencies {
 object Versions {
   val scalaCollectionCompat = "2.11.0"
   val scalaParallelCollections = "1.0.4"
-  val jacksonVersion = "2.16.1"
+  val jacksonVersion = "2.16.2"
 }
