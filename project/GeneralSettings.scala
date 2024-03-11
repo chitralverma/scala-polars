@@ -8,7 +8,7 @@ object GeneralSettings {
 
   val scala212 = "2.12.19"
   val scala213 = "2.13.13"
-  val scala33 = "3.3.1"
+  val scala33 = "3.3.3"
 
   val defaultScalaVersion: String = scala33
   val supportedScalaVersions: Seq[String] = Seq(scala212, scala213, scala33)
