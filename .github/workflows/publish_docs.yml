@@ -22,4 +22,6 @@ jobs:
 
       - name: Publish Artifacts
         run: |
+          git config user.name git
+          git config user.email git@github.com
           sbt ghpagesPushSite
