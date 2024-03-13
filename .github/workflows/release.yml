@@ -163,6 +163,6 @@ jobs:
 
       - name: Publish API Docs
         run: |
-          git config user.name github-actions
+          git config user.name chitralverma 
           git config user.email github-actions@github.com
           sbt ghpagesPushSite
