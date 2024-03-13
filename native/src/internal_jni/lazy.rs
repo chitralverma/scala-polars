@@ -310,12 +310,23 @@ pub fn rename(mut _env: JNIEnv, object: JObject, ldf_ptr: jlong, options: JObjec
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn explain(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong, optimized: jboolean) -> jstring {
+pub fn explain(
+    mut _env: JNIEnv,
+    _object: JObject,
+    ldf_ptr: jlong,
+    optimized: jboolean,
+    tree_format: jboolean,
+) -> jstring {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let plan_str = if optimized == JNI_TRUE {
-        j_ldf.ldf.describe_optimized_plan()
+    dbg!(tree_format == JNI_TRUE);
+    let plan_str = if tree_format == JNI_TRUE {
+        if optimized == JNI_TRUE {
+            j_ldf.ldf.describe_optimized_plan_tree()
+        } else {
+            Ok(j_ldf.ldf.describe_plan_tree())
+        }
     } else {
-        Ok(j_ldf.ldf.describe_plan())
+        j_ldf.ldf.explain(optimized == JNI_TRUE)
     }
     .expect("Unable to describe plan.");
 

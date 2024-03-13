@@ -197,7 +197,8 @@ class LazyFrame private (private[polars] val ptr: Long) {
       slicePushdown: Boolean = true,
       commSubplanElim: Boolean = true,
       commSubexprElim: Boolean = true,
-      streaming: Boolean = false
+      streaming: Boolean = false,
+      treeFormat: Boolean = false
   ): Unit = {
     val planStr = if (optimized) {
       lazy_frame.explain(
@@ -212,9 +213,10 @@ class LazyFrame private (private[polars] val ptr: Long) {
           commSubexprElim = commSubexprElim,
           streaming = streaming
         ),
-        optimized = true
+        optimized = true,
+        treeFormat
       )
-    } else lazy_frame.explain(ptr, optimized = false)
+    } else lazy_frame.explain(ptr, optimized = false, treeFormat)
 
     println(planStr)
   }

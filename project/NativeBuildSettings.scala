@@ -1,10 +1,12 @@
+import java.nio.file.*
+
 import sbt.*
 import sbt.Keys.*
-import Utils.*
 
-import java.nio.file.*
 import scala.collection.JavaConverters.*
 import scala.sys.process.*
+
+import Utils.*
 
 object NativeBuildSettings {
 
