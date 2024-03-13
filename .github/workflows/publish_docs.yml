@@ -1,0 +1,25 @@
+name: Publish Artifacts
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+
+      - name: Publish Artifacts
+        run: |
+          sbt ghpagesPushSite
