@@ -1,4 +1,4 @@
-name: Publish Artifacts
+name: Publish Docs
 on:
   push:
     branches:
@@ -22,6 +22,6 @@ jobs:
 
       - name: Publish Artifacts
         run: |
-          git config user.name git
-          git config user.email git@github.com
+          git config --global user.email "git@github.com"
+          git config --global user.name  "git"
           sbt ghpagesPushSite
