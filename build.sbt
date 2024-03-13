@@ -15,7 +15,7 @@ lazy val core = project
   .settings(name := "scala-polars")
   .enablePlugins(GhpagesPlugin, SiteScaladocPlugin)
   .settings(
-    git.remoteRepo := "git@github.com:chitralverma/scala-polars.git",
+    git.remoteRepo := "https://github.com/chitralverma/scala-polars.git",
     SiteScaladoc / siteSubdirName := "api/latest"
   )
   .settings(ProjectDependencies.dependencies)
