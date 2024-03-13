@@ -1,169 +1,173 @@
-#name: Publish Artifacts
-#on:
-#  push:
-#    branches:
-#      - main
-#
-#permissions:
-#  contents: read
-#
-#jobs:
-#  build-natives:
-#    name: ${{ matrix.arch }} build
-#    runs-on: ${{ matrix.os }}
-#    env:
-#      JAVA_OPTS: "-XX:+UseG1GC"
-#      SBT_OPTS: "-Dsbt.ci=true"
-#      TARGET_TRIPLE: ${{ matrix.arch }}
-#      NATIVE_LIB_LOCATION: /tmp/native-libs/
-#    strategy:
-#      fail-fast: true
-#      matrix:
-#        include:
-#          - os: ubuntu-latest
-#            arch: aarch64-unknown-linux-gnu
-#            packages: "sudo apt update && sudo apt-get install gcc-aarch64-linux-gnu"
-#
-#          - os: ubuntu-latest
-#            arch: x86_64-unknown-linux-gnu
-#            packages: ""
-#
-#          - os: windows-latest
-#            arch: aarch64-pc-windows-msvc
-#            packages: ""
-#
-#          - os: windows-latest
-#            arch: x86_64-pc-windows-msvc
-#            packages: ""
-#
-#          - os: macos-latest
-#            arch: x86_64-apple-darwin
-#            packages: ""
-#
-#          - os: macos-latest
-#            arch: aarch64-apple-darwin
-#            packages: ""
-#    steps:
-#      - name: Install system packages
-#        run: ${{ matrix.packages }}
-#
-#      - uses: actions/checkout@v4
-#
-#      - name: Set up JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: "8"
-#          distribution: 'temurin'
-#
-#      - name: Install rust toolchain
-#        uses: dtolnay/rust-toolchain@nightly
-#
-#      - uses: coursier/cache-action@v6
-#        with:
-#          extraKey: ${{ matrix.arch }}
-#
-#      - uses: Swatinem/rust-cache@v2
-#        with:
-#          workspaces: native
-#          prefix-key: ${{ matrix.arch }}
-#
-#      - name: Cross publish artifacts containing native library
-#        run: |
-#          rustup target add ${{ matrix.arch }}
-#          sbt generateNativeLibrary
-#
-#      - name: Temporarily save native library for ${{ matrix.arch }}
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: native_libs-${{ matrix.arch }}
-#          path: /tmp/native-libs/
-#          retention-days: 1
-#          if-no-files-found: error
-#
-#  test-build:
-#    name: ${{ matrix.os }} test
-#    runs-on: ${{ matrix.os }}
-#    needs: [ build-natives ]
-#    env:
-#      JAVA_OPTS: -XX:+UseG1GC -Xms2G -Xmx8G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
-#      SBT_OPTS: "-Dsbt.ci=true"
-#      NATIVE_LIB_LOCATION: /tmp/native-libs/
-#      SKIP_NATIVE_GENERATION: true
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        include:
-#          - os: ubuntu-latest
-#
-#          - os: windows-latest
-#
-#          - os: macos-latest
-#
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - name: Set up JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: "8"
-#          distribution: 'temurin'
-#
-#      - uses: coursier/cache-action@v6
-#        with:
-#          extraKey: ${{ matrix.arch }}
-#
-#      - name: Download artifacts
-#        uses: actions/download-artifact@v4
-#        with:
-#          pattern: native_libs-*
-#          path: /tmp/native-libs/
-#          merge-multiple: true
-#
-#      - name: Test for ${{ matrix.os }}
-#        run: |
-#          sbt +assembly
-#          java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
-#          java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
-#          java -cp ./examples/target/scala-3.3.3/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
-#
-#  publish:
-#    timeout-minutes: 15
-#    runs-on: ubuntu-latest
-#    env:
-#      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-#      NATIVE_LIB_LOCATION: /tmp/native-libs/
-#      SKIP_NATIVE_GENERATION: true
-#    needs: [ test-build ]
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - name: Set up JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: "8"
-#          distribution: 'temurin'
-#
-#      - uses: coursier/cache-action@v6
-#        with:
-#          extraKey: ${{ matrix.arch }}
-#
-#      - name: Download artifacts
-#        uses: actions/download-artifact@v4
-#        with:
-#          pattern: native_libs-*
-#          path: /tmp/native-libs/
-#          merge-multiple: true
-#
-#      - name: List the built artifacts
-#        run: ls -lhtR
-#        working-directory: /tmp/native-libs/
-#
-#      - name: Publish Artifacts
-#        run: sbt +aetherDeploy
-#
-#      - name: Publish API Docs
-#        uses: actions/checkout@v4
-#        run: |
-#          git config user.name git
-#          git config user.email git@github.com
-#          sbt ghpagesPushSite
+name: Publish Artifacts
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-natives:
+    name: ${{ matrix.arch }} build
+    runs-on: ${{ matrix.os }}
+    env:
+      JAVA_OPTS: "-XX:+UseG1GC"
+      SBT_OPTS: "-Dsbt.ci=true"
+      TARGET_TRIPLE: ${{ matrix.arch }}
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: aarch64-unknown-linux-gnu
+            packages: "sudo apt update && sudo apt-get install gcc-aarch64-linux-gnu"
+
+          - os: ubuntu-latest
+            arch: x86_64-unknown-linux-gnu
+            packages: ""
+
+          - os: windows-latest
+            arch: aarch64-pc-windows-msvc
+            packages: ""
+
+          - os: windows-latest
+            arch: x86_64-pc-windows-msvc
+            packages: ""
+
+          - os: macos-latest
+            arch: x86_64-apple-darwin
+            packages: ""
+
+          - os: macos-latest
+            arch: aarch64-apple-darwin
+            packages: ""
+    steps:
+      - name: Install system packages
+        run: ${{ matrix.packages }}
+
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: ${{ matrix.arch }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+          prefix-key: ${{ matrix.arch }}
+
+      - name: Cross publish artifacts containing native library
+        run: |
+          rustup target add ${{ matrix.arch }}
+          sbt generateNativeLibrary
+
+      - name: Temporarily save native library for ${{ matrix.arch }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native_libs-${{ matrix.arch }}
+          path: /tmp/native-libs/
+          retention-days: 1
+          if-no-files-found: error
+
+  test-build:
+    name: ${{ matrix.os }} test
+    runs-on: ${{ matrix.os }}
+    needs: [ build-natives ]
+    env:
+      JAVA_OPTS: -XX:+UseG1GC -Xms2G -Xmx8G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+      SBT_OPTS: "-Dsbt.ci=true"
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+      SKIP_NATIVE_GENERATION: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+
+          - os: windows-latest
+
+          - os: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: ${{ matrix.arch }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native_libs-*
+          path: /tmp/native-libs/
+          merge-multiple: true
+
+      - name: Test for ${{ matrix.os }}
+        run: |
+          sbt +assembly
+          java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+          java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+          java -cp ./examples/target/scala-3.3.3/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+
+  publish:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      NATIVE_LIB_LOCATION: /tmp/native-libs/
+      SKIP_NATIVE_GENERATION: true
+    needs: [ test-build ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: ${{ matrix.arch }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native_libs-*
+          path: /tmp/native-libs/
+          merge-multiple: true
+
+      - name: List the built artifacts
+        run: ls -lhtR
+        working-directory: /tmp/native-libs/
+
+      - name: Publish Artifacts
+        run: sbt +aetherDeploy
+
+      - name: Publish API Docs
+        run: |
+          git config --global user.email "git@github.com"
+          git config --global user.name  "git"
+          sbt ghpagesPushSite
