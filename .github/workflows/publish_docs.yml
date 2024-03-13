@@ -20,6 +20,12 @@ jobs:
           java-version: "8"
           distribution: 'temurin'
 
+      - name: Setup SSH
+        uses: MrSquaare/ssh-setup-action@v3
+        with:
+          host: github.com
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Publish Artifacts
         run: |
           git config --global user.email "git@github.com"
