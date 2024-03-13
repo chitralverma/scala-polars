@@ -13,6 +13,11 @@ lazy val core = project
   .in(file("core"))
   .withId("scala-polars")
   .settings(name := "scala-polars")
+  .enablePlugins(GhpagesPlugin, SiteScaladocPlugin)
+  .settings(
+    git.remoteRepo := "https://github.com/chitralverma/scala-polars.git",
+    SiteScaladoc / siteSubdirName := "api/latest"
+  )
   .settings(ProjectDependencies.dependencies)
   .settings(GeneralSettings.commonSettings)
   .settings(PublishingSettings.settings)

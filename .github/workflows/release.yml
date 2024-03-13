@@ -160,3 +160,6 @@ jobs:
 
       - name: Publish Artifacts
         run: sbt +aetherDeploy
+
+      - name: Publish API Docs
+        run: sbt ghpagesPushSite
