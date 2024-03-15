@@ -1,0 +1,33 @@
+name: Lint Rust
+
+on: [ pull_request ]
+
+permissions:
+  contents: read
+
+env:
+  RUSTFLAGS: -C debuginfo=0
+
+jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: "clippy, rustfmt"
+
+      - name: Check all formatting
+        run: |
+          cargo install cargo-sort
+          sbt fmtCheckAll
