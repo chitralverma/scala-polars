@@ -27,6 +27,7 @@ jobs:
       - name: Check all formatting
         run: |
           cargo install cargo-sort
+          rustup component add rustfmt
           sbt fmtCheckAll
 
   build-natives:
