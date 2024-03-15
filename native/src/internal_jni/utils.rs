@@ -1,13 +1,14 @@
-use crate::j_data_frame::JDataFrame;
-use crate::j_expr::JExpr;
+use std::path::{Component, PathBuf};
+
 use jni::objects::{JObject, JString};
 use jni::strings::JNIString;
 use jni::sys::{jint, jlong, jstring};
 use jni::JNIEnv;
 use polars::io::RowIndex;
 use polars::prelude::*;
-use std::path::{Component, PathBuf};
 
+use crate::j_data_frame::JDataFrame;
+use crate::j_expr::JExpr;
 use crate::j_lazy_frame::JLazyFrame;
 
 pub fn normalize_path(path: &std::path::Path) -> PathBuf {
@@ -24,14 +25,14 @@ pub fn normalize_path(path: &std::path::Path) -> PathBuf {
             Component::Prefix(..) => unreachable!(),
             Component::RootDir => {
                 ret.push(component.as_os_str());
-            }
-            Component::CurDir => {}
+            },
+            Component::CurDir => {},
             Component::ParentDir => {
                 ret.pop();
-            }
+            },
             Component::Normal(c) => {
                 ret.push(c);
-            }
+            },
         }
     }
 

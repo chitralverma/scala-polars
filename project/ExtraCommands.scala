@@ -47,7 +47,8 @@ object ExtraCommands {
       val nativeRootDir = nativeRoot.value: @sbtUnchecked
       val cmds = Seq(
         "cargo fmt --check --all",
-        "cargo sort --check"
+        "cargo sort --check",
+        "cargo clippy -- -D warnings"
       )
 
       executeProcesses(cmds, cwd = Some(nativeRootDir), sLog.value, infoOnly = true)

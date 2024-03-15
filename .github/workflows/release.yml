@@ -8,6 +8,22 @@ permissions:
   contents: read
 
 jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: 'temurin'
+
+      - name: Publish Artifacts
+        run: sbt fmtCheckAll
+
   build-natives:
     name: ${{ matrix.arch }} build
     runs-on: ${{ matrix.os }}
@@ -16,6 +32,7 @@ jobs:
       SBT_OPTS: "-Dsbt.ci=true"
       TARGET_TRIPLE: ${{ matrix.arch }}
       NATIVE_LIB_LOCATION: /tmp/native-libs/
+    needs: [ check-formatting ]
     strategy:
       fail-fast: true
       matrix:

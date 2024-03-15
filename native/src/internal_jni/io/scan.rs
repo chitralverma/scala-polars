@@ -1,11 +1,9 @@
 #![allow(non_snake_case)]
 
 use jni::objects::{JObject, JString};
-use jni::JNIEnv;
-
 use jni::sys::{jboolean, jchar, jint, jlong, JNI_TRUE};
+use jni::JNIEnv;
 use jni_fn::jni_fn;
-
 use polars::prelude::*;
 
 use crate::internal_jni::utils::*;

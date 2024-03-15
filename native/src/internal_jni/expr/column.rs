@@ -3,8 +3,7 @@
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 use jni::objects::{JObject, JString};
-use jni::sys::jint;
-use jni::sys::jlong;
+use jni::sys::{jint, jlong};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_derive::FromPrimitive;

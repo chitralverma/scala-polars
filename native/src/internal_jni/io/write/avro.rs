@@ -12,7 +12,6 @@ use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
 use polars_arrow::io::avro as arrow2_avro;
-use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;
 
@@ -135,7 +134,7 @@ fn parse_avro_compression(
             return Err(PathError::Generic(format!(
                 "Compression must be one of {{'uncompressed', 'deflate', 'snappy'}}, got {e}",
             )));
-        }
+        },
     };
 
     Ok(parsed)

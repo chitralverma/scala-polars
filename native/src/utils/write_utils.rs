@@ -2,10 +2,9 @@ use std::collections::HashMap;
 
 use jni::objects::JString;
 use jni::JNIEnv;
-use object_store::parse_url_opts;
 use object_store::path::Error::InvalidPath;
 use object_store::path::Path;
-use object_store::{DynObjectStore, ObjectMeta};
+use object_store::{parse_url_opts, DynObjectStore, ObjectMeta};
 use polars::prelude::{ArrowDataType, ArrowSchema};
 use polars_arrow::datatypes::PhysicalType;
 use polars_parquet::write::{transverse, Encoding};

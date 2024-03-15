@@ -8,7 +8,6 @@ use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
 use polars_arrow::io::ipc::write as write_ipc;
-use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;
 use write_ipc::{Compression, WriteOptions};
@@ -111,7 +110,7 @@ fn parse_ipc_compression(compression: &str) -> Result<Option<Compression>, PathE
             return Err(PathError::Generic(format!(
                 "Compression must be one of {{'uncompressed', 'lz4', 'zstd'}}, got {e}",
             )));
-        }
+        },
     };
 
     Ok(parsed)

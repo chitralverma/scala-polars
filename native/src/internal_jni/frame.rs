@@ -5,7 +5,6 @@ use jni::objects::{JLongArray, JObject};
 use jni::sys::{jlong, jstring};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 use polars_core::utils::concat_df;

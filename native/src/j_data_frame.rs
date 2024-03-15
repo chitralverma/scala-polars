@@ -1,9 +1,9 @@
 use jni::objects::{GlobalRef, JObject};
-
-use crate::internal_jni::utils::df_to_ptr;
 use jni::sys::jlong;
 use jni::JNIEnv;
 use polars::prelude::*;
+
+use crate::internal_jni::utils::df_to_ptr;
 
 #[derive(Clone)]
 pub struct JDataFrame {

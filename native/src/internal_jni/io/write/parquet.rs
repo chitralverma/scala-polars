@@ -8,7 +8,6 @@ use jni_fn::jni_fn;
 use object_store::path::Path;
 use polars::prelude::*;
 use polars_parquet::write as write_parquet;
-use tokio;
 use tokio_util::compat::TokioAsyncWriteCompatExt;
 use url::Url;
 use write_parquet::{BrotliLevel, CompressionOptions, GzipLevel, ZstdLevel};
@@ -156,7 +155,7 @@ fn parse_parquet_compression(
             return Err(PathError::Generic(format!(
                 "Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}",
             )));
-        }
+        },
     };
     Ok(parsed)
 }

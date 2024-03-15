@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
 use jni::objects::{JObject, JString};
-use jni::sys::jstring;
-use jni::sys::{jboolean, JNI_TRUE};
+use jni::sys::{jboolean, jstring, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 

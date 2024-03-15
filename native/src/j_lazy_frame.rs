@@ -92,7 +92,7 @@ impl JLazyFrame {
                     } else {
                         get_non_sort_expr(&expr.clone(), options.descending, true)
                     }
-                }
+                },
                 e => (e.clone(), direction),
             }
         }
@@ -131,7 +131,7 @@ impl JLazyFrame {
                     } else {
                         get_non_sort_expr(&expr.clone(), options.descending, true)
                     }
-                }
+                },
                 e => (e.clone(), direction),
             }
         }

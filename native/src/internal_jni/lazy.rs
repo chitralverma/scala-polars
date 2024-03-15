@@ -7,7 +7,6 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
-use polars_core::prelude::UniqueKeepStrategy;
 use polars_core::series::IsSorted;
 
 use crate::internal_jni::utils::*;
