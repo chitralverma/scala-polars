@@ -1,4 +1,4 @@
-name: Lint Rust
+name: Lint All
 
 on: [ pull_request ]
 
@@ -26,6 +26,15 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: "clippy, rustfmt"
+
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: lint
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+          prefix-key: lint
 
       - name: Check all formatting
         run: |
