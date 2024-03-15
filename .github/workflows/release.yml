@@ -21,8 +21,13 @@ jobs:
           java-version: "8"
           distribution: 'temurin'
 
-      - name: Publish Artifacts
-        run: sbt fmtCheckAll
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Check all formatting
+        run: |
+          cargo add cargo-sort
+          sbt fmtCheckAll
 
   build-natives:
     name: ${{ matrix.arch }} build
