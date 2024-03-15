@@ -55,9 +55,6 @@ features = [
     "regex"
 ]
 
-[dev-dependencies]
-cargo-sort = "1"
-
 [profile.release]
 codegen-units = 1
 lto = true

@@ -26,7 +26,7 @@ jobs:
 
       - name: Check all formatting
         run: |
-          cargo add cargo-sort
+          cargo install cargo-sort
           sbt fmtCheckAll
 
   build-natives:
