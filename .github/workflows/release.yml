@@ -26,6 +26,15 @@ jobs:
         with:
           components: "clippy, rustfmt"
 
+      - uses: coursier/cache-action@v6
+        with:
+          extraKey: lint
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+          prefix-key: lint
+
       - name: Check all formatting
         run: |
           cargo install cargo-sort
