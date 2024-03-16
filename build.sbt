@@ -1,3 +1,4 @@
+import DocSettings.*
 import Utils.*
 
 ThisBuild / publish / skip := true
@@ -15,6 +16,7 @@ lazy val core = project
   .settings(name := "scala-polars")
   .enablePlugins(GhpagesPlugin, SiteScaladocPlugin)
   .settings(
+    unidocSourceFilePatterns := Nil,
     git.remoteRepo := "git@github.com:chitralverma/scala-polars.git",
     SiteScaladoc / siteSubdirName := "api/latest"
   )
@@ -27,6 +29,7 @@ lazy val core = project
   )
   .settings(ExtraCommands.commands)
   .settings(ExtraCommands.commandAliases)
+  .configureUnidoc("scala-polars API Reference")
 
 /*
  ***********************
