@@ -40,7 +40,7 @@ The project is mainly divided into 2 submodules,
 ## Compatibility
 
 - JDK version `>=8`
-- Scala version `2.12.x`, `2.13.x` and `3.3.x`. Default is `3.3.3`
+- Scala version `2.12.x`, `2.13.x` and `3.3.x`. Default is `2.13.x`
 - Rust version `>=1.58`
 
 ## Building

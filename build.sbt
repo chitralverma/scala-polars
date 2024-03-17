@@ -16,7 +16,7 @@ lazy val core = project
   .settings(name := "scala-polars")
   .enablePlugins(GhpagesPlugin, SiteScaladocPlugin)
   .settings(
-    unidocSourceFilePatterns := Nil,
+//    unidocSourceFilePatterns := Nil,
     git.remoteRepo := "git@github.com:chitralverma/scala-polars.git",
     SiteScaladoc / siteSubdirName := "api/latest"
   )

@@ -10,6 +10,7 @@ use polars::prelude::*;
 use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
 use crate::j_lazy_frame::JLazyFrame;
+use crate::j_series::JSeries;
 
 pub fn normalize_path(path: &std::path::Path) -> PathBuf {
     let mut components = path.components().peekable();
@@ -104,4 +105,13 @@ pub fn expr_to_ptr(env: &mut JNIEnv, object: JObject, expr: Expr) -> jlong {
     let j_expr = JExpr::new(expr, global_ref);
 
     Box::into_raw(Box::new(j_expr)) as jlong
+}
+
+pub fn series_to_ptr(env: &mut JNIEnv, object: JObject, series_res: PolarsResult<Series>) -> jlong {
+    let series = series_res.expect("Cannot create Series from provided arguments.");
+
+    let global_ref = env.new_global_ref(object).unwrap();
+    let j_series = JSeries::new(series, global_ref);
+
+    Box::into_raw(Box::new(j_series)) as jlong
 }
