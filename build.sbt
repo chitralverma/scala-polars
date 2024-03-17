@@ -29,7 +29,7 @@ lazy val core = project
   )
   .settings(ExtraCommands.commands)
   .settings(ExtraCommands.commandAliases)
-  .configureUnidoc("scala-polars API Reference")
+//  .configureUnidoc("scala-polars API Reference")
 
 /*
  ***********************
