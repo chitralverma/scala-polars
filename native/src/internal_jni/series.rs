@@ -161,13 +161,12 @@ pub fn new_date_series(
             .map(JString::from)
             .unwrap();
         let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
-        let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").expect(
-            format!(
+        let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap_or_else(|_| {
+            panic!(
                 "Provided value `{}` cannot be parsed to date with format `%Y-%m-%d`",
                 val
             )
-            .as_str(),
-        );
+        });
 
         data.push(date)
     }
