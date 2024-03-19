@@ -211,6 +211,32 @@ pub fn new_datetime_series(
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+pub fn new_list_series(
+    mut env: JNIEnv,
+    object: JObject,
+    name: JString,
+    values: JLongArray,
+) -> jlong {
+    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
+    let data: Vec<Series> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_series = &mut *(ptr as *mut JSeries);
+                j_series.to_owned().series
+            })
+            .collect()
+    };
+
+    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series = Series::new(series_name.as_str(), data);
+
+    series_to_ptr(&mut env, object, Ok(series))
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
 pub fn show(mut _env: JNIEnv, _object: JObject, ptr: jlong) {
     let j_series = unsafe { &mut *(ptr as *mut JSeries) };
     j_series.show()

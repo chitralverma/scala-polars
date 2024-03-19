@@ -11,6 +11,7 @@ class Series private (private[polars] val ptr: Long) {
 }
 
 object Series {
+  private final val EmptyString = ""
 
   def of[T: TypeTag](
       name: String,
@@ -23,6 +24,22 @@ object Series {
       case Some(_: Float) => series.new_float_series(name, data.map(_.asInstanceOf[Float]))
       case Some(_: Double) => series.new_double_series(name, data.map(_.asInstanceOf[Double]))
       case Some(_: Boolean) => series.new_boolean_series(name, data.map(_.asInstanceOf[Boolean]))
+      case Some(_: Array[_]) =>
+        val internalPtrs = data.map {
+          case e: Array[Int] => Series.of(EmptyString, e).ptr
+          case e: Array[Long] => Series.of(EmptyString, e).ptr
+          case e: Array[Float] => Series.of(EmptyString, e).ptr
+          case e: Array[Double] => Series.of(EmptyString, e).ptr
+          case e: Array[Boolean] => Series.of(EmptyString, e).ptr
+          case e: Array[java.time.LocalDate] => Series.of(EmptyString, e).ptr
+          case e: Array[java.time.LocalDateTime] => Series.of(EmptyString, e).ptr
+          case e: Array[String] => Series.of(EmptyString, e).ptr
+          case _ =>
+            throw new IllegalArgumentException(
+              s"List Series of provided internal type is currently not supported."
+            )
+        }
+        series.new_list_series(name, internalPtrs)
       case Some(_: java.time.LocalDate) =>
         series.new_date_series(
           name,
@@ -51,7 +68,7 @@ object Series {
         }
       case _ =>
         throw new IllegalArgumentException(
-          s"Series of data type `${typeOf[T].typeSymbol.name}` are currently not supported."
+          s"Series of data type `${typeOf[T].typeSymbol.name}` is currently not supported."
         )
     }
 

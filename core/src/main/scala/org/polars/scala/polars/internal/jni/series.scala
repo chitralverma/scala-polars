@@ -20,4 +20,6 @@ private[polars] object series extends Natively {
 
   @native def new_datetime_series(name: String, data: Array[String]): Long
 
+  @native def new_list_series(name: String, ptrs: Array[Long]): Long
+
 }
