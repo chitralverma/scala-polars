@@ -31,7 +31,10 @@ case object DoubleType extends BasicDataType
 
 case object DateType extends BasicDataType
 
-case class DateTimeType(precision: TimeUnit, timezone: ZoneId) extends DataType
+// todo: validate the timeunit and timezone and re-enable this later
+//case class DateTimeType(precision: TimeUnit, timezone: ZoneId) extends DataType
+
+case object DateTimeType extends BasicDataType
 
 case class ListType(tpe: DataType) extends DataType {
   override def simpleName: String = "list"

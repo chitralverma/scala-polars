@@ -23,8 +23,22 @@ object Series {
       case Some(_: Float) => series.new_float_series(name, data.map(_.asInstanceOf[Float]))
       case Some(_: Double) => series.new_double_series(name, data.map(_.asInstanceOf[Double]))
       case Some(_: Boolean) => series.new_boolean_series(name, data.map(_.asInstanceOf[Boolean]))
-      case Some(_: java.time.LocalDate) => series.new_date_series(name, data.map(_.toString))
-      case Some(_: java.sql.Date) => series.new_date_series(name, data.map(_.toString))
+      case Some(_: java.time.LocalDate) =>
+        series.new_date_series(
+          name,
+          data.map(v =>
+            java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
+              .format(v.asInstanceOf[java.time.LocalDate])
+          )
+        )
+      case Some(_: java.time.LocalDateTime) =>
+        series.new_datetime_series(
+          name,
+          data.map(v =>
+            java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+              .format(v.asInstanceOf[java.time.LocalDateTime])
+          )
+        )
       case Some(_: String) => series.new_str_series(name, data.map(_.asInstanceOf[String]))
       case None =>
         dtype match {
@@ -52,6 +66,7 @@ object Series {
       case DoubleType => series.new_double_series(name, Array.empty[Double])
       case BooleanType => series.new_boolean_series(name, Array.empty[Boolean])
       case DateType => series.new_date_series(name, Array.empty[String])
+      case DateTimeType => series.new_datetime_series(name, Array.empty[String])
       case StringType => series.new_str_series(name, Array.empty[String])
       case t: DataType =>
         throw new IllegalArgumentException(

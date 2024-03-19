@@ -7,7 +7,7 @@ use jni::objects::{
 use jni::sys::{jlong, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::export::chrono::NaiveDate;
+use polars::export::chrono::{NaiveDate, NaiveDateTime};
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 
@@ -161,10 +161,48 @@ pub fn new_date_series(
             .map(JString::from)
             .unwrap();
         let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
-        let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d")
-            .expect(format!("Unable to parse provided value `{}` cannot be parsed to date with format `%Y-%m-%d`", val).as_str());
+        let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").expect(
+            format!(
+                "Provided value `{}` cannot be parsed to date with format `%Y-%m-%d`",
+                val
+            )
+            .as_str(),
+        );
 
         data.push(date)
+    }
+
+    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series = Series::new(series_name.as_str(), data);
+
+    series_to_ptr(&mut env, object, Ok(series))
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+pub fn new_datetime_series(
+    mut env: JNIEnv,
+    object: JObject,
+    name: JString,
+    values: JObjectArray,
+) -> jlong {
+    let mut data: Vec<NaiveDateTime> = Vec::new();
+    let num_values = env.get_array_length(&values).unwrap();
+
+    for i in 0..num_values {
+        let result = env
+            .get_object_array_element(&values, i)
+            .map(JString::from)
+            .unwrap();
+        let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
+        let datetime =
+            NaiveDateTime::parse_from_str(val.as_str(), "%FT%T%.f").unwrap_or_else(|_| {
+                panic!(
+                    "Provided value `{}` cannot be parsed to datetime with format `%FT%T%.f`",
+                    val
+                )
+            });
+
+        data.push(datetime)
     }
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
