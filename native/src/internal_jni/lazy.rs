@@ -317,7 +317,6 @@ pub fn explain(
     tree_format: jboolean,
 ) -> jstring {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    dbg!(tree_format == JNI_TRUE);
     let plan_str = if tree_format == JNI_TRUE {
         if optimized == JNI_TRUE {
             j_ldf.ldf.describe_optimized_plan_tree()

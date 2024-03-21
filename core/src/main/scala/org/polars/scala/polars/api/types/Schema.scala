@@ -54,22 +54,24 @@ class Schema private (private[polars] val json: String) {
 
     // For DateTime Type
     case (name, node, _ @JsonNodeType.OBJECT) if node.has("Datetime") =>
-      val dtNode = node.get("Datetime")
+      // todo: validate the timeunit and timezone and re-enable this later
 
-      val (tu, tz) = dtNode.iterator().asScala.map(_.textValue()).toSeq match {
-        case Seq(null, null) =>
-          (TimeUnit.MICROSECONDS, ZoneId.of("UTC"))
-        case Seq(null, tz) if tz.nonEmpty =>
-          (TimeUnit.MICROSECONDS, ZoneId.of(tz))
-        case Seq(tu, null) if tu.nonEmpty =>
-          (TimeUnit.valueOf(tu.toUpperCase(Locale.ROOT)), ZoneId.of("UTC"))
-        case Seq(tu, tz) if tu.nonEmpty && tz.nonEmpty =>
-          (TimeUnit.valueOf(tu.toUpperCase(Locale.ROOT)), ZoneId.of(tz))
-        case _ =>
-          (TimeUnit.MICROSECONDS, ZoneId.of("UTC"))
-      }
+//      val dtNode = node.get("Datetime")
+//
+//      val (tu, tz) = dtNode.iterator().asScala.map(_.textValue()).toSeq match {
+//        case Seq(null, null) =>
+//          (TimeUnit.MICROSECONDS, ZoneId.of("UTC"))
+//        case Seq(null, tz) if tz.nonEmpty =>
+//          (TimeUnit.MICROSECONDS, ZoneId.of(tz))
+//        case Seq(tu, null) if tu.nonEmpty =>
+//          (TimeUnit.valueOf(tu.toUpperCase(Locale.ROOT)), ZoneId.of("UTC"))
+//        case Seq(tu, tz) if tu.nonEmpty && tz.nonEmpty =>
+//          (TimeUnit.valueOf(tu.toUpperCase(Locale.ROOT)), ZoneId.of(tz))
+//        case _ =>
+//          (TimeUnit.MICROSECONDS, ZoneId.of("UTC"))
+//      }
 
-      Field(name, DateTimeType(tu, tz))
+      Field(name, DateTimeType)
 
     // For (Nested) List Type
     case (name, node, _ @JsonNodeType.OBJECT) if node.has("List") =>
