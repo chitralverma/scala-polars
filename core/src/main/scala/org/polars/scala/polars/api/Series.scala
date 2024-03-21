@@ -1,5 +1,6 @@
 package org.polars.scala.polars.api
 
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 import org.polars.scala.polars.internal.jni.series
@@ -230,10 +231,15 @@ object Series {
       name,
       Try(values.map {
         case e: Array[Int] => Series.of(EmptyString, e)
+        case e: Array[java.lang.Integer] => Series.of(EmptyString, e)
         case e: Array[Long] => Series.of(EmptyString, e)
+        case e: Array[java.lang.Long] => Series.of(EmptyString, e)
         case e: Array[Float] => Series.of(EmptyString, e)
+        case e: Array[java.lang.Float] => Series.of(EmptyString, e)
         case e: Array[Double] => Series.of(EmptyString, e)
+        case e: Array[java.lang.Double] => Series.of(EmptyString, e)
         case e: Array[Boolean] => Series.of(EmptyString, e)
+        case e: Array[java.lang.Boolean] => Series.of(EmptyString, e)
         case e: Array[java.time.LocalDate] => Series.of(EmptyString, e)
         case e: Array[java.time.LocalDateTime] => Series.of(EmptyString, e)
         case e: Array[String] => Series.of(EmptyString, e)
@@ -244,6 +250,48 @@ object Series {
         )
       )
     )
+
+  /** Initialize new nested series by name and values of provided type.
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a [[java.util.List]]
+    *
+    * @return
+    *   Nested Series of provided type. If `values` is empty, empty series is returned retaining
+    *   type.
+    */
+  def of[T](name: String, values: java.util.List[java.util.List[T]]): Series = {
+
+    val data = values.asScala.toArray.map(_.toArray)
+
+    Series.of(
+      name,
+      Try(
+        data.map(_.asInstanceOf[Array[_]]).map {
+          case e: Array[Int] => Series.of(EmptyString, e)
+          case e: Array[java.lang.Integer] => Series.of(EmptyString, e)
+          case e: Array[Long] => Series.of(EmptyString, e)
+          case e: Array[java.lang.Long] => Series.of(EmptyString, e)
+          case e: Array[Float] => Series.of(EmptyString, e)
+          case e: Array[java.lang.Float] => Series.of(EmptyString, e)
+          case e: Array[Double] => Series.of(EmptyString, e)
+          case e: Array[java.lang.Double] => Series.of(EmptyString, e)
+          case e: Array[Boolean] => Series.of(EmptyString, e)
+          case e: Array[java.lang.Boolean] => Series.of(EmptyString, e)
+          case e: Array[java.time.LocalDate] => Series.of(EmptyString, e)
+          case e: Array[java.time.LocalDateTime] => Series.of(EmptyString, e)
+          case e: Array[String] => Series.of(EmptyString, e)
+          case e: Array[Array[_]] => Series.of(EmptyString, e)
+        }
+      ).getOrElse(
+        throw new IllegalArgumentException(
+          s"Nested series of provided internal type `${data.getClass.getSimpleName}` is currently not supported."
+        )
+      )
+    )
+  }
 
   def withPtr(ptr: Long) = new Series(ptr)
 }
