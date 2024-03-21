@@ -11,8 +11,7 @@ object ProjectDependencies {
       Seq(
         "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompat,
         "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
-        "dev.zio" %% "izumi-reflect" % reflectVersion
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
       ) ++
         (if (!priorTo213(scalaVersion.value))
            Seq(
@@ -28,5 +27,4 @@ object Versions {
   val scalaCollectionCompat = "2.11.0"
   val scalaParallelCollections = "1.0.4"
   val jacksonVersion = "2.17.0"
-  val reflectVersion = "2.3.8"
 }
