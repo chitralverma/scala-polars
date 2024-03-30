@@ -6,6 +6,8 @@ import sbtunidoc.BaseUnidocPlugin.autoImport.*
 import sbtunidoc.JavaUnidocPlugin.autoImport.*
 import sbtunidoc.ScalaUnidocPlugin.autoImport.*
 
+/* Borrowed from delta-io/delta */
+
 object DocSettings {
   val unidocSourceFilePatterns = settingKey[Seq[SourceFilePattern]](
     "Patterns to match (simple substring match) against full source file paths. " +

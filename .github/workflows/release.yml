@@ -20,15 +20,12 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
+          cache: 'sbt'
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: "clippy, rustfmt"
-
-      - uses: coursier/cache-action@v6
-        with:
-          extraKey: lint
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -39,6 +36,9 @@ jobs:
         run: |
           cargo install cargo-sort
           sbt fmtCheckAll
+
+      - name: Check doc issues
+        run: sbt makeSite
 
   build-natives:
     name: ${{ matrix.arch }} build
@@ -87,13 +87,10 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
+          cache: 'sbt'
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
-
-      - uses: coursier/cache-action@v6
-        with:
-          extraKey: ${{ matrix.arch }}
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -114,7 +111,7 @@ jobs:
           if-no-files-found: error
 
   test-build:
-    name: ${{ matrix.os }} test
+    name: ${{ matrix.os }} ${{ matrix.java }} test
     runs-on: ${{ matrix.os }}
     needs: [ build-natives ]
     env:
@@ -126,6 +123,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - java: [ '8', '11', '17', '21' ]
           - os: ubuntu-latest
 
           - os: windows-latest
@@ -138,12 +136,9 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: "8"
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
-
-      - uses: coursier/cache-action@v6
-        with:
-          extraKey: ${{ matrix.arch }}
+          cache: 'sbt'
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -152,7 +147,7 @@ jobs:
           path: /tmp/native-libs/
           merge-multiple: true
 
-      - name: Test for ${{ matrix.os }}
+      - name: Test for ${{ matrix.os }} ${{ matrix.java }}
         run: |
           sbt +assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
@@ -180,10 +175,7 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
-
-      - uses: coursier/cache-action@v6
-        with:
-          extraKey: ${{ matrix.arch }}
+          cache: 'sbt'
 
       - name: Download artifacts
         uses: actions/download-artifact@v4

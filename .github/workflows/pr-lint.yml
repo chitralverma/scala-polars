@@ -21,15 +21,12 @@ jobs:
         with:
           java-version: "8"
           distribution: 'temurin'
+          cache: 'sbt'
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: "clippy, rustfmt"
-
-      - uses: coursier/cache-action@v6
-        with:
-          extraKey: lint
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -40,3 +37,6 @@ jobs:
         run: |
           cargo install cargo-sort
           sbt fmtCheckAll
+
+      - name: Check doc issues
+        run: sbt makeSite
