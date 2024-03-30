@@ -11,6 +11,7 @@ use polars_core::utils::concat_df;
 
 use crate::internal_jni::utils::*;
 use crate::j_data_frame::JDataFrame;
+use crate::j_series::JSeries;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
@@ -75,4 +76,23 @@ pub fn tail(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
     let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
 
     j_df.tail(&mut env, object, n as usize)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
+pub fn fromSeries(mut env: JNIEnv, callback_obj: JObject, ptrs: JLongArray) -> jlong {
+    let arr = unsafe { env.get_array_elements(&ptrs, NoCopyBack).unwrap() };
+    let data: Vec<Series> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_series = &mut *(ptr as *mut JSeries);
+                j_series.to_owned().series
+            })
+            .collect()
+    };
+
+    let df = DataFrame::new(data);
+    df_to_ptr(&mut env, callback_obj, df)
 }

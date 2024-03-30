@@ -16,4 +16,6 @@ private[polars] object data_frame extends Natively {
 
   @native def tail(ptr: Long, n: Long): Long
 
+  @native def fromSeries(ptrs: Array[Long]): Long
+
 }

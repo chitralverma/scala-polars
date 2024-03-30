@@ -1,5 +1,6 @@
 package org.polars.scala.polars.api
 
+import java.util
 import java.util.Collections
 
 import scala.annotation.varargs
@@ -170,4 +171,17 @@ class DataFrame private (private[polars] val ptr: Long) {
 object DataFrame {
 
   private[polars] def withPtr(ptr: Long) = new DataFrame(ptr)
+
+  def fromSeries(series: Series, more: Array[Series]): DataFrame =
+    DataFrame.withPtr(data_frame.fromSeries(more.+:(series).map(_.ptr)))
+
+  def fromSeries(series: Series, more: Iterable[Series]): DataFrame =
+    fromSeries(series, more.toArray)
+
+  def fromSeries(series: Series, more: java.lang.Iterable[Series]): DataFrame =
+    fromSeries(series, more.asScala)
+
+  def fromSeries(series: Series, more: Series*): DataFrame =
+    fromSeries(series, more)
+
 }
