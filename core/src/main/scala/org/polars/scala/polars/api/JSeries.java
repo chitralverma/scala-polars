@@ -16,6 +16,7 @@ import java.util.stream.StreamSupport;
 class JSeries {
     final static String EmptyString = "";
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     static Series ofList(String name, Iterable<Iterable> values) {
         Iterator<Iterable> valuesIter = values.iterator();
         List<Series> sList = new ArrayList<>();

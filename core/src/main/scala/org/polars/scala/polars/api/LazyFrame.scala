@@ -262,5 +262,5 @@ class LazyFrame private (private[polars] val ptr: Long) {
 
 object LazyFrame {
 
-  def withPtr(ptr: Long) = new LazyFrame(ptr)
+  private[polars] def withPtr(ptr: Long) = new LazyFrame(ptr)
 }

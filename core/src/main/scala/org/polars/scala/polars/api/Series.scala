@@ -469,21 +469,6 @@ object Series {
     * @param name
     *   Name of Series
     * @param values
-    *   Values of Series as a scala or java array
-    *
-    * @return
-    *   Nested Series of provided type. If `values` is empty, empty series is returned retaining
-    *   type. Nested collections in `values` must not be empty or this will result in
-    *   [[java.lang.ArrayIndexOutOfBoundsException]].
-    */
-  def ofList[T](name: String, values: Array[Array[T]]): Series =
-    Series.ofList(name, values.map(_.toSeq).toSeq)
-
-  /** Initialize new nested series by name and values of provided type.
-    *
-    * @param name
-    *   Name of Series
-    * @param values
     *   Values of Series as a java iterable
     *
     * @return
@@ -509,5 +494,20 @@ object Series {
   def ofList(name: String, values: Iterable[Iterable[_]]): Series =
     Series.ofList(name, values.map(_.asJava.asInstanceOf[java.lang.Iterable[_]]).asJava)
 
-  def withPtr(ptr: Long) = new Series(ptr)
+  /** Initialize new nested series by name and values of provided type.
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a scala or java array
+    *
+    * @return
+    *   Nested Series of provided type. If `values` is empty, empty series is returned retaining
+    *   type. Nested collections in `values` must not be empty or this will result in
+    *   [[java.lang.ArrayIndexOutOfBoundsException]].
+    */
+  def ofList[T](name: String, values: Array[Array[T]]): Series =
+    Series.ofList(name, values.map(_.toSeq).toSeq)
+
+  private[polars] def withPtr(ptr: Long) = new Series(ptr)
 }
