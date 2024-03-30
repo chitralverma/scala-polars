@@ -509,5 +509,5 @@ object Series {
   def ofList[T](name: String, values: Array[Array[T]]): Series =
     Series.ofList(name, values.map(_.toSeq).toSeq)
 
-  def withPtr(ptr: Long) = new Series(ptr)
+  private[polars] def withPtr(ptr: Long) = new Series(ptr)
 }
