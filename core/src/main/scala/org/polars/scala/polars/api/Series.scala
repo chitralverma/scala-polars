@@ -11,7 +11,7 @@ class Series private (private[polars] val ptr: Long) {
 
 object Series {
 
-  /** Initialize new series by name and values of type [[Int]].
+  /** Initialize new series by name and values of type [[scala.Int]].
     *
     * @param name
     *   Name of Series
@@ -19,12 +19,13 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Series of type [[Int]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Int]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofInt(name: String, values: Array[Int]): Series =
     Series.withPtr(series.new_int_series(name, values))
 
-  /** Initialize new series by name and values of type [[Int]].
+  /** Initialize new series by name and values of type [[scala.Int]].
     *
     * @param name
     *   Name of Series
@@ -32,7 +33,8 @@ object Series {
     *   Values of Series as a scala iterable
     *
     * @return
-    *   Series of type [[Int]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Int]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofInt(name: String, values: Iterable[Int]): Series = Series.ofInt(name, values.toArray)
 
@@ -64,7 +66,7 @@ object Series {
   def ofInt(name: String, values: java.lang.Iterable[java.lang.Integer]): Series =
     Series.ofInt(name, values.asScala.toArray)
 
-  /** Initialize new series by name and values of type [[Long]].
+  /** Initialize new series by name and values of type [[scala.Long]].
     *
     * @param name
     *   Name of Series
@@ -72,12 +74,13 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Series of type [[Long]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Long]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofLong(name: String, values: Array[Long]): Series =
     Series.withPtr(series.new_long_series(name, values))
 
-  /** Initialize new series by name and values of type [[Long]].
+  /** Initialize new series by name and values of type [[scala.Long]].
     *
     * @param name
     *   Name of Series
@@ -85,7 +88,8 @@ object Series {
     *   Values of Series as a scala iterable
     *
     * @return
-    *   Series of type [[Long]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Long]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofLong(name: String, values: Iterable[Long]): Series = Series.ofLong(name, values.toArray)
 
@@ -117,7 +121,7 @@ object Series {
   def ofLong(name: String, values: java.lang.Iterable[java.lang.Long]): Series =
     Series.ofLong(name, values.asScala.toArray)
 
-  /** Initialize new series by name and values of type [[Float]].
+  /** Initialize new series by name and values of type [[scala.Float]].
     *
     * @param name
     *   Name of Series
@@ -125,12 +129,13 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Series of type [[Float]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Float]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofFloat(name: String, values: Array[Float]): Series =
     Series.withPtr(series.new_float_series(name, values))
 
-  /** Initialize new series by name and values of type [[Float]].
+  /** Initialize new series by name and values of type [[scala.Float]].
     *
     * @param name
     *   Name of Series
@@ -138,7 +143,8 @@ object Series {
     *   Values of Series as a scala iterable
     *
     * @return
-    *   Series of type [[Float]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Float]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofFloat(name: String, values: Iterable[Float]): Series =
     Series.ofFloat(name, values.toArray)
@@ -171,7 +177,7 @@ object Series {
   def ofFloat(name: String, values: java.lang.Iterable[java.lang.Float]): Series =
     Series.ofFloat(name, values.asScala.toArray)
 
-  /** Initialize new series by name and values of type [[Double]].
+  /** Initialize new series by name and values of type [[scala.Double]].
     *
     * @param name
     *   Name of Series
@@ -179,12 +185,13 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Series of type [[Double]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Double]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofDouble(name: String, values: Array[Double]): Series =
     Series.withPtr(series.new_double_series(name, values))
 
-  /** Initialize new series by name and values of type [[Double]].
+  /** Initialize new series by name and values of type [[scala.Double]].
     *
     * @param name
     *   Name of Series
@@ -192,7 +199,8 @@ object Series {
     *   Values of Series as a scala iterable
     *
     * @return
-    *   Series of type [[Double]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Double]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofDouble(name: String, values: Iterable[Double]): Series =
     Series.ofDouble(name, values.toArray)
@@ -225,7 +233,7 @@ object Series {
   def ofDouble(name: String, values: java.lang.Iterable[java.lang.Double]): Series =
     Series.ofDouble(name, values.asScala.toArray)
 
-  /** Initialize new series by name and values of type [[Boolean]].
+  /** Initialize new series by name and values of type [[scala.Boolean]].
     *
     * @param name
     *   Name of Series
@@ -233,12 +241,13 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Series of type [[Boolean]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Boolean]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofBoolean(name: String, values: Array[Boolean]): Series =
     Series.withPtr(series.new_boolean_series(name, values))
 
-  /** Initialize new series by name and values of type [[Boolean]].
+  /** Initialize new series by name and values of type [[scala.Boolean]].
     *
     * @param name
     *   Name of Series
@@ -246,7 +255,8 @@ object Series {
     *   Values of Series as a scala iterable
     *
     * @return
-    *   Series of type [[Boolean]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[scala.Boolean]]. If `values` is empty, empty series is returned retaining
+    *   type.
     */
   def ofBoolean(name: String, values: Iterable[Boolean]): Series =
     Series.ofBoolean(name, values.toArray)
@@ -279,7 +289,7 @@ object Series {
   def ofBoolean(name: String, values: java.lang.Iterable[java.lang.Boolean]): Series =
     Series.ofBoolean(name, values.asScala.toArray)
 
-  /** Initialize new series by name and values of type [[String]].
+  /** Initialize new series by name and values of type [[java.lang.String]].
     *
     * @param name
     *   Name of Series
@@ -287,12 +297,13 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Series of type [[String]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[java.lang.String]]. If `values` is empty, empty series is returned
+    *   retaining type.
     */
   def ofString(name: String, values: Array[String]): Series =
     Series.withPtr(series.new_str_series(name, values))
 
-  /** Initialize new series by name and values of type [[String]].
+  /** Initialize new series by name and values of type [[java.lang.String]].
     *
     * @param name
     *   Name of Series
@@ -300,7 +311,8 @@ object Series {
     *   Values of Series as a scala iterable
     *
     * @return
-    *   Series of type [[String]]. If `values` is empty, empty series is returned retaining type.
+    *   Series of type [[java.lang.String]]. If `values` is empty, empty series is returned
+    *   retaining type.
     */
   def ofString(name: String, values: Iterable[String]): Series =
     Series.ofString(name, values.toArray)
@@ -452,7 +464,7 @@ object Series {
   def ofSeries(name: String, values: java.lang.Iterable[Series]): Series =
     Series.ofSeries(name, values.asScala.toArray)
 
-  /** Initialize new nested series by name and values of provided type [[T]].
+  /** Initialize new nested series by name and values of provided type.
     *
     * @param name
     *   Name of Series
@@ -460,9 +472,9 @@ object Series {
     *   Values of Series as a scala or java array
     *
     * @return
-    *   Nested Series of provided type [[T]]. If `values` is empty, empty series is returned
-    *   retaining type. Nested collections in `values` must not be empty or this will result in
-    *   [[ArrayIndexOutOfBoundsException]].
+    *   Nested Series of provided type. If `values` is empty, empty series is returned retaining
+    *   type. Nested collections in `values` must not be empty or this will result in
+    *   [[java.lang.ArrayIndexOutOfBoundsException]].
     */
   def ofList[T](name: String, values: Array[Array[T]]): Series =
     Series.ofList(name, values.map(_.toSeq).toSeq)
@@ -477,7 +489,7 @@ object Series {
     * @return
     *   Nested Series of provided type. If `values` is empty, empty series is returned retaining
     *   type. Nested collections in `values` must not be empty or this will result in
-    *   [[ArrayIndexOutOfBoundsException]].
+    *   [[java.lang.ArrayIndexOutOfBoundsException]].
     */
   def ofList(name: String, values: java.lang.Iterable[java.lang.Iterable[_]]): Series =
     JSeries.ofList(name, values)
@@ -492,7 +504,7 @@ object Series {
     * @return
     *   Nested Series of provided type. If `values` is empty, empty series is returned retaining
     *   type. Nested collections in `values` must not be empty or this will result in
-    *   [[ArrayIndexOutOfBoundsException]].
+    *   [[java.lang.ArrayIndexOutOfBoundsException]].
     */
   def ofList(name: String, values: Iterable[Iterable[_]]): Series =
     Series.ofList(name, values.map(_.asJava.asInstanceOf[java.lang.Iterable[_]]).asJava)
