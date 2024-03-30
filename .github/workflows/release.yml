@@ -122,13 +122,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - java: [ '8', '11', '17', '21' ]
-          - os: ubuntu-latest
-
-          - os: windows-latest
-
-          - os: macos-latest
+        java: [ '8', '11', '17', '21' ]
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
 
     steps:
       - uses: actions/checkout@v4
