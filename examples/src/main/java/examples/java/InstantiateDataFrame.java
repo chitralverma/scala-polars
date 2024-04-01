@@ -7,6 +7,17 @@ import org.polars.scala.polars.api.Series;
 public class InstantiateDataFrame {
   public static void main(String[] args) {
 
+    DataFrame.fromSeries(Series.ofBoolean("bool_col", new boolean[] {true, false, true})).show();
+
+    DataFrame.fromSeries(
+            Series.ofInt("i32_col", new int[] {1, 2, 3}),
+            Series.ofLong("i64_col", new long[] {1L, 2L, 3L}),
+            Series.ofBoolean("bool_col", new boolean[] {true, false, true}),
+            Series.ofList(
+                "nested_str_col",
+                new String[][] {{"a", "b", "c"}, {"a", "b", "c"}, {"a", "b", "c"}}))
+        .show();
+
     /* Values as Java array(s) */
 
     DataFrame.fromSeries(

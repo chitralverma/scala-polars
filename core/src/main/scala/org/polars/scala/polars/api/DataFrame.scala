@@ -185,8 +185,9 @@ object DataFrame {
     *   [[org.polars.scala.polars.api.DataFrame]] formed from the provided
     *   [[org.polars.scala.polars.api.Series]]
     */
-  def fromSeries(series: Series, more: Array[Series]): DataFrame =
-    DataFrame.withPtr(data_frame.fromSeries(more.+:(series).map(_.ptr)))
+  @varargs
+  def fromSeries(series: Series, more: Series*): DataFrame =
+    DataFrame.withPtr(data_frame.fromSeries(more.+:(series).map(_.ptr).toArray))
 
   /** Initialize new [[org.polars.scala.polars.api.DataFrame]] from one or more
     * [[org.polars.scala.polars.api.Series]]. The name of a series is used as column name and its
@@ -219,21 +220,5 @@ object DataFrame {
     */
   def fromSeries(series: Series, more: java.lang.Iterable[Series]): DataFrame =
     fromSeries(series, more.asScala)
-
-  /** Initialize new [[org.polars.scala.polars.api.DataFrame]] from one or more
-    * [[org.polars.scala.polars.api.Series]]. The name of a series is used as column name and its
-    * values are the values of this column.
-    *
-    * @param series
-    *   Series
-    * @param more
-    *   Series as scala varargs
-    *
-    * @return
-    *   [[org.polars.scala.polars.api.DataFrame]] formed from the provided
-    *   [[org.polars.scala.polars.api.Series]]
-    */
-  def fromSeries(series: Series, more: Series*): DataFrame =
-    fromSeries(series, more)
 
 }
