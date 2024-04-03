@@ -38,6 +38,10 @@ object Json {
     val rowOriented = df.write().toJsonString(pretty = false, rowOriented = true)
     println(rowOriented)
 
+
+    println("Showing pretty column-oriented CSV file as a DataFrame to stdout.")
+    val prettyOrientedBytes = df.write().toJsonBytes(pretty = true, rowOriented = false)
+    println(new String(prettyOrientedBytes, "UTF-8"))
   }
 
 }

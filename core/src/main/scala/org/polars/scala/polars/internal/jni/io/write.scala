@@ -30,6 +30,8 @@ private[polars] object write extends Natively {
       writeMode: String
   ): Unit
 
-  @native def toJson(ptr: Long, pretty: Boolean, rowOriented: Boolean): String
+  @native def json(ptr: Long, pretty: Boolean, rowOriented: Boolean): String
+
+  @native def jsonBytes(ptr: Long, pretty: Boolean, rowOriented: Boolean): Array[Byte]
 
 }

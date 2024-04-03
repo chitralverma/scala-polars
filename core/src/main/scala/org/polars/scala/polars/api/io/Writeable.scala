@@ -156,6 +156,8 @@ class Writeable private[polars] (ptr: Long) {
     )
   }
 
-  def toJsonString(pretty: Boolean, rowOriented: Boolean): String = toJson(ptr, pretty, rowOriented)
+  def toJsonString(pretty: Boolean, rowOriented: Boolean): String = json(ptr, pretty, rowOriented)
+
+  def toJsonBytes(pretty: Boolean, rowOriented: Boolean): Array[Byte] = jsonBytes(ptr, pretty, rowOriented)
 
 }
