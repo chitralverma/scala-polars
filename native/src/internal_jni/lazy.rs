@@ -321,7 +321,7 @@ pub fn explain(
         if optimized == JNI_TRUE {
             j_ldf.ldf.describe_optimized_plan_tree()
         } else {
-            Ok(j_ldf.ldf.describe_plan_tree())
+            j_ldf.ldf.describe_plan_tree()
         }
     } else {
         j_ldf.ldf.explain(optimized == JNI_TRUE)

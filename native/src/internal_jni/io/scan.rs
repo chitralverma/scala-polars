@@ -4,6 +4,7 @@ use jni::objects::{JObject, JString};
 use jni::sys::{jboolean, jchar, jint, jlong, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
+use polars::io::HiveOptions;
 use polars::prelude::*;
 
 use crate::internal_jni::utils::*;
@@ -34,7 +35,11 @@ pub fn scanParquet(
         low_memory: lowMemory == JNI_TRUE,
         cloud_options: None,
         use_statistics: true,
-        hive_partitioning: hivePartitioning == JNI_TRUE,
+        hive_options: HiveOptions {
+            enabled: hivePartitioning == JNI_TRUE,
+            schema: None,
+        },
+        ..Default::default()
     };
 
     let j_ldf = LazyFrame::scan_parquet(this_path, scan_args);
@@ -65,14 +70,14 @@ pub fn scanCSV(
     let j_ldf = LazyCsvReader::new(this_path)
         .with_n_rows(n_rows)
         .with_separator(delimiter as u8)
-        .has_header(hasHeader == JNI_TRUE)
+        .with_has_header(hasHeader == JNI_TRUE)
         .with_ignore_errors(ignoreErrors == JNI_TRUE)
         .with_row_index(row_index)
         .with_infer_schema_length(Some(inferSchemaRows as usize))
         .with_try_parse_dates(parseDates == JNI_TRUE)
         .with_cache(cache == JNI_TRUE)
         .with_rechunk(reChunk == JNI_TRUE)
-        .low_memory(lowMemory == JNI_TRUE)
+        .with_low_memory(lowMemory == JNI_TRUE)
         .finish();
 
     ldf_to_ptr(&mut env, object, j_ldf)
@@ -131,7 +136,8 @@ pub fn scanIPC(
         cache: cache == JNI_TRUE,
         rechunk: re_chunk == JNI_TRUE,
         row_index,
-        memmap: mem_map == JNI_TRUE,
+        memory_map: mem_map == JNI_TRUE,
+        ..Default::default()
     };
 
     let j_ldf = LazyFrame::scan_ipc(this_path, scan_args);

@@ -67,10 +67,11 @@ pub fn get_row_index(
 ) -> Option<RowIndex> {
     if !row_count_col_name.is_null() {
         Some(RowIndex {
-            name: env
-                .get_string(&row_count_col_name)
-                .expect("Unable to get/ convert row column name to UTF8.")
-                .into(),
+            name: Arc::from(get_string(
+                env,
+                row_count_col_name,
+                "Unable to get/ convert row column name to UTF8.",
+            )),
             offset: if row_count_col_offset.is_positive() {
                 row_count_col_offset as IdxSize
             } else {
