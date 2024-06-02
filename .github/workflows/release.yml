@@ -144,6 +144,12 @@ jobs:
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
         run: |
+          if: matrix.os == 'macos-latest'; then
+               brew install sbt
+          else
+               echo -n
+          fi
+          
           sbt +assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
