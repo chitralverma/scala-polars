@@ -16,7 +16,8 @@ use crate::j_lazy_frame::JLazyFrame;
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let schema_string = serde_json::to_string(&j_ldf.ldf.schema().unwrap()).unwrap();
+    let schema_string =
+        serde_json::to_string(&j_ldf.ldf.schema().unwrap().to_arrow(false)).unwrap();
 
     to_jstring(
         &mut _env,
