@@ -143,6 +143,7 @@ jobs:
           merge-multiple: true
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
+        shell: bash
         run: |
           if [ "$RUNNER_OS" == "macOS" ]; then
                brew install sbt
