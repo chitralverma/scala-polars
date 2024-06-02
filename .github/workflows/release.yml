@@ -71,11 +71,11 @@ jobs:
 
           - os: macos-latest
             arch: x86_64-apple-darwin
-            packages: ""
+            packages: "brew install sbt"
 
           - os: macos-latest
             arch: aarch64-apple-darwin
-            packages: ""
+            packages: "brew install sbt"
     steps:
       - name: Install system packages
         run: ${{ matrix.packages }}
