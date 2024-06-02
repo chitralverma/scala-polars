@@ -144,7 +144,7 @@ jobs:
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
         run: |
-          if: matrix.os == 'macos-latest'; then
+          if [ "$RUNNER_OS" == "macOS" ]; then
                brew install sbt
           else
                echo -n
