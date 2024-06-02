@@ -4,6 +4,7 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+import scala.util.Try
 import scala.util.matching.Regex
 
 trait DataType {
@@ -31,10 +32,72 @@ case object DoubleType extends BasicDataType
 
 case object DateType extends BasicDataType
 
-// todo: validate the timeunit and timezone and re-enable this later
-//case class DateTimeType(precision: TimeUnit, timezone: ZoneId) extends DataType
+case class TimeType(protected val unitStr: String) extends DataType {
+  val timeUnit: Option[TimeUnit] =
+    unitStr match {
+      case s if s.toLowerCase(Locale.ROOT).contains("nano") => Some(TimeUnit.NANOSECONDS)
+      case s if s.toLowerCase(Locale.ROOT).contains("micro") => Some(TimeUnit.MICROSECONDS)
+      case s if s.toLowerCase(Locale.ROOT).contains("milli") => Some(TimeUnit.MILLISECONDS)
+      case _ => None
+    }
 
-case object DateTimeType extends BasicDataType
+  override def simpleName: String = timeUnit match {
+    case Some(TimeUnit.NANOSECONDS) => "time[ns]"
+    case Some(TimeUnit.MICROSECONDS) => "time[us]"
+    case Some(TimeUnit.MILLISECONDS) => "time[ms]"
+    case _ => "time"
+  }
+}
+
+case class DateTimeType(protected val unitStr: String, protected val tzStr: String)
+    extends DataType {
+  val timeUnit: Option[TimeUnit] =
+    unitStr match {
+      case null => None
+      case s if s.toLowerCase(Locale.ROOT).contains("nano") => Some(TimeUnit.NANOSECONDS)
+      case s if s.toLowerCase(Locale.ROOT).contains("micro") => Some(TimeUnit.MICROSECONDS)
+      case s if s.toLowerCase(Locale.ROOT).contains("milli") => Some(TimeUnit.MILLISECONDS)
+      case _ => None
+    }
+
+  val timeZone: Option[ZoneId] = Try(ZoneId.of(tzStr)).toOption
+
+  override def simpleName: String = {
+    val tu = timeUnit match {
+      case Some(TimeUnit.NANOSECONDS) => "ns"
+      case Some(TimeUnit.MICROSECONDS) => "us"
+      case Some(TimeUnit.MILLISECONDS) => "ms"
+      case _ => null
+    }
+
+    val tz = timeZone.orNull
+
+    (tu, tz) match {
+      case (null, null) => "datetime"
+      case (tu, null) => s"datetime[$tu]"
+      case (null, tz) => s"datetime[$tz]"
+      case (tu, tz) => s"datetime[$tu, $tz]"
+    }
+
+  }
+}
+
+case class Duration(protected val unitStr: String) extends DataType {
+  val timeUnit: Option[TimeUnit] =
+    unitStr match {
+      case s if s.toLowerCase(Locale.ROOT).contains("nano") => Some(TimeUnit.NANOSECONDS)
+      case s if s.toLowerCase(Locale.ROOT).contains("micro") => Some(TimeUnit.MICROSECONDS)
+      case s if s.toLowerCase(Locale.ROOT).contains("milli") => Some(TimeUnit.MILLISECONDS)
+      case _ => None
+    }
+
+  override def simpleName: String = timeUnit match {
+    case Some(TimeUnit.NANOSECONDS) => "duration[ns]"
+    case Some(TimeUnit.MICROSECONDS) => "duration[us]"
+    case Some(TimeUnit.MILLISECONDS) => "duration[ms]"
+    case _ => "duration"
+  }
+}
 
 case class ListType(tpe: DataType) extends DataType {
   override def simpleName: String = "list"
@@ -63,7 +126,7 @@ object DataType {
   private[polars] final val LongRegex: Regex = """^(?i)Int64|UInt64$""".r
   private[polars] final val FloatRegex: Regex = """^(?i)Float32$""".r
   private[polars] final val DoubleRegex: Regex = """^(?i)Float64$""".r
-  private[polars] final val DateRegex: Regex = """^(?i)Date$""".r
+  private[polars] final val DateRegex: Regex = """^(?i)Date|Date32|Date64$""".r
 
   def fromBasicType(typeStr: String): DataType = typeStr match {
     case StringRegex() => StringType

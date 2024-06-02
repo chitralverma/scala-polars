@@ -1,6 +1,5 @@
 package org.polars.scala.polars.api
 
-import java.util
 import java.util.Collections
 
 import scala.annotation.varargs

@@ -16,7 +16,8 @@ use crate::j_lazy_frame::JLazyFrame;
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let schema_string = serde_json::to_string(&j_ldf.ldf.schema().unwrap()).unwrap();
+    let schema_string =
+        serde_json::to_string(&j_ldf.ldf.schema().unwrap().to_arrow(false)).unwrap();
 
     to_jstring(
         &mut _env,
@@ -321,7 +322,7 @@ pub fn explain(
         if optimized == JNI_TRUE {
             j_ldf.ldf.describe_optimized_plan_tree()
         } else {
-            Ok(j_ldf.ldf.describe_plan_tree())
+            j_ldf.ldf.describe_plan_tree()
         }
     } else {
         j_ldf.ldf.explain(optimized == JNI_TRUE)

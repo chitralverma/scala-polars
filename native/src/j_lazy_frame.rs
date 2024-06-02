@@ -2,7 +2,7 @@ use jni::objects::{GlobalRef, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
 use polars::prelude::{Expr, IdxSize, LazyFrame};
-use polars_core::prelude::UniqueKeepStrategy;
+use polars_core::prelude::{SortMultipleOptions, UniqueKeepStrategy};
 
 use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr};
 
@@ -103,10 +103,15 @@ impl JLazyFrame {
             new_exprs.push(expr);
         }
 
-        let ldf = self
-            .ldf
-            .clone()
-            .sort_by_exprs(new_exprs, desc, null_last, maintain_order);
+        let ldf = self.ldf.clone().sort_by_exprs(
+            new_exprs,
+            SortMultipleOptions {
+                descending: desc,
+                nulls_last: null_last,
+                maintain_order,
+                ..Default::default()
+            },
+        );
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
@@ -142,10 +147,16 @@ impl JLazyFrame {
             new_exprs.push(expr);
         }
 
-        let ldf = self
-            .ldf
-            .clone()
-            .top_k(k, new_exprs, desc, null_last, maintain_order);
+        let ldf = self.ldf.clone().top_k(
+            k,
+            new_exprs,
+            SortMultipleOptions {
+                descending: desc,
+                nulls_last: null_last,
+                maintain_order,
+                ..Default::default()
+            },
+        );
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }

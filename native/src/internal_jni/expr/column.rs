@@ -69,7 +69,7 @@ pub fn sort_column_by_name(
     );
 
     let expr = Expr::Sort {
-        expr: Box::new(col(name.as_str())),
+        expr: Arc::new(col(name.as_str())),
         options: SortOptions {
             descending,
             ..Default::default()
