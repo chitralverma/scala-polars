@@ -9,7 +9,7 @@ publish = false
 
 [lib]
 name = "scala_polars"
-crate_type = ["cdylib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 futures = "0.3.25"
