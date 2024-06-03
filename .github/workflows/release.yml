@@ -140,8 +140,12 @@ jobs:
           pattern: native_libs-*
           path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
+
       - name: List the built artifacts
-        run: ls -lhtR
+        run: |
+          pwd
+          ls -lhtR
+
         working-directory: ${{env.NATIVE_LIB_LOCATION}}
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
@@ -153,7 +157,7 @@ jobs:
                echo -n
           fi
           
-          echo ${{env.NATIVE_LIB_LOCATION}}
+          echo ${NATIVE_LIB_LOCATION}
           pwd
           
           sbt +assembly
