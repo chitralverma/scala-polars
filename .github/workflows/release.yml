@@ -7,6 +7,11 @@ on:
 permissions:
   contents: read
 
+env:
+  NATIVE_LIB_LOCATION: /tmp/native-libs/
+  SBT_OPTS: "-Dsbt.ci=true"
+  JAVA_OPTS: "-XX:+UseG1GC -Xms2G -Xmx8G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8"
+
 jobs:
   check-formatting:
     runs-on: ubuntu-latest
@@ -44,10 +49,7 @@ jobs:
     name: ${{ matrix.arch }} build
     runs-on: ${{ matrix.os }}
     env:
-      JAVA_OPTS: "-XX:+UseG1GC"
-      SBT_OPTS: "-Dsbt.ci=true"
       TARGET_TRIPLE: ${{ matrix.arch }}
-      NATIVE_LIB_LOCATION: /tmp/native-libs/
     needs: [ check-formatting ]
     strategy:
       fail-fast: true
@@ -106,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs-${{ matrix.arch }}
-          path: /tmp/native-libs/
+          path: ${{env.NATIVE_LIB_LOCATION}}
           retention-days: 1
           if-no-files-found: error
 
@@ -115,9 +117,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: [ build-natives ]
     env:
-      JAVA_OPTS: -XX:+UseG1GC -Xms2G -Xmx8G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
-      SBT_OPTS: "-Dsbt.ci=true"
-      NATIVE_LIB_LOCATION: /tmp/native-libs/
       SKIP_NATIVE_GENERATION: true
     strategy:
       fail-fast: false
@@ -139,7 +138,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: native_libs-*
-          path: /tmp/native-libs/
+          path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
@@ -161,7 +160,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-      NATIVE_LIB_LOCATION: /tmp/native-libs/
       SKIP_NATIVE_GENERATION: true
     needs: [ test-build ]
     steps:
@@ -183,12 +181,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: native_libs-*
-          path: /tmp/native-libs/
+          path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
 
       - name: List the built artifacts
         run: ls -lhtR
-        working-directory: /tmp/native-libs/
+        working-directory: ${{env.NATIVE_LIB_LOCATION}}
 
       - name: Publish Artifacts
         run: sbt +aetherDeploy
