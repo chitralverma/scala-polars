@@ -71,13 +71,13 @@ jobs:
             arch: x86_64-pc-windows-msvc
             packages: ""
 
-          - os: macos-latest
+          - os: macos-12
             arch: x86_64-apple-darwin
             packages: "brew install sbt"
 
-          - os: macos-latest
+          - os: macos-12
             arch: aarch64-apple-darwin
-            packages: "brew install sbt"
+            packages: ""
     steps:
       - name: Install system packages
         run: ${{ matrix.packages }}
@@ -122,7 +122,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11', '17', '21' ]
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        os: ["ubuntu-latest", "windows-latest", "macos-12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -141,25 +141,8 @@ jobs:
           path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
 
-      - name: List the built artifacts
-        run: |
-          pwd
-          ls -lhtR
-
-        working-directory: ${{env.NATIVE_LIB_LOCATION}}
-
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
-        shell: bash
         run: |
-          if [ "$RUNNER_OS" == "macOS" ]; then
-               brew install sbt
-          else
-               echo -n
-          fi
-          
-          echo ${NATIVE_LIB_LOCATION}
-          pwd
-          
           sbt +assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
