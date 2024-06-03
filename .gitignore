@@ -7,6 +7,12 @@
 .fleet/
 *.iml
 
+# VS Code specific
+.bloop
+.metals
+metals.sbt
+.vscode
+
 # SBT specific
 .bsp/
 coverage.xml
