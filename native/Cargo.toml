@@ -18,7 +18,7 @@ jni_fn = "0.1"
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
-object_store = { version = "0.9", features = ["aws", "azure", "gcp"] }
+object_store = { version = "0.10", features = ["aws", "azure", "gcp"] }
 polars-arrow = { version = "0.40", features = ["io_ipc_write_async", "io_avro_async"] }
 polars-core = { version = "0.40", default-features = false }
 polars-parquet = { version = "0.40", features = ["async", "compression"] }
