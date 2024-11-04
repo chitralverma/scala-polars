@@ -67,7 +67,7 @@ pub fn get_row_index(
 ) -> Option<RowIndex> {
     if !row_count_col_name.is_null() {
         Some(RowIndex {
-            name: Arc::from(get_string(
+            name: PlSmallStr::from_string(get_string(
                 env,
                 row_count_col_name,
                 "Unable to get/ convert row column name to UTF8.",

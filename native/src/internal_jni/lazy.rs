@@ -17,7 +17,7 @@ use crate::j_lazy_frame::JLazyFrame;
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
     let schema_string =
-        serde_json::to_string(&j_ldf.ldf.schema().unwrap().to_arrow(false)).unwrap();
+        serde_json::to_string(&j_ldf.ldf.collect_schema().unwrap().to_arrow(CompatLevel::oldest())).unwrap();
 
     to_jstring(
         &mut _env,
@@ -344,7 +344,7 @@ pub fn unique(
     let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
     let num_expr = _env.get_array_length(&subset).unwrap();
 
-    let mut cols: Vec<String> = Vec::new();
+    let mut cols: Vec<PlSmallStr> = Vec::new();
 
     for i in 0..num_expr {
         let result = _env
@@ -353,11 +353,11 @@ pub fn unique(
             .unwrap();
         let col_name = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
 
-        cols.push(col_name)
+        cols.push(PlSmallStr::from_string(col_name))
     }
 
     let keep = get_string(&mut _env, keep, "Unable to get/ convert value to UTF8.");
-    let sub: Option<Vec<String>> = if cols.is_empty() { None } else { Some(cols) };
+    let sub: Option<Vec<PlSmallStr>> = if cols.is_empty() { None } else { Some(cols) };
 
     let keep = match keep.as_str() {
         "any" => Ok(UniqueKeepStrategy::Any),

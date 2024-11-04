@@ -35,7 +35,7 @@ pub fn new_str_series(
     }
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -57,7 +57,7 @@ pub fn new_long_series(
     };
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -74,7 +74,7 @@ pub fn new_int_series(mut env: JNIEnv, object: JObject, name: JString, values: J
     };
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -96,7 +96,7 @@ pub fn new_float_series(
     };
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -118,7 +118,7 @@ pub fn new_double_series(
     };
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -140,7 +140,7 @@ pub fn new_boolean_series(
     };
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -172,7 +172,7 @@ pub fn new_date_series(
     }
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -205,7 +205,7 @@ pub fn new_datetime_series(
     }
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
@@ -231,7 +231,7 @@ pub fn new_list_series(
     };
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
-    let series = Series::new(series_name.as_str(), data);
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
 
     series_to_ptr(&mut env, object, Ok(series))
 }
