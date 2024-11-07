@@ -43,7 +43,7 @@ class LazyFrame private (private[polars] val ptr: Long) {
   def sort(
       cols: Array[String],
       descending: Array[Boolean],
-      nullLast: Boolean,
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): LazyFrame = {
     assert(
@@ -56,7 +56,7 @@ class LazyFrame private (private[polars] val ptr: Long) {
       Expression.withPtr(column_expr.sort_column_by_name(column, bool))
     }
 
-    sort(exprs, null_last = nullLast, maintainOrder = maintainOrder)
+    sort(exprs, nullLast, maintainOrder = maintainOrder)
   }
 
   def sort(
@@ -65,9 +65,15 @@ class LazyFrame private (private[polars] val ptr: Long) {
       nullLast: Boolean,
       maintainOrder: Boolean
   ): LazyFrame =
-    sort(Array(col), Array(descending), nullLast = nullLast, maintainOrder = maintainOrder)
+    sort(Array(col), Array(descending), Array(nullLast), maintainOrder = maintainOrder)
 
-  def sort(exprs: Array[Expression], null_last: Boolean, maintainOrder: Boolean): LazyFrame = {
+  def sort(exprs: Array[Expression], null_last: Array[Boolean], maintainOrder: Boolean): LazyFrame = {
+    assert(
+      exprs.length == null_last.length,
+      s"Length of provided expressions (${exprs.length}) and their " +
+        s"null_last (${null_last.length}) is not equal."
+    )
+
     val ldfPtr =
       lazy_frame.sortFromExprs(ptr, exprs.map(_.ptr).distinct, null_last, maintainOrder)
 
@@ -75,7 +81,7 @@ class LazyFrame private (private[polars] val ptr: Long) {
   }
 
   def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
-    sort(Array(expr), null_last = nullLast, maintainOrder = maintainOrder)
+    sort(Array(expr), Array(nullLast), maintainOrder = maintainOrder)
 
   def set_sorted(mapping: Map[String, Boolean]): LazyFrame =
     set_sorted(mapping.asJava)
@@ -89,9 +95,14 @@ class LazyFrame private (private[polars] val ptr: Long) {
   def top_k(
       k: Int,
       exprs: Array[Expression],
-      null_last: Boolean,
+      null_last: Array[Boolean],
       maintainOrder: Boolean
   ): LazyFrame = {
+    assert(
+      exprs.length == null_last.length,
+      s"Length of provided expressions (${exprs.length}) and their " +
+        s"null_last (${null_last.length}) is not equal."
+    )
     val ldfPtr =
       lazy_frame.topKFromExprs(ptr, k, exprs.map(_.ptr).distinct, null_last, maintainOrder)
 
@@ -99,19 +110,19 @@ class LazyFrame private (private[polars] val ptr: Long) {
   }
 
   def top_k(k: Int, expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
-    top_k(k, Array(expr), null_last = nullLast, maintainOrder = maintainOrder)
+    top_k(k, Array(expr), Array(nullLast), maintainOrder = maintainOrder)
 
   def top_k(
       k: Int,
       cols: Array[String],
       descending: Array[Boolean],
-      nullLast: Boolean,
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): LazyFrame = {
     assert(
       cols.length == descending.length,
-      s"Length of provided list columns(${cols.length}) and their " +
-        s"sorting directions((${descending.length})) is not equal."
+      s"Length of provided list columns (${cols.length}) and their " +
+        s"sorting directions (${descending.length}) is not equal."
     )
 
     val exprs = cols.zip(descending).map { case (column, bool) =>
@@ -128,7 +139,7 @@ class LazyFrame private (private[polars] val ptr: Long) {
       nullLast: Boolean,
       maintainOrder: Boolean
   ): LazyFrame =
-    top_k(k, Array(col), Array(descending), nullLast = nullLast, maintainOrder = maintainOrder)
+    top_k(k, Array(col), Array(descending), Array(nullLast), maintainOrder = maintainOrder)
 
   def limit(n: Long): LazyFrame = LazyFrame.withPtr(lazy_frame.limit(ptr, n))
 
