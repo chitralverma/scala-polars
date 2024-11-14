@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 
+use std::num::NonZeroUsize;
+
 use jni::objects::{JObject, JString};
 use jni::sys::{jboolean, jchar, jint, jlong, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::io::HiveOptions;
 use polars::prelude::*;
-use std::num::NonZeroUsize;
 
 use crate::internal_jni::utils::*;
 

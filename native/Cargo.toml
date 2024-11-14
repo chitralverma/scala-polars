@@ -18,14 +18,14 @@ jni_fn = "0.1"
 num = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
-object_store = { version = "0.10", features = ["aws", "azure", "gcp"] }
+object_store = { version = "0.10", features = ["aws", "azure", "gcp", "http"] }
 polars-arrow = { version = "0.44" }
 polars-core = { version = "0.44", default-features = false }
 polars-parquet = { version = "0.44", features = ["async", "compression"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
-tokio = { version = "1.26", features = ["sync", "macros", "rt", "time", "io-util", "net", "rt-multi-thread"] }
+tokio = { version = "1.26", features = ["fs", "net", "rt-multi-thread", "time", "sync", "macros", "rt", "io-util"] }
 tokio-util = { version = "0.7.8", features = ["compat"] }
 toml = "0.8"
 url = "2.4"
@@ -34,22 +34,54 @@ url = "2.4"
 version = "0.44"
 default-features = false
 features = [
-    "ipc",
-    "avro",
     "json",
-    "bigidx",
-    "object",
-    "approx_unique",
-    "async",
-    "cloud_write",
     "parquet",
+    "ipc",
+    "ipc_streaming",
+    "avro",
     "csv",
+    "cloud",
+    "approx_unique",
+    "array_any_all",
+    "array_count",
+    "bitwise",
+    "is_in",
+    "repeat_by",
+    "trigonometry",
+    "sign",
+    "list_gather",
+    "list_count",
+    "list_sets",
+    "list_any_all",
+    "list_drop_nulls",
+    "list_sample",
+    "cutqcut",
+    "rle",
+    "extract_groups",
+    "pivot",
+    "extract_jsonpath",
+    "asof_join",
+    "cross_join",
+    "pct_change",
+    "search_sorted",
+    "merge_sorted",
+    "top_k",
+    "propagate_nans",
+    "timezones",
+    "peaks",
+    "hist",
+    "find_many",
+    "dtype-full",
+    "meta",
+    "decompress",
+    "regex",
+    "binary_encoding",
+    "polars_cloud",
+    "cloud_write",
+    "performant",
     "lazy",
     "fmt",
-    "performant",
     "temporal",
-    "dtype-categorical",
-    "streaming",
     "strings",
     "serde",
     "serde-lazy",
@@ -57,7 +89,7 @@ features = [
     "aws",
     "gcp",
     "azure",
-    "regex"
+    "http"
 ]
 
 [profile.release]

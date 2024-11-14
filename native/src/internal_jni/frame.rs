@@ -16,7 +16,8 @@ use crate::j_series::JSeries;
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
-    let schema_string = serde_json::to_string(&j_df.df.schema().to_arrow(CompatLevel::oldest())).unwrap();
+    let schema_string =
+        serde_json::to_string(&j_df.df.schema().to_arrow(CompatLevel::oldest())).unwrap();
 
     _env.new_string(schema_string)
         .expect("Unable to get/ convert Schema to UTF8.")

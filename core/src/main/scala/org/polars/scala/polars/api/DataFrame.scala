@@ -58,7 +58,11 @@ class DataFrame private (private[polars] val ptr: Long) {
       )
       .collect(noOptimization = true)
 
-  def sort(exprs: Array[Expression], null_last: Array[Boolean], maintain_order: Boolean): DataFrame =
+  def sort(
+      exprs: Array[Expression],
+      null_last: Array[Boolean],
+      maintain_order: Boolean
+  ): DataFrame =
     toLazy.sort(exprs, null_last, maintain_order).collect(noOptimization = true)
 
   def sort(expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =

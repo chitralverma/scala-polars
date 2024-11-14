@@ -1,61 +1,43 @@
 #![allow(non_snake_case)]
 
-use futures::SinkExt;
 use jni::objects::{JObject, JString};
-use jni::sys::{jboolean, jint, jlong, JNI_TRUE};
+use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use object_store::path::Path;
+use num_traits::ToPrimitive;
 use polars::prelude::*;
-use polars_parquet::write as write_parquet;
-use tokio_util::compat::TokioAsyncWriteCompatExt;
-use url::Url;
-use write_parquet::{BrotliLevel, CompressionOptions, GzipLevel, ZstdLevel};
 
-use crate::internal_jni::utils::*;
-use crate::j_data_frame::JDataFrame;
-use crate::utils::write_utils::{
-    build_storage, ensure_write_mode, get_encodings, parse_json_to_options, parse_write_mode,
-    ObjectStoreRef,
-};
-use crate::utils::{PathError, WriteModes};
+use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options, DynWriter};
 
-#[tokio::main(flavor = "current_thread")]
-async fn write_files(
-    object_store: ObjectStoreRef,
-    prefix: Path,
-    url: Url,
-    write_opts: write_parquet::WriteOptions,
-    mut data_frame: DataFrame,
-    write_mode: WriteModes,
-) {
-    let meta = object_store.head(&prefix).await;
-    ensure_write_mode(meta, url, write_mode).expect("Error encountered");
-
-    let re_chunked_df = data_frame.align_chunks();
-
-    let schema = re_chunked_df.schema().to_arrow(true);
-    let encodings = get_encodings(&schema);
-    let iter = re_chunked_df.iter_chunks(true);
-
-    let (_id, writer) = object_store
-        .put_multipart(&prefix.clone())
-        .await
-        .expect("Error encountered while opening destination");
-
-    let mut sink =
-        write_parquet::FileSink::try_new(writer.compat_write(), schema, encodings, write_opts)
-            .expect("Error encountered while creating file sink");
-
-    for chunk in iter {
-        sink.feed(chunk)
-            .await
-            .expect("Error encountered while feeding chunk")
+fn parse_parquet_compression(
+    compression: Option<String>,
+    compression_level: Option<i32>,
+) -> Option<ParquetCompression> {
+    match (compression, compression_level) {
+        (Some(t), l) => match t.to_lowercase().as_str() {
+            "uncompressed" => Some(ParquetCompression::Uncompressed),
+            "snappy" => Some(ParquetCompression::Snappy),
+            "lz4" => Some(ParquetCompression::Lz4Raw),
+            "lzo" => Some(ParquetCompression::Lzo),
+            "gzip" => {
+                let level = l.and_then(|v| GzipLevel::try_new(v.to_u8()?).ok());
+                Some(ParquetCompression::Gzip(level))
+            },
+            "brotli" => {
+                let level = l.and_then(|v| BrotliLevel::try_new(v.to_u32()?).ok());
+                Some(ParquetCompression::Brotli(level))
+            },
+            "zstd" => {
+                let level = l.and_then(|v| ZstdLevel::try_new(v).ok());
+                Some(ParquetCompression::Zstd(level))
+            },
+            e => {
+                polars_warn!(format!("Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}. Using defaults."));
+                None
+            },
+        },
+        _ => None,
     }
-
-    sink.close()
-        .await
-        .expect("Error encountered while closing file sink");
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
@@ -64,98 +46,60 @@ pub fn writeParquet(
     _object: JObject,
     df_ptr: jlong,
     filePath: JString,
-    writeStats: jboolean,
-    compression: JString,
-    compressionLevel: jint,
     options: JString,
-    writeMode: JString,
 ) {
-    let this_path = get_file_path(&mut env, filePath);
+    let mut options = parse_json_to_options(&mut env, options).unwrap();
 
-    let compression_str = get_string(
-        &mut env,
-        compression,
-        "Unable to get/ convert compression string to UTF8.",
-    );
-    let compression_level = if compressionLevel.is_negative() {
-        None
-    } else {
-        Some(compressionLevel)
-    };
+    let is_parallel = options
+        .remove("write_parquet_parallel")
+        .and_then(|s| s.parse::<bool>().ok());
 
-    let compression = parse_parquet_compression(&compression_str, compression_level)
-        .expect("Unable to parse the provided compression argument(s)");
+    let data_page_size = options
+        .remove("write_parquet_data_page_size")
+        .and_then(|s| s.parse::<usize>().ok());
 
-    let write_mode = parse_write_mode(&mut env, writeMode);
+    let row_group_size = options
+        .remove("write_parquet_row_group_size")
+        .and_then(|s| s.parse::<usize>().ok());
 
-    let options = parse_json_to_options(&mut env, options);
+    let overwrite_mode = options
+        .remove("write_mode")
+        .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
+        .unwrap_or(false);
 
-    let write_options = write_parquet::WriteOptions {
-        write_statistics: writeStats == JNI_TRUE,
-        version: write_parquet::Version::V2,
-        compression,
-        data_pagesize_limit: None,
-    };
+    let compression = options.remove("write_compression");
+    let compression_level = options
+        .remove("write_compression_level")
+        .and_then(|s| s.parse::<i32>().ok());
 
-    let j_df = unsafe { &mut *(df_ptr as *mut JDataFrame) };
-    let data_frame = j_df.to_owned().df;
+    let write_stats = options
+        .remove("write_parquet_stats")
+        .map(|s| match s.as_str() {
+            "full" => StatisticsOptions::full(),
+            "none" => StatisticsOptions::empty(),
+            _ => StatisticsOptions::default(),
+        });
 
-    let (object_store_ref, url, path) = build_storage(this_path.clone(), options)
-        .expect("Unable to instantiate object store from provided path");
+    let (mut dataframe, writer): (DataFrame, DynWriter) =
+        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options).unwrap();
 
-    write_files(
-        object_store_ref,
-        path,
-        url,
-        write_options,
-        data_frame,
-        write_mode,
-    );
-}
+    let parquet_compression = parse_parquet_compression(compression, compression_level);
 
-fn parse_parquet_compression(
-    compression: &str,
-    compression_level: Option<i32>,
-) -> Result<CompressionOptions, PathError> {
-    let parsed = match compression {
-        "uncompressed" => CompressionOptions::Uncompressed,
+    let mut parquet_writer = ParquetWriter::new(writer)
+        .with_data_page_size(data_page_size)
+        .with_row_group_size(row_group_size);
 
-        "snappy" => CompressionOptions::Snappy,
+    if let Some(value) = is_parallel {
+        parquet_writer = parquet_writer.set_parallel(value)
+    }
 
-        "lz4" => CompressionOptions::Lz4Raw,
+    if let Some(value) = write_stats {
+        parquet_writer = parquet_writer.with_statistics(value)
+    }
 
-        "lzo" => CompressionOptions::Lzo,
+    if let Some(value) = parquet_compression {
+        parquet_writer = parquet_writer.with_compression(value)
+    }
 
-        "gzip" => CompressionOptions::Gzip(
-            compression_level
-                .map(|lvl| {
-                    GzipLevel::try_new(lvl as u8).map_err(|e| PathError::Generic(format!("{e:?}")))
-                })
-                .transpose()?,
-        ),
-
-        "brotli" => CompressionOptions::Brotli(
-            compression_level
-                .map(|lvl| {
-                    BrotliLevel::try_new(lvl as u32)
-                        .map_err(|e| PathError::Generic(format!("{e:?}")))
-                })
-                .transpose()?,
-        ),
-
-        "zstd" => CompressionOptions::Zstd(
-            compression_level
-                .map(|lvl| {
-                    ZstdLevel::try_new(lvl).map_err(|e| PathError::Generic(format!("{e:?}")))
-                })
-                .transpose()?,
-        ),
-
-        e => {
-            return Err(PathError::Generic(format!(
-                "Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}",
-            )));
-        },
-    };
-    Ok(parsed)
+    parquet_writer.finish(&mut dataframe).unwrap();
 }

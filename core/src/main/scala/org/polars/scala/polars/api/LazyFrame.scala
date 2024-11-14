@@ -67,7 +67,11 @@ class LazyFrame private (private[polars] val ptr: Long) {
   ): LazyFrame =
     sort(Array(col), Array(descending), Array(nullLast), maintainOrder = maintainOrder)
 
-  def sort(exprs: Array[Expression], null_last: Array[Boolean], maintainOrder: Boolean): LazyFrame = {
+  def sort(
+      exprs: Array[Expression],
+      null_last: Array[Boolean],
+      maintainOrder: Boolean
+  ): LazyFrame = {
     assert(
       exprs.length == null_last.length,
       s"Length of provided expressions (${exprs.length}) and their " +

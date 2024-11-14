@@ -1,9 +1,14 @@
 use std::path::{Component, PathBuf};
 
-use jni::objects::{JObject, JString};
+use jni::objects::ReleaseMode::NoCopyBack;
+use jni::objects::{
+    AutoElementsCritical, JBooleanArray, JDoubleArray, JFloatArray, JIntArray, JLongArray, JObject,
+    JObjectArray, JPrimitiveArray, JString, TypeArray,
+};
 use jni::strings::JNIString;
-use jni::sys::{jint, jlong, jstring};
+use jni::sys::{jboolean, jdouble, jfloat, jint, jlong, jobject, jstring, JNI_TRUE};
 use jni::JNIEnv;
+use num_traits::ToPrimitive;
 use polars::io::RowIndex;
 use polars::prelude::*;
 
@@ -11,6 +16,95 @@ use crate::j_data_frame::JDataFrame;
 use crate::j_expr::JExpr;
 use crate::j_lazy_frame::JLazyFrame;
 use crate::j_series::JSeries;
+
+// Define a trait for converting Java arrays to Rust Vec
+pub trait JavaArrayToVec {
+    type Output;
+    type InternalType;
+
+    fn get_elements<'local, 'array, 'other_local, 'env>(
+        env: &'env mut JNIEnv<'local>,
+        array: &'array JPrimitiveArray<'other_local, <Self as JavaArrayToVec>::InternalType>,
+    ) -> AutoElementsCritical<'local, 'other_local, 'array, 'env, Self::InternalType>
+    where
+        <Self as JavaArrayToVec>::InternalType: TypeArray,
+    {
+        unsafe {
+            env.get_array_elements_critical(array, NoCopyBack)
+                .expect("Unable to get elements of the array")
+        }
+    }
+
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output>;
+}
+
+// Implement the trait for each Java array type
+impl<'local> JavaArrayToVec for JBooleanArray<'local> {
+    type Output = bool;
+    type InternalType = jboolean;
+
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
+        let arr = Self::get_elements(env, &array);
+        arr.to_vec().iter().map(|jb| *jb == JNI_TRUE).collect()
+    }
+}
+
+impl<'local> JavaArrayToVec for JIntArray<'local> {
+    type Output = i32;
+    type InternalType = jint;
+
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
+        let arr = Self::get_elements(env, &array);
+        arr.to_vec().iter().map(|jb| jb.to_i32().unwrap()).collect()
+    }
+}
+
+impl<'local> JavaArrayToVec for JLongArray<'local> {
+    type Output = i64;
+    type InternalType = jlong;
+
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
+        let arr = Self::get_elements(env, &array);
+        arr.to_vec().iter().map(|jb| jb.to_i64().unwrap()).collect()
+    }
+}
+
+impl<'local> JavaArrayToVec for JFloatArray<'local> {
+    type Output = f32;
+    type InternalType = jfloat;
+
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
+        let arr = Self::get_elements(env, &array);
+        arr.to_vec().iter().map(|jb| jb.to_f32().unwrap()).collect()
+    }
+}
+
+impl<'local> JavaArrayToVec for JDoubleArray<'local> {
+    type Output = f64;
+    type InternalType = jdouble;
+
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
+        let arr = Self::get_elements(env, &array);
+        arr.to_vec().iter().map(|jb| jb.to_f64().unwrap()).collect()
+    }
+}
+
+impl<'local> JavaArrayToVec for JObjectArray<'local> {
+    type Output = String;
+    type InternalType = jobject;
+    fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
+        let len = env.get_array_length(&array).expect("???");
+        let mut result = Vec::with_capacity(len as usize);
+
+        for i in 0..len {
+            let obj = env.get_object_array_element(&array, i).expect("???????");
+            let s = get_string(env, JString::from(obj), "");
+            result.push(s);
+        }
+
+        result
+    }
+}
 
 pub fn normalize_path(path: &std::path::Path) -> PathBuf {
     let mut components = path.components().peekable();

@@ -1,14 +1,12 @@
 package examples.scala.io
 
 import org.polars.scala.polars.Polars
-import org.polars.scala.polars.api.io.{WriteCompressions, WriteModes}
 
 import examples.scala.utils.CommonUtils
 
 /** Polars supports various output file formats like the following,
   *   - [[org.polars.scala.polars.api.io.Writeable.parquet Apache Parquet]]
-  *   - [[org.polars.scala.polars.api.io.Writeable.ipc Apache Arrow IPC]]
-  *   - [[org.polars.scala.polars.api.io.Writeable.avro Apache Avro]]
+  *   - [[org.polars.scala.polars.api.io.Writeable.ipc Apache IPC]]
   *
   * A [[org.polars.scala.polars.api.DataFrame DataFrame]] can be written to an object storage as a
   * file in one of the supported formats mentioned above.
@@ -38,14 +36,19 @@ object WritingToFileDatasets {
     printf("File written to location: %s%n%n", outputPath)
 
     /* Overwrite output if already exists */
-    df.write().mode("overwrite").parquet(outputPath)
+    df.write().option("write_mode", "full").parquet(outputPath)
     printf("File overwritten at location: %s%n%n", outputPath)
 
     /* Write output file with compression */
     df.write()
-      .compression(WriteCompressions.zstd, Some.apply(14))
-      .mode(WriteModes.Overwrite)
-      .parquet(outputPath, writeStats = true)
+      .options(
+        Map(
+          "write_compression" -> "zstd",
+          "write_mode" -> "overwrite",
+          "write_parquet_stats" -> "full"
+        )
+      )
+      .parquet(outputPath)
     printf("File overwritten at location: %s with compression%n%n", outputPath)
 
     /* Write output file to Amazon S3 object store */
@@ -53,14 +56,15 @@ object WritingToFileDatasets {
     df.write()
       .options(
         Map(
+          "write_compression" -> "zstd",
+          "write_mode" -> "overwrite",
+          "write_parquet_stats" -> "full",
           "aws_default_region" -> "us‑east‑2",
           "aws_access_key_id" -> "ABC",
           "aws_secret_access_key" -> "XYZ"
         )
       )
-      .compression(WriteCompressions.zstd, Some.apply(14))
-      .mode(WriteModes.Overwrite)
-      .parquet(s3Path, writeStats = true)
+      .parquet(s3Path)
     printf("File overwritten at location: %s with compression%n%n", s3Path)
   }
 
