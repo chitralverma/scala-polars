@@ -39,7 +39,7 @@ pub trait JavaArrayToVec {
 }
 
 // Implement the trait for each Java array type
-impl<'local> JavaArrayToVec for JBooleanArray<'local> {
+impl JavaArrayToVec for JBooleanArray<'_> {
     type Output = bool;
     type InternalType = jboolean;
 
@@ -49,7 +49,7 @@ impl<'local> JavaArrayToVec for JBooleanArray<'local> {
     }
 }
 
-impl<'local> JavaArrayToVec for JIntArray<'local> {
+impl JavaArrayToVec for JIntArray<'_> {
     type Output = i32;
     type InternalType = jint;
 
@@ -59,7 +59,7 @@ impl<'local> JavaArrayToVec for JIntArray<'local> {
     }
 }
 
-impl<'local> JavaArrayToVec for JLongArray<'local> {
+impl JavaArrayToVec for JLongArray<'_> {
     type Output = i64;
     type InternalType = jlong;
 
@@ -69,7 +69,7 @@ impl<'local> JavaArrayToVec for JLongArray<'local> {
     }
 }
 
-impl<'local> JavaArrayToVec for JFloatArray<'local> {
+impl JavaArrayToVec for JFloatArray<'_> {
     type Output = f32;
     type InternalType = jfloat;
 
@@ -79,7 +79,7 @@ impl<'local> JavaArrayToVec for JFloatArray<'local> {
     }
 }
 
-impl<'local> JavaArrayToVec for JDoubleArray<'local> {
+impl JavaArrayToVec for JDoubleArray<'_> {
     type Output = f64;
     type InternalType = jdouble;
 
@@ -89,7 +89,7 @@ impl<'local> JavaArrayToVec for JDoubleArray<'local> {
     }
 }
 
-impl<'local> JavaArrayToVec for JObjectArray<'local> {
+impl JavaArrayToVec for JObjectArray<'_> {
     type Output = String;
     type InternalType = jobject;
     fn to_vec(env: &mut JNIEnv, array: Self) -> Vec<Self::Output> {
