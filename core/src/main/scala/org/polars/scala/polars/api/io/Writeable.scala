@@ -10,7 +10,7 @@ import org.polars.scala.polars.internal.jni.io.write._
 class Writeable private[polars] (ptr: Long) {
   import org.polars.scala.polars.jsonMapper
 
-  private val _options: MutableMap[String, String] = MutableMap("writeMode" -> "errorifexists")
+  private val _options: MutableMap[String, String] = MutableMap("write_mode" -> "errorifexists")
 
   def option(key: String, value: String): Writeable = synchronized {
     if (Option(key).exists(_.trim.isEmpty) || Option(value).exists(_.trim.isEmpty)) {
@@ -51,4 +51,22 @@ class Writeable private[polars] (ptr: Long) {
       filePath = filePath,
       options = jsonMapper.writeValueAsString(_options)
     )
+
+  def json(filePath: String): Unit = {
+    option("write_json_format", "json")
+    writeJson(
+      ptr = ptr,
+      filePath = filePath,
+      options = jsonMapper.writeValueAsString(_options)
+    )
+  }
+
+  def json_lines(filePath: String): Unit = {
+    option("write_json_format", "json_lines")
+    writeJson(
+      ptr = ptr,
+      filePath = filePath,
+      options = jsonMapper.writeValueAsString(_options)
+    )
+  }
 }
