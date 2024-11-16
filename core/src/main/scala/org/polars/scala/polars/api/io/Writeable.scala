@@ -7,9 +7,9 @@ import org.polars.scala.polars.api.DataFrame
 import org.polars.scala.polars.internal.jni.io.write._
 
 /** Interface used to write a [[DataFrame]] in various formats to local filesystems and cloud
-  * object stores (aws, gcp and azure). Use `DataFrame.write()` to access this.
+  * object stores (aws, gcp and azure). Use [[DataFrame.write write()]] to access this.
   *
-  * Cloud options are global and can be set by methods like [[option]] or [[options]].
+  * Cloud options are global and can be set by methods like [[option option[s]()]]
   *   - For amazon s3 options, see
   *     [[https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html#variants here]]
   *   - For google cloud options, see
