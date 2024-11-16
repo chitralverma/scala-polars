@@ -6,10 +6,27 @@ import scala.jdk.CollectionConverters._
 import org.polars.scala.polars.api.DataFrame
 import org.polars.scala.polars.internal.jni.io.write._
 
+/** Interface used to write a [[DataFrame]] in various formats to local filesystems and cloud
+  * object stores (aws, gcp and azure). Use `DataFrame.write()` to access this.
+  *
+  * Cloud options are global and can be set by methods like [[option]] or [[options]].
+  *   - For amazon s3 options, see
+  *     [[https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html#variants here]]
+  *   - For google cloud options, see
+  *     [[https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html#variants here]]
+  *   - For azure options, see
+  *     [[https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html#variants here]]
+  *
+  * This interface also supports the following global options,
+  *   - `write_mode`: Specifies the behavior when data already exists at provided path. Supported
+  *     values 'overwrite', 'error'. Default: error.
+  *     - overwrite: Overwrites the existing data at the provided location.
+  *     - error: Throw an exception if data already exists at the provided location.
+  */
 class Writeable private[polars] (ptr: Long) {
   import org.polars.scala.polars.jsonMapper
 
-  private val _options: MutableMap[String, String] = MutableMap("write_mode" -> "errorifexists")
+  private val _options: MutableMap[String, String] = MutableMap("write_mode" -> "error")
 
   /** Adds options for the underlying output format. */
   def options(opts: Iterable[(String, String)]): Writeable = synchronized {
