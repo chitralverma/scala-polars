@@ -38,7 +38,7 @@ class DataFrame private (private[polars] val ptr: Long) {
   def sort(
       cols: Array[String],
       descending: Array[Boolean],
-      nullLast: Boolean,
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): DataFrame =
     toLazy.sort(cols, descending, nullLast, maintainOrder).collect(noOptimization = true)
@@ -53,17 +53,21 @@ class DataFrame private (private[polars] val ptr: Long) {
       .sort(
         cols = Array(expr),
         descending = Array(descending),
-        nullLast = nullLast,
+        nullLast = Array(nullLast),
         maintainOrder = maintainOrder
       )
       .collect(noOptimization = true)
 
-  def sort(exprs: Array[Expression], null_last: Boolean, maintain_order: Boolean): DataFrame =
+  def sort(
+      exprs: Array[Expression],
+      null_last: Array[Boolean],
+      maintain_order: Boolean
+  ): DataFrame =
     toLazy.sort(exprs, null_last, maintain_order).collect(noOptimization = true)
 
   def sort(expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
     toLazy
-      .sort(Array(expr), null_last = null_last, maintainOrder = maintain_order)
+      .sort(Array(expr), Array(null_last), maintainOrder = maintain_order)
       .collect(noOptimization = true)
 
   def set_sorted(mapping: Map[String, Boolean]): DataFrame =
@@ -76,7 +80,7 @@ class DataFrame private (private[polars] val ptr: Long) {
       k: Int,
       cols: Array[String],
       descending: Array[Boolean],
-      nullLast: Boolean,
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): DataFrame =
     toLazy
@@ -95,7 +99,7 @@ class DataFrame private (private[polars] val ptr: Long) {
         k = k,
         cols = Array(expr),
         descending = Array(descending),
-        nullLast = nullLast,
+        nullLast = Array(nullLast),
         maintainOrder = maintainOrder
       )
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
@@ -103,7 +107,7 @@ class DataFrame private (private[polars] val ptr: Long) {
   def top_k(
       k: Int,
       exprs: Array[Expression],
-      null_last: Boolean,
+      null_last: Array[Boolean],
       maintain_order: Boolean
   ): DataFrame =
     toLazy
@@ -112,7 +116,7 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   def top_k(k: Int, expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
     toLazy
-      .top_k(k, Array(expr), null_last = null_last, maintainOrder = maintain_order)
+      .top_k(k, Array(expr), Array(null_last), maintainOrder = maintain_order)
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
   def limit(n: Long): DataFrame = DataFrame.withPtr(data_frame.limit(ptr, n))

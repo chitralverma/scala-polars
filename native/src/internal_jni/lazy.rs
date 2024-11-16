@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use jni::objects::ReleaseMode::NoCopyBack;
-use jni::objects::{JLongArray, JObject, JObjectArray, JString};
+use jni::objects::{JBooleanArray, JLongArray, JObject, JObjectArray, JString};
 use jni::sys::{jboolean, jint, jlong, jstring, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
@@ -16,8 +16,14 @@ use crate::j_lazy_frame::JLazyFrame;
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let schema_string =
-        serde_json::to_string(&j_ldf.ldf.schema().unwrap().to_arrow(false)).unwrap();
+    let schema_string = serde_json::to_string(
+        &j_ldf
+            .ldf
+            .collect_schema()
+            .unwrap()
+            .to_arrow(CompatLevel::oldest()),
+    )
+    .unwrap();
 
     to_jstring(
         &mut _env,
@@ -85,7 +91,7 @@ pub fn sortFromExprs(
     object: JObject,
     ldf_ptr: jlong,
     inputs: JLongArray,
-    nullLast: jboolean,
+    nullLast: JBooleanArray,
     maintainOrder: jboolean,
 ) -> jlong {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
@@ -103,13 +109,7 @@ pub fn sortFromExprs(
             .collect()
     };
 
-    j_ldf.sort(
-        &mut env,
-        object,
-        exprs,
-        nullLast == JNI_TRUE,
-        maintainOrder == JNI_TRUE,
-    )
+    j_ldf.sort(&mut env, object, exprs, nullLast, maintainOrder == JNI_TRUE)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
@@ -119,15 +119,14 @@ pub fn topKFromExprs(
     ldf_ptr: jlong,
     k: jint,
     inputs: JLongArray,
-    nullLast: jboolean,
+    nullLast: JBooleanArray,
     maintainOrder: jboolean,
 ) -> jlong {
     let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
 
     let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
     let exprs: Vec<Expr> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
+        arr.to_vec()
             .iter()
             .map(|p| p.to_i64().unwrap())
             .map(|ptr| {
@@ -142,7 +141,7 @@ pub fn topKFromExprs(
         object,
         k as IdxSize,
         exprs,
-        nullLast == JNI_TRUE,
+        nullLast,
         maintainOrder == JNI_TRUE,
     )
 }
@@ -344,7 +343,7 @@ pub fn unique(
     let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
     let num_expr = _env.get_array_length(&subset).unwrap();
 
-    let mut cols: Vec<String> = Vec::new();
+    let mut cols: Vec<PlSmallStr> = Vec::new();
 
     for i in 0..num_expr {
         let result = _env
@@ -353,11 +352,11 @@ pub fn unique(
             .unwrap();
         let col_name = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
 
-        cols.push(col_name)
+        cols.push(PlSmallStr::from_string(col_name))
     }
 
     let keep = get_string(&mut _env, keep, "Unable to get/ convert value to UTF8.");
-    let sub: Option<Vec<String>> = if cols.is_empty() { None } else { Some(cols) };
+    let sub: Option<Vec<PlSmallStr>> = if cols.is_empty() { None } else { Some(cols) };
 
     let keep = match keep.as_str() {
         "any" => Ok(UniqueKeepStrategy::Any),

@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use std::num::NonZeroUsize;
+
 use jni::objects::{JObject, JString};
 use jni::sys::{jboolean, jchar, jint, jlong, JNI_TRUE};
 use jni::JNIEnv;
@@ -36,7 +38,9 @@ pub fn scanParquet(
         cloud_options: None,
         use_statistics: true,
         hive_options: HiveOptions {
-            enabled: hivePartitioning == JNI_TRUE,
+            enabled: Some(hivePartitioning == JNI_TRUE),
+            hive_start_idx: 0,
+            try_parse_dates: true,
             schema: None,
         },
         ..Default::default()
@@ -103,7 +107,7 @@ pub fn scanNdJson(
     let j_ldf = LazyJsonLineReader::new(this_path)
         .with_n_rows(n_rows)
         .with_row_index(row_index)
-        .with_infer_schema_length(Some(inferSchemaRows as usize))
+        .with_infer_schema_length(NonZeroUsize::new(inferSchemaRows as usize))
         .with_rechunk(reChunk == JNI_TRUE)
         .low_memory(lowMemory == JNI_TRUE)
         .finish();
@@ -123,7 +127,6 @@ pub fn scanIPC(
     nRows: jlong,
     cache: jboolean,
     re_chunk: jboolean,
-    mem_map: jboolean,
     rowCountColName: JString,
     rowCountColOffset: jint,
 ) -> jlong {
@@ -136,7 +139,6 @@ pub fn scanIPC(
         cache: cache == JNI_TRUE,
         rechunk: re_chunk == JNI_TRUE,
         row_index,
-        memory_map: mem_map == JNI_TRUE,
         ..Default::default()
     };
 

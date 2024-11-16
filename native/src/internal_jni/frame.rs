@@ -16,7 +16,8 @@ use crate::j_series::JSeries;
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
     let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
-    let schema_string = serde_json::to_string(&j_df.df.schema().to_arrow(false)).unwrap();
+    let schema_string =
+        serde_json::to_string(&j_df.df.schema().to_arrow(CompatLevel::oldest())).unwrap();
 
     _env.new_string(schema_string)
         .expect("Unable to get/ convert Schema to UTF8.")
@@ -81,7 +82,7 @@ pub fn tail(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub fn fromSeries(mut env: JNIEnv, callback_obj: JObject, ptrs: JLongArray) -> jlong {
     let arr = unsafe { env.get_array_elements(&ptrs, NoCopyBack).unwrap() };
-    let data: Vec<Series> = unsafe {
+    let data: Vec<Column> = unsafe {
         std::slice::from_raw_parts(arr.as_ptr(), arr.len())
             .to_vec()
             .iter()
@@ -90,6 +91,7 @@ pub fn fromSeries(mut env: JNIEnv, callback_obj: JObject, ptrs: JLongArray) -> j
                 let j_series = &mut *(ptr as *mut JSeries);
                 j_series.to_owned().series
             })
+            .map(|s| s.into_column())
             .collect()
     };
 

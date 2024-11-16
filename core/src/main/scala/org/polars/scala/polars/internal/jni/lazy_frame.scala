@@ -25,7 +25,7 @@ private[polars] object lazy_frame extends Natively {
   @native def sortFromExprs(
       ldfPtr: Long,
       exprPtrs: Array[Long],
-      nullLast: Boolean,
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): Long
 
@@ -33,7 +33,7 @@ private[polars] object lazy_frame extends Natively {
       ldfPtr: Long,
       k: Int,
       exprPtrs: Array[Long],
-      nullLast: Boolean,
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): Long
 

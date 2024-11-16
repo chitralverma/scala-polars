@@ -3,17 +3,13 @@ package examples.java.io;
 import examples.scala.utils.CommonUtils;
 import org.polars.scala.polars.Polars;
 import org.polars.scala.polars.api.DataFrame;
-import org.polars.scala.polars.api.io.WriteCompressions;
-import org.polars.scala.polars.api.io.WriteModes;
-import scala.Some;
 
 /**
  * Polars supports various output file formats like the following,
  *
  * <ul>
- *   <li>{@link org.polars.scala.polars.api.io.Writeable#parquet(String, boolean) Apache Parquet}
- *   <li>{@link org.polars.scala.polars.api.io.Writeable#ipc(String) Apache Arrow IPC}
- *   <li>{@link org.polars.scala.polars.api.io.Writeable#avro(String) Apache Avro}
+ *   <li>{@link org.polars.scala.polars.api.io.Writeable#parquet(String) Apache Parquet}
+ *   <li>{@link org.polars.scala.polars.api.io.Writeable#ipc(String) Apache IPC}
  * </ul>
  *
  * <p>A {@link DataFrame} can be written to an object storage as a file in one of the supported
@@ -40,29 +36,31 @@ public class WritingToFileDatasets {
 
     /* Write this DataFrame to local filesystem at the provided path */
     String outputPath = CommonUtils.getOutputLocation("output.pq");
-    df.write().parquet(outputPath, false);
+    df.write().parquet(outputPath);
     System.out.printf("File written to location: %s%n%n", outputPath);
 
     /* Overwrite output if already exists */
-    df.write().mode("overwrite").parquet(outputPath, false);
+    df.write().option("write_mode", "overwrite").parquet(outputPath);
     System.out.printf("File overwritten at location: %s%n%n", outputPath);
 
     /* Write output file with compression */
     df.write()
-        .compression(WriteCompressions.zstd(), Some.apply(14))
-        .mode(WriteModes.Overwrite())
-        .parquet(outputPath, true);
+        .option("write_compression", "zstd")
+        .option("write_mode", "overwrite")
+        .option("write_parquet_stats", "full")
+        .parquet(outputPath);
     System.out.printf("File overwritten at location: %s with compression%n%n", outputPath);
 
     /* Write output file to Amazon S3 object store */
     String s3Path = "s3://bucket/output.pq";
     df.write()
-        .withOption("aws_default_region", "us‑east‑2")
-        .withOption("aws_access_key_id", "ABC")
-        .withOption("aws_secret_access_key", "XYZ")
-        .compression(WriteCompressions.zstd(), Some.apply(14))
-        .mode(WriteModes.Overwrite())
-        .parquet(s3Path, true);
+        .option("write_compression", "zstd")
+        .option("write_mode", "overwrite")
+        .option("write_parquet_stats", "full")
+        .option("aws_default_region", "us‑east‑2")
+        .option("aws_access_key_id", "ABC")
+        .option("aws_secret_access_key", "XYZ")
+        .parquet(s3Path);
     System.out.printf("File overwritten at location: %s with compression%n%n", s3Path);
   }
 }

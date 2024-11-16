@@ -1,10 +1,10 @@
-use jni::objects::{GlobalRef, JObject};
+use jni::objects::{GlobalRef, JBooleanArray, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
-use polars::prelude::{Expr, IdxSize, LazyFrame};
+use polars::prelude::{Expr, IdxSize, LazyFrame, PlSmallStr};
 use polars_core::prelude::{SortMultipleOptions, UniqueKeepStrategy};
 
-use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr};
+use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr, JavaArrayToVec};
 
 #[derive(Clone)]
 pub struct JLazyFrame {
@@ -78,7 +78,7 @@ impl JLazyFrame {
         env: &mut JNIEnv,
         callback_obj: JObject,
         exprs: Vec<Expr>,
-        null_last: bool,
+        null_last: JBooleanArray,
         maintain_order: bool,
     ) -> jlong {
         let mut desc: Vec<bool> = Vec::new();
@@ -107,7 +107,7 @@ impl JLazyFrame {
             new_exprs,
             SortMultipleOptions {
                 descending: desc,
-                nulls_last: null_last,
+                nulls_last: JavaArrayToVec::to_vec(env, null_last),
                 maintain_order,
                 ..Default::default()
             },
@@ -122,7 +122,7 @@ impl JLazyFrame {
         callback_obj: JObject,
         k: IdxSize,
         exprs: Vec<Expr>,
-        null_last: bool,
+        null_last: JBooleanArray,
         maintain_order: bool,
     ) -> jlong {
         let mut desc: Vec<bool> = Vec::new();
@@ -152,7 +152,7 @@ impl JLazyFrame {
             new_exprs,
             SortMultipleOptions {
                 descending: desc,
-                nulls_last: null_last,
+                nulls_last: JavaArrayToVec::to_vec(env, null_last),
                 maintain_order,
                 ..Default::default()
             },
@@ -186,7 +186,7 @@ impl JLazyFrame {
         old: Vec<String>,
         new: Vec<String>,
     ) -> jlong {
-        let ldf = self.ldf.clone().rename(old, new);
+        let ldf = self.ldf.clone().rename(old, new, false);
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
@@ -195,13 +195,20 @@ impl JLazyFrame {
         &self,
         env: &mut JNIEnv,
         callback_obj: JObject,
-        subset: Option<Vec<String>>,
+        subset: Option<Vec<PlSmallStr>>,
         keep: UniqueKeepStrategy,
         maintain_order: bool,
     ) -> jlong {
         let ldf = match maintain_order {
             true => self.ldf.clone().unique_stable(subset, keep),
-            false => self.ldf.clone().unique(subset, keep),
+            false => self.ldf.clone().unique(
+                subset.map(|vec| {
+                    vec.into_iter()
+                        .map(|s| s.into_string())
+                        .collect::<Vec<String>>()
+                }),
+                keep,
+            ),
         };
 
         ldf_to_ptr(env, callback_obj, Ok(ldf))

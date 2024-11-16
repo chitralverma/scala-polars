@@ -81,7 +81,7 @@ class Schema private (private[polars] val json: String) {
         .map(Option(_))
         .collectFirst { case Some(v) => v } match {
         case Some(listNode) =>
-          val listNodeType = listNode.get("data_type")
+          val listNodeType = listNode.get("dtype")
           Field(name, ListType(toField((name, listNodeType, listNodeType.getNodeType)).dataType))
 
         case None =>
@@ -93,9 +93,9 @@ class Schema private (private[polars] val json: String) {
       val structNode = node.get("Struct")
       val structFields = structNode.iterator().asScala
       val sf = structFields.map {
-        case node: JsonNode if node.hasNonNull("name") && node.hasNonNull("data_type") =>
+        case node: JsonNode if node.hasNonNull("name") && node.hasNonNull("dtype") =>
           val structFieldName: String = node.get("name").textValue()
-          val structFieldType: JsonNode = node.get("data_type")
+          val structFieldType: JsonNode = node.get("dtype")
 
           Field(
             structFieldName,
@@ -119,9 +119,7 @@ class Schema private (private[polars] val json: String) {
     case Some(node: JsonNode) if node.hasNonNull("fields") =>
       val fields = node.get("fields").elements().asScala.toList
       _fields = fields
-        .map(f =>
-          toField(f.get("name").textValue(), f.get("data_type"), f.get("data_type").getNodeType)
-        )
+        .map(f => toField(f.get("name").textValue(), f.get("dtype"), f.get("dtype").getNodeType))
         .toArray
       _fieldNames = fields.map(f => f.get("name").toString).toArray
 
