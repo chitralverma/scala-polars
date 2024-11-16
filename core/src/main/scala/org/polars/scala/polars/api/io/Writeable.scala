@@ -52,6 +52,13 @@ class Writeable private[polars] (ptr: Long) {
       options = jsonMapper.writeValueAsString(_options)
     )
 
+  def csv(filePath: String): Unit =
+    writeCSV(
+      ptr = ptr,
+      filePath = filePath,
+      options = jsonMapper.writeValueAsString(_options)
+    )
+
   def json(filePath: String): Unit = {
     option("write_json_format", "json")
     writeJson(

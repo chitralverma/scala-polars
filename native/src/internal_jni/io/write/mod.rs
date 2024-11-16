@@ -1,4 +1,5 @@
 pub mod avro;
+pub mod csv;
 pub mod ipc;
 pub mod json;
 pub mod parquet;

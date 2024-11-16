@@ -22,6 +22,12 @@ object write extends Natively {
       options: String
   ): Unit
 
+  @native def writeCSV(
+      ptr: Long,
+      filePath: String,
+      options: String
+  ): Unit
+
   @native def writeJson(
       ptr: Long,
       filePath: String,
