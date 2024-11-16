@@ -34,11 +34,6 @@ pub fn writeCSV(
         .remove("write_csv_float_precision")
         .and_then(|s| s.parse::<usize>().ok());
 
-    let overwrite_mode = options
-        .remove("write_mode")
-        .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
-        .unwrap_or(false);
-
     let separator = options
         .remove("write_csv_separator")
         .and_then(|s| s.parse::<u8>().ok());
@@ -62,15 +57,20 @@ pub fn writeCSV(
             _ => QuoteStyle::Necessary,
         });
 
+    let overwrite_mode = options
+        .remove("write_mode")
+        .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
+        .unwrap_or(false);
+
     let (mut dataframe, writer): (DataFrame, DynWriter) =
         get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options).unwrap();
 
     let mut csv_writer = CsvWriter::new(writer)
         .with_date_format(date_format)
+        .with_time_format(time_format)
         .with_datetime_format(datetime_format)
         .with_float_precision(float_precision)
-        .with_float_scientific(float_scientific)
-        .with_time_format(time_format);
+        .with_float_scientific(float_scientific);
 
     if let Some(value) = include_bom {
         csv_writer = csv_writer.include_bom(value)
