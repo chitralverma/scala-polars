@@ -94,7 +94,7 @@ impl<'a> RowIterator<'a> {
             width,
             start: 0,
             schema,
-            end: end.unwrap_or(data_frame.height()),
+            end: std::cmp::min(end.unwrap_or(data_frame.height()), data_frame.height()),
         }
     }
 

@@ -1,16 +1,14 @@
 package org.polars.scala.polars.api
 
+import scala.jdk.CollectionConverters._
+
 import org.polars.scala.polars.api.types.Schema
 import org.polars.scala.polars.internal.jni.row
 
-import scala.jdk.CollectionConverters._
-
 class RowIterator private (private[polars] val ptr: Long) {
 
-  def lazyIterator(): Iterator[Row] = lazyIterator(None)
-
-  def lazyIterator(nRows: Option[Long]): Iterator[Row] = new Iterator[Row] {
-    private val iteratorPtr = row.createIterator(ptr, nRows.getOrElse(-1L))
+  private[polars] def lazyIterator(nRows: Long): Iterator[Row] = new Iterator[Row] {
+    private val iteratorPtr = row.createIterator(ptr, nRows)
     private val schema = {
       val schemaString = row.schemaString(iteratorPtr)
       Schema.from(schemaString)

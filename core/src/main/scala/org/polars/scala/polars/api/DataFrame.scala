@@ -167,9 +167,9 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   def count(): Long = data_frame.count(ptr)
 
-  def rowIterator(nRows: Option[Long]): Iterator[Row] = RowIterator.withPtr(ptr).lazyIterator()
+  def rows(nRows: Long): Iterator[Row] = RowIterator.withPtr(ptr).lazyIterator(nRows)
 
-  def rowIterator(): Iterator[Row] = rowIterator(None)
+  def rows(): Iterator[Row] = rows(-1L)
 
   def write(): Writeable = new Writeable(ptr)
 
