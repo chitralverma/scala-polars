@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.util.{Failure, Success, Try}
 
 import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
 
 package object polars {
@@ -15,7 +16,13 @@ package object polars {
     new AtomicReference[LibraryStates.LibraryState](LibraryStates.NOT_LOADED)
 
   final val jsonMapper =
-    JsonMapper.builder().addModule(DefaultScalaModule).build() :: ClassTagExtensions
+    JsonMapper
+      .builder()
+      .addModules(
+        DefaultScalaModule,
+        new JavaTimeModule()
+      )
+      .build() :: ClassTagExtensions
 
   private[polars] def loadLibraryIfRequired(): Unit = {
     if (libraryLoaded.get() == LibraryStates.LOADED)

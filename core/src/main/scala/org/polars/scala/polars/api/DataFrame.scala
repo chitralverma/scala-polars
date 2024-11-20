@@ -167,8 +167,20 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   def count(): Long = data_frame.count(ptr)
 
+  /** Provides an iterator to traverse a specified number of rows from the DataFrame.
+    * @param nRows
+    *   number of rows to traverse
+    * @note
+    *   if `nRows` is greater than the total rows in DataFrame then all rows are included.
+    * @return
+    *   Iterator of [[Row]]
+    */
   def rows(nRows: Long): Iterator[Row] = RowIterator.withPtr(ptr).lazyIterator(nRows)
 
+  /** Provides an iterator to traverse a all rows from the DataFrame.
+    * @return
+    *   Iterator of [[Row]]
+    */
   def rows(): Iterator[Row] = rows(-1L)
 
   def write(): Writeable = new Writeable(ptr)
