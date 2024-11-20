@@ -1,5 +1,3 @@
-use std::path::{Component, PathBuf};
-
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{
     AutoElementsCritical, JBooleanArray, JDoubleArray, JFloatArray, JIntArray, JLongArray, JObject,
@@ -104,34 +102,6 @@ impl JavaArrayToVec for JObjectArray<'_> {
 
         result
     }
-}
-
-pub fn normalize_path(path: &std::path::Path) -> PathBuf {
-    let mut components = path.components().peekable();
-    let mut ret = if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
-        components.next();
-        PathBuf::from(c.as_os_str())
-    } else {
-        PathBuf::new()
-    };
-
-    for component in components {
-        match component {
-            Component::Prefix(..) => unreachable!(),
-            Component::RootDir => {
-                ret.push(component.as_os_str());
-            },
-            Component::CurDir => {},
-            Component::ParentDir => {
-                ret.pop();
-            },
-            Component::Normal(c) => {
-                ret.push(c);
-            },
-        }
-    }
-
-    ret
 }
 
 pub fn get_string(env: &mut JNIEnv, string: JString, error_msg: &str) -> String {

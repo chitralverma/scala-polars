@@ -121,7 +121,7 @@ class Schema private (private[polars] val json: String) {
       _fields = fields
         .map(f => toField(f.get("name").textValue(), f.get("dtype"), f.get("dtype").getNodeType))
         .toArray
-      _fieldNames = fields.map(f => f.get("name").toString).toArray
+      _fieldNames = fields.map(f => f.get("name").textValue()).toArray
 
     case _ =>
       throw new IllegalArgumentException("Provided schema string is an invalid JSON.")
