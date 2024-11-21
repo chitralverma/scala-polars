@@ -1,7 +1,7 @@
 use std::clone::Clone;
 
-use jni::objects::{JClass, JObject, JObjectArray, JValue};
-use jni::sys::{jlong, jobjectArray, jsize, jstring};
+use jni::objects::{JClass, JList, JObject, JObjectArray, JValue};
+use jni::sys::{jbyte, jlong, jobjectArray, jsize, jstring};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_traits::ToPrimitive;
@@ -120,6 +120,40 @@ pub trait IntoJava<'a> {
     fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a>;
 }
 
+impl<'a> IntoJava<'a> for &[u8] {
+    fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
+        let byte_array = env
+            .new_byte_array(self.len() as jsize)
+            .expect("Failed to create byte array");
+        env.set_byte_array_region(&byte_array, 0, unsafe {
+            // Safe because `u8` and `jbyte` are compatible in layout
+            std::slice::from_raw_parts(self.as_ptr() as *const jbyte, self.len())
+        })
+        .expect("Failed to set element in byte array");
+
+        JObject::from(byte_array)
+    }
+}
+
+impl<'a> IntoJava<'a> for Series {
+    fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
+        let j_list_obj = env
+            .new_object("java/util/ArrayList", "()V", &[])
+            .expect("Failed to create nested Java ArrayList");
+        let j_list = JList::from_env(env, &j_list_obj).unwrap();
+
+        for any_value in self.iter() {
+            let wrapped = AnyValueWrapper(any_value);
+            let element = wrapped.into_java(env);
+            j_list
+                .add(env, &element)
+                .expect("Failed to set element in byte array");
+        }
+
+        j_list_obj
+    }
+}
+
 impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
     fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
         match self.0 {
@@ -134,6 +168,13 @@ impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
             AnyValue::Float32(v) => box_float(env, v),
             AnyValue::Float64(v) => box_double(env, v),
             AnyValue::Date(days) => box_date(env, days as i64),
+            AnyValue::Time(v) => box_time(env, v),
+            AnyValue::Datetime(nanos, tu, tz) => box_datetime(env, nanos, tu, tz),
+            AnyValue::DatetimeOwned(nanos, tu, tz) => box_datetime(env, nanos, tu, tz.as_deref()),
+            AnyValue::List(s) => s.into_java(env),
+            AnyValue::Array(s, _) => s.into_java(env),
+            AnyValue::Binary(slice) => slice.into_java(env),
+            AnyValue::BinaryOwned(v) => v.as_slice().into_java(env),
             AnyValue::Boolean(v) => {
                 box_primitive(env, v as u8, "java/lang/Boolean", "(Z)Ljava/lang/Boolean;")
             },
@@ -206,4 +247,56 @@ fn box_date<'a, T: Into<JValue<'a, 'a>>>(env: &mut JNIEnv<'a>, value: T) -> JObj
         "(J)Ljava/time/LocalDate;",
         &[value.into()],
     )
+}
+
+fn box_time<'a, T: Into<JValue<'a, 'a>>>(env: &mut JNIEnv<'a>, value: T) -> JObject<'a> {
+    let wrapper_class = find_java_class(env, "java/time/LocalTime");
+    call_java_static_method(
+        env,
+        wrapper_class,
+        "ofNanoOfDay",
+        "(J)Ljava/time/LocalTime;",
+        &[value.into()],
+    )
+}
+
+fn box_datetime<'a>(
+    env: &mut JNIEnv<'a>,
+    timestamp: i64,
+    time_unit: TimeUnit,
+    time_zone: Option<&TimeZone>,
+) -> JObject<'a> {
+    let nanos = match time_unit {
+        TimeUnit::Nanoseconds => timestamp,
+        TimeUnit::Microseconds => timestamp * 1_000,
+        TimeUnit::Milliseconds => timestamp * 1_000_000,
+    };
+    let jzoned_date_time = env
+        .call_static_method(
+            "java/time/Instant",
+            "ofEpochSecond",
+            "(JJ)Ljava/time/Instant;",
+            &[
+                JValue::Long(nanos / 1_000_000_000),
+                JValue::Long((nanos % 1_000_000_000) as jlong),
+            ],
+        )
+        .ok()
+        .and_then(|v| v.l().ok())
+        .expect("Cant");
+
+    // If a timezone is specified, convert it to ZonedDateTime
+    if let Some(zone) = time_zone {
+        let zone_id: JObject = env.new_string(zone).expect("Cant 2").into();
+        let cls = find_java_class(env, "java/time/ZonedDateTime");
+        call_java_static_method(
+            env,
+            cls,
+            "ofInstant",
+            "(Ljava/time/Instant;Ljava/time/ZoneId;)Ljava/time/ZonedDateTime;",
+            &[JValue::Object(&jzoned_date_time), JValue::Object(&zone_id)],
+        )
+    } else {
+        jzoned_date_time
+    }
 }
