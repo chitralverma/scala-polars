@@ -331,6 +331,53 @@ object Series {
   def ofString(name: String, values: java.lang.Iterable[java.lang.String]): Series =
     Series.ofString(name, values.asScala.toArray)
 
+  /** Initialize new series by name and values of type [[java.time.LocalTime]].
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a scala or java array
+    *
+    * @return
+    *   Series of type [[java.time.LocalTime]]. If `values` is empty, empty series is returned
+    *   retaining type.
+    */
+  def ofTime(name: String, values: Array[java.time.LocalTime]): Series =
+    Series.withPtr(
+      series.new_time_series(
+        name,
+        values.map(v => java.time.format.DateTimeFormatter.ISO_LOCAL_TIME.format(v))
+      )
+    )
+
+  /** Initialize new series by name and values of type [[java.time.LocalTime]].
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a scala iterable
+    *
+    * @return
+    *   Series of type [[java.time.LocalTime]]. If `values` is empty, empty series is returned
+    *   retaining type.
+    */
+  def ofTime(name: String, values: Iterable[java.time.LocalTime]): Series =
+    Series.ofTime(name, values.toArray)
+
+  /** Initialize new series by name and values of type [[java.time.LocalTime]].
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a java iterable
+    *
+    * @return
+    *   Series of type [[java.time.LocalTime]]. If `values` is empty, empty series is returned
+    *   retaining type.
+    */
+  def ofTime(name: String, values: java.lang.Iterable[java.time.LocalTime]): Series =
+    Series.ofTime(name, values.asScala.toArray)
+
   /** Initialize new series by name and values of type [[java.time.LocalDate]].
     *
     * @param name
