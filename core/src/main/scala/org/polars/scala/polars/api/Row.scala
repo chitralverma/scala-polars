@@ -62,7 +62,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value at position `i` as the provided generic type.
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getAs[T: ClassTag](i: Int): T = {
@@ -74,17 +74,17 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as the provided generic type.
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getAs[T: ClassTag](name: String): T =
     getAs[T](fieldIndex(name))
 
-  /** Returns the value at position `i` as the per the provided [[Class]].
+  /** Returns the value at position `i` as the per the provided Class.
     *
     * @param cls
     *   Class of output value
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getAs[T](i: Int, cls: Class[T]): T = {
@@ -93,11 +93,11 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     else throw new ClassCastException(s"Unable to cast value `$v` as `${cls.getCanonicalName}`")
   }
 
-  /** Returns the value by column `name` as the per the provided [[Class]].
+  /** Returns the value by column `name` as the per the provided class.
     *
     * @param cls
     *   Class of output value
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getAs[T](name: String, cls: Class[T]): T =
@@ -105,7 +105,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value at position `i` as Boolean
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getBoolean(i: Int): Boolean = {
@@ -115,7 +115,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as Boolean
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getBoolean(name: String): Boolean =
@@ -123,7 +123,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value at position `i` as Int
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getInt(i: Int): Int = {
@@ -133,7 +133,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as Int
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getInt(name: String): Int =
@@ -141,7 +141,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value at position `i` as Long
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getLong(i: Int): Long = {
@@ -151,14 +151,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as Long
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getLong(name: String): Long = getLong(fieldIndex(name))
 
   /** Returns the value at position `i` as Float
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getFloat(i: Int): Float = {
@@ -168,14 +168,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as Float
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getFloat(name: String): Float = getFloat(fieldIndex(name))
 
   /** Returns the value at position `i` as Double
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getDouble(i: Int): Double = {
@@ -185,14 +185,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as Double
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getDouble(name: String): Double = getDouble(fieldIndex(name))
 
   /** Returns the value at position `i` as [[java.time.LocalDate]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getDate(i: Int): java.time.LocalDate = {
@@ -202,14 +202,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as [[java.time.LocalDate]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getDate(name: String): java.time.LocalDate = getDate(fieldIndex(name))
 
   /** Returns the value at position `i` as String
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getString(i: Int): String = {
@@ -219,14 +219,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as String
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getString(name: String): String = getString(fieldIndex(name))
 
   /** Returns the value at position `i` as [[java.time.LocalTime]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getTime(i: Int): java.time.LocalTime = {
@@ -240,14 +240,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as [[java.time.LocalTime]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getTime(name: String): java.time.LocalTime = getTime(fieldIndex(name))
 
   /** Returns the value at position `i` as [[java.time.ZonedDateTime]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getZonedDateTime(i: Int): java.time.ZonedDateTime = {
@@ -265,14 +265,14 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as [[java.time.ZonedDateTime]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getZonedDateTime(name: String): java.time.ZonedDateTime = getZonedDateTime(fieldIndex(name))
 
   /** Returns the value at position `i` as [[java.util.List]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getJList[T: ClassTag](i: Int): java.util.List[T] = {
@@ -286,21 +286,21 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
 
   /** Returns the value by column `name` as [[java.util.List]]
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getJList[T: ClassTag](name: String): java.util.List[T] = getJList[T](fieldIndex(name))
 
   /** Returns the value at position `i` as scala Sequence
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getSeq[T: ClassTag](i: Int): Seq[T] = getJList[T](i).asScala.toSeq
 
   /** Returns the value by column `name` as scala Sequence
     *
-    * @throws ClassCastException
+    * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
   def getSeq[T: ClassTag](name: String): Seq[T] = getSeq[T](fieldIndex(name))
