@@ -18,7 +18,15 @@ object ProjectDependencies {
            Seq(
              "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollections
            )
-         else Nil)
+         else Nil) ++
+        (
+          scalaVersion.value match {
+            // Only include scala-reflect for Scala 2
+            case v if v.startsWith("2.") => Seq("org.scala-lang" % "scala-reflect" % v)
+            // No scala-reflect for Scala 3
+            case _ => Seq.empty
+          }
+        )
     }
   )
 

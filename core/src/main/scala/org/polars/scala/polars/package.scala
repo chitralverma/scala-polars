@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.{Failure, Success, Try}
 
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
@@ -23,6 +24,8 @@ package object polars {
         new JavaTimeModule()
       )
       .build() :: ClassTagExtensions
+
+  jsonMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
   private[polars] def loadLibraryIfRequired(): Unit = {
     if (libraryLoaded.get() == LibraryStates.LOADED)

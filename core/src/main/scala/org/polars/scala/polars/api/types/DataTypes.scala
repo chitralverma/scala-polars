@@ -4,6 +4,7 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+import scala.reflect.ClassTag
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -22,7 +23,7 @@ case object StringType extends BasicDataType
 
 case object BooleanType extends BasicDataType
 
-case object IntType extends BasicDataType
+case object IntegerType extends BasicDataType
 
 case object LongType extends BasicDataType
 
@@ -31,6 +32,12 @@ case object FloatType extends BasicDataType
 case object DoubleType extends BasicDataType
 
 case object DateType extends BasicDataType
+
+case object TimeType extends DataType
+
+case object DateTimeType extends DataType
+
+case object ListType extends DataType
 
 case class TimeType(protected val unitStr: String) extends DataType {
   val timeUnit: Option[TimeUnit] =
@@ -131,13 +138,33 @@ object DataType {
   def fromBasicType(typeStr: String): DataType = typeStr match {
     case StringRegex() => StringType
     case BooleanRegex() => BooleanType
-    case IntRegex() => IntType
+    case IntRegex() => IntegerType
     case LongRegex() => LongType
     case FloatRegex() => FloatType
     case DoubleRegex() => DoubleType
     case DateRegex() => DateType
     case typeStr =>
       throw new IllegalArgumentException(s"Unknown basic type `$typeStr` is not supported.")
+  }
+
+  def typeToDataType[T: ClassTag](): DataType = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass
+    clazz match {
+      case c if c == classOf[java.lang.Integer] || c == classOf[Int] => IntegerType
+      case c if c == classOf[java.lang.Long] || c == classOf[Long] => LongType
+      case c if c == classOf[java.lang.Boolean] || c == classOf[Boolean] => BooleanType
+      case c if c == classOf[java.lang.Float] || c == classOf[Float] => FloatType
+      case c if c == classOf[java.lang.Double] || c == classOf[Double] => DoubleType
+      case c if c == classOf[java.time.LocalDate] => DateType
+      case c if c == classOf[java.time.LocalTime] => TimeType
+      case c if c == classOf[java.time.ZonedDateTime] => DateTimeType
+      case c if c == classOf[java.lang.String] || c == classOf[String] => StringType
+      case c if c == classOf[java.util.List[_]] => ListType
+      case c =>
+        throw new IllegalArgumentException(
+          s"Data type could not be found for class `${c.getSimpleName}`"
+        )
+    }
   }
 
   /** Borrowed from Apache Spark source to represent [[DataType]] as a tree string. */
