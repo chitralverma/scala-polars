@@ -15,7 +15,7 @@ class RowIterator private (private[polars] val ptr: Long) {
     private val iteratorPtr = row.createIterator(ptr, nRows)
     private val schema = {
       val schemaString = row.schemaString(iteratorPtr)
-      Schema.from(schemaString)
+      Schema.fromString(schemaString)
     }
 
     private var nextValue: Option[Array[Object]] = fetchNext()
@@ -41,6 +41,8 @@ object RowIterator {
 }
 
 class Row private (private[polars] val arr: Array[Object], schema: Schema) {
+
+  assert(schema != null, "Schema of a Row cannot be null")
 
   /** Returns the Schema for the row. This yields same value as [[DataFrame.schema]] */
   def getSchema: Schema = schema
@@ -305,6 +307,32 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     */
   def getSeq[T: ClassTag](name: String): Seq[T] = getSeq[T](fieldIndex(name))
 
+  /** Returns the value(s) of struct column at position `i` as [[Row]]
+    *
+    * @throws java.lang.ClassCastException
+    *   when data type does not match.
+    */
+  def getStruct(i: Int): Row = {
+    val s = getSchema.getFields(i).dataType match {
+      case StructType(fields) =>
+        Schema.fromFields(fields)
+      case x =>
+        assertDataType(x, StructType)
+        null
+    }
+
+    val arr = getAs[java.util.HashMap[String, Object]](i).values().toArray
+
+    Row.fromObjects(arr, s)
+  }
+
+  /** Returns the value(s) of struct column `name` as [[Row]]
+    *
+    * @throws java.lang.ClassCastException
+    *   when data type does not match.
+    */
+  def getStruct(name: String): Row = getStruct(fieldIndex(name))
+
   /** Checks whether the value at position `i` is null. */
   def isNullAt(i: Int): Boolean = arr(i) == null
 
@@ -347,5 +375,5 @@ object Row {
   private def assertDataType(target: DataType, dt: DataType): Unit =
     assert(dt == target, s"Data Type mismatch, field is of `$target` but `$dt` was provided")
 
-  private[polars] def fromObjects(arr: Array[Object], schema: Schema) = new Row(arr, schema)
+  def fromObjects(arr: Array[Object], schema: Schema) = new Row(arr, schema)
 }

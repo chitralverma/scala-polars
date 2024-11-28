@@ -1,6 +1,6 @@
 use std::clone::Clone;
 
-use jni::objects::{JClass, JList, JObject, JObjectArray, JValue};
+use jni::objects::{JClass, JList, JMap, JObject, JObjectArray, JValue};
 use jni::sys::{jbyte, jlong, jobjectArray, jsize, jstring};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
@@ -44,7 +44,6 @@ pub unsafe fn advanceIterator(
         for (i, any_value) in next_avs.into_iter().enumerate() {
             let wrapped = AnyValueWrapper(any_value);
             let java_object = wrapped.into_java(&mut env);
-            // let value = JValue::Object(&java_object);
             env.set_object_array_element(&jarray, i as jsize, java_object)
                 .unwrap();
         }
@@ -120,6 +119,43 @@ pub trait IntoJava<'a> {
     fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a>;
 }
 
+impl<'a> IntoJava<'a> for &StructArray {
+    fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
+        let (fld, _, arrs, _nulls) = self.clone().into_data();
+
+        let iter = fld.iter().zip(arrs).map(|(fld, arr)| {
+            // SAFETY:
+            // reported data type is correct
+            unsafe {
+                (
+                    fld.name.clone(),
+                    Series::_try_from_arrow_unchecked_with_md(
+                        fld.name.clone(),
+                        vec![arr],
+                        fld.dtype(),
+                        Some(&fld.metadata),
+                    ),
+                )
+            }
+        });
+
+        let map = env
+            .new_object("java/util/HashMap", "()V", &[])
+            .expect("Failed to create Java row map");
+        let j_map = JMap::from_env(env, &map).unwrap();
+
+        for (name, s) in iter {
+            let series = s.expect("Unable to get series from struct");
+            let java_object = AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
+
+            let key = env.new_string(name).unwrap();
+            j_map.put(env, &key, &java_object).unwrap();
+        }
+
+        map
+    }
+}
+
 impl<'a> IntoJava<'a> for &[u8] {
     fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
         let byte_array = env
@@ -189,10 +225,12 @@ impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
                 .new_string(v)
                 .expect("Failed to create Java string")
                 .into(),
+            AnyValue::Struct(row_idx, arr, _) => arr.clone().sliced(row_idx, 1).into_java(env),
             _ => JObject::null(),
         }
     }
 }
+
 fn find_java_class<'a>(env: &mut JNIEnv<'a>, class: &str) -> JClass<'a> {
     env.find_class(class)
         .expect(&format!("Failed to find Java class '{class}'"))
