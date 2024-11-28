@@ -39,6 +39,8 @@ case object DateTimeType extends DataType
 
 case object ListType extends DataType
 
+case object StructType extends DataType
+
 case class TimeType(protected val unitStr: String) extends DataType {
   val timeUnit: Option[TimeUnit] =
     unitStr match {
@@ -117,8 +119,10 @@ case class ListType(tpe: DataType) extends DataType {
 
 }
 
-case class StructType(fields: Seq[Field]) extends DataType {
+case class StructType(fields: Array[Field]) extends DataType {
   override def simpleName: String = "struct"
+
+  def toSchema: Schema = Schema.fromFields(fields)
 
   /** Borrowed from Apache Spark source to represent [[StructType]] as a tree string. */
   private[polars] def buildFormattedString(prefix: String, buffer: StringBuffer): Unit =

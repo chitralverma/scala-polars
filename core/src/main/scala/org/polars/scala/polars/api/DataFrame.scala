@@ -15,7 +15,7 @@ class DataFrame private (private[polars] val ptr: Long) {
 
   val schema: Schema = {
     val schemaString = data_frame.schemaString(ptr)
-    Schema.from(schemaString)
+    Schema.fromString(schemaString)
   }
 
   val width: Int = schema.getFields.length
