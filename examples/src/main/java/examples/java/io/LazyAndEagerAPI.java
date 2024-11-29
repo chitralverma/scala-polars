@@ -4,6 +4,8 @@ import examples.scala.utils.CommonUtils;
 import org.polars.scala.polars.Polars;
 import org.polars.scala.polars.api.DataFrame;
 import org.polars.scala.polars.api.LazyFrame;
+import org.polars.scala.polars.api.Row;
+import scala.collection.Iterator;
 
 /**
  * Polars provides 2 API for reading datasets lazily ({@code scan}) or eagerly ({@code read}).
@@ -52,6 +54,14 @@ public class LazyAndEagerAPI {
     /* Lazily read only first 3 rows */
     df = Polars.csv().nRows(3).scan(path).collect();
     System.out.printf("Total rows: %s%n%n", df.count());
+
+    System.out.println("Rows:");
+    Iterator<Row> rows = df.rows();
+
+    while (rows.hasNext()) {
+      System.out.println(rows.next());
+    }
+    System.out.println("\n");
 
     /* Convert DataFrame back to LazyFrame */
     LazyFrame backToLdf = df.toLazy();

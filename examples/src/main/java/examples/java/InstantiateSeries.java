@@ -48,29 +48,58 @@ public class InstantiateSeries {
     Series.ofDate("series_date_java_list", Collections.singletonList(java.time.LocalDate.now()))
         .show();
 
-    // java.time.LocalDateTime
+    // java.time.LocalTime
+    Series.ofTime(
+            "series_time_java_array_primitive",
+            new java.time.LocalTime[] {java.time.LocalTime.now()})
+        .show();
+    Series.ofTime("series_time_java_list", Collections.singletonList(java.time.LocalTime.now()))
+        .show();
+
+    // java.time.ZonedDateTime
     Series.ofDateTime(
             "series_datetime_java_array_primitive",
-            new java.time.LocalDateTime[] {java.time.LocalDateTime.now()})
+            new java.time.ZonedDateTime[] {java.time.ZonedDateTime.now()})
         .show();
     Series.ofDateTime(
-            "series_datetime_java_list", Collections.singletonList(java.time.LocalDateTime.now()))
+            "series_datetime_java_list", Collections.singletonList(java.time.ZonedDateTime.now()))
         .show();
 
     /* Values as Java array/ list of Nested List Types */
 
     // int or java.lang.Integer
     Series.ofList("series_list_int_java_array", new java.lang.Integer[][] {{1, 2, 3}}).show();
-    Series.ofList("series_list_int_java_list", Arrays.asList(Arrays.asList(1, 2, 3))).show();
+    Series.ofList("series_list_int_java_list", Collections.singletonList(Arrays.asList(1, 2, 3)))
+        .show();
 
     // String
     Series.ofList("series_list_str_java_array", new String[][] {{"a", "b"}}).show();
-    Series.ofList("series_list_str_java_list", Arrays.asList(Arrays.asList("a", "b"))).show();
+    Series.ofList("series_list_str_java_list", Collections.singletonList(Arrays.asList("a", "b")))
+        .show();
 
     // Deep Nested
     Series.ofList("series_list_list_str_java_array", new String[][][] {{{"a", "b"}}}).show();
     Series.ofList(
-            "series_list_list_str_java_list", Arrays.asList(Arrays.asList(Arrays.asList("a", "b"))))
+            "series_list_list_str_java_list",
+            Collections.singletonList(Collections.singletonList(Arrays.asList("a", "b"))))
+        .show();
+
+    /* Values as Java array/ list of Struct Types */
+
+    Series.ofSeries(
+            "series_struct_java_array",
+            new Series[] {
+              Series.ofInt("int_col", new int[] {1, 2, 3}),
+              Series.ofString("str_col", new String[] {"a", "b", "c"}),
+              Series.ofBoolean("bool_col", new boolean[] {true, false, true}),
+            })
+        .show();
+    Series.ofSeries(
+            "series_struct_java_list",
+            Arrays.asList(
+                Series.ofInt("int_col", Arrays.asList(1, 2, 3)),
+                Series.ofString("str_col", Arrays.asList("a", "b", "c")),
+                Series.ofBoolean("bool_col", Arrays.asList(true, false, true))))
         .show();
   }
 }

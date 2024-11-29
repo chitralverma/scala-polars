@@ -331,6 +331,53 @@ object Series {
   def ofString(name: String, values: java.lang.Iterable[java.lang.String]): Series =
     Series.ofString(name, values.asScala.toArray)
 
+  /** Initialize new series by name and values of type [[java.time.LocalTime]].
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a scala or java array
+    *
+    * @return
+    *   Series of type [[java.time.LocalTime]]. If `values` is empty, empty series is returned
+    *   retaining type.
+    */
+  def ofTime(name: String, values: Array[java.time.LocalTime]): Series =
+    Series.withPtr(
+      series.new_time_series(
+        name,
+        values.map(v => java.time.format.DateTimeFormatter.ISO_LOCAL_TIME.format(v))
+      )
+    )
+
+  /** Initialize new series by name and values of type [[java.time.LocalTime]].
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a scala iterable
+    *
+    * @return
+    *   Series of type [[java.time.LocalTime]]. If `values` is empty, empty series is returned
+    *   retaining type.
+    */
+  def ofTime(name: String, values: Iterable[java.time.LocalTime]): Series =
+    Series.ofTime(name, values.toArray)
+
+  /** Initialize new series by name and values of type [[java.time.LocalTime]].
+    *
+    * @param name
+    *   Name of Series
+    * @param values
+    *   Values of Series as a java iterable
+    *
+    * @return
+    *   Series of type [[java.time.LocalTime]]. If `values` is empty, empty series is returned
+    *   retaining type.
+    */
+  def ofTime(name: String, values: java.lang.Iterable[java.time.LocalTime]): Series =
+    Series.ofTime(name, values.asScala.toArray)
+
   /** Initialize new series by name and values of type [[java.time.LocalDate]].
     *
     * @param name
@@ -389,7 +436,7 @@ object Series {
     *   Series of type [[java.time.LocalDateTime]]. If `values` is empty, empty series is returned
     *   retaining type.
     */
-  def ofDateTime(name: String, values: Array[java.time.LocalDateTime]): Series =
+  def ofDateTime(name: String, values: Array[java.time.ZonedDateTime]): Series =
     Series.withPtr(
       series.new_datetime_series(
         name,
@@ -408,7 +455,7 @@ object Series {
     *   Series of type [[java.time.LocalDateTime]]. If `values` is empty, empty series is returned
     *   retaining type.
     */
-  def ofDateTime(name: String, values: Iterable[java.time.LocalDateTime]): Series =
+  def ofDateTime(name: String, values: Iterable[java.time.ZonedDateTime]): Series =
     Series.ofDateTime(name, values.toArray)
 
   /** Initialize new series by name and values of type [[java.time.LocalDateTime]].
@@ -422,10 +469,10 @@ object Series {
     *   Series of type [[java.time.LocalDateTime]]. If `values` is empty, empty series is returned
     *   retaining type.
     */
-  def ofDateTime(name: String, values: java.lang.Iterable[java.time.LocalDateTime]): Series =
+  def ofDateTime(name: String, values: java.lang.Iterable[java.time.ZonedDateTime]): Series =
     Series.ofDateTime(name, values.asScala.toArray)
 
-  /** Initialize new series by name and values of type [[Series]].
+  /** Initialize new series (struct) by name and values of type [[Series]].
     *
     * @param name
     *   Name of Series
@@ -436,9 +483,9 @@ object Series {
     *   Series of type [[Series]]. If `values` is empty, empty series is returned retaining type.
     */
   def ofSeries(name: String, values: Array[Series]): Series =
-    Series.withPtr(series.new_list_series(name, values.map(_.ptr)))
+    Series.withPtr(series.new_struct_series(name, values.map(_.ptr)))
 
-  /** Initialize new series by name and values of type [[Series]].
+  /** Initialize new series (struct) by name and values of type [[Series]].
     *
     * @param name
     *   Name of Series
@@ -451,7 +498,7 @@ object Series {
   def ofSeries(name: String, values: Iterable[Series]): Series =
     Series.ofSeries(name, values.toArray)
 
-  /** Initialize new series by name and values of type [[Series]].
+  /** Initialize new series (struct) by name and values of type [[Series]].
     *
     * @param name
     *   Name of Series
@@ -509,5 +556,5 @@ object Series {
   def ofList[T](name: String, values: Array[Array[T]]): Series =
     Series.ofList(name, values.map(_.toSeq).toSeq)
 
-  private[polars] def withPtr(ptr: Long) = new Series(ptr)
+  def withPtr(ptr: Long) = new Series(ptr)
 }

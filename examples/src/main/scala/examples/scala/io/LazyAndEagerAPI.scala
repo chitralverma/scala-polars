@@ -44,6 +44,10 @@ object LazyAndEagerAPI {
     df = Polars.csv.nRows(3).scan(path).collect()
     printf("Total rows: %s%n%n", df.count())
 
+    println("Rows:")
+    df.rows().foreach(println)
+    println("\n")
+
     /* Convert DataFrame back to LazyFrame */
     val backToLdf: LazyFrame = df.toLazy
     printf("Show schema: %s%n%n", backToLdf.schema)

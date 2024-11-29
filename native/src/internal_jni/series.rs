@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use std::convert::Into;
+
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::{
     JBooleanArray, JDoubleArray, JFloatArray, JIntArray, JLongArray, JObject, JObjectArray, JString,
@@ -7,7 +9,7 @@ use jni::objects::{
 use jni::sys::{jlong, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::export::chrono::{NaiveDate, NaiveDateTime};
+use polars::export::chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 
@@ -178,6 +180,38 @@ pub fn new_date_series(
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+pub fn new_time_series(
+    mut env: JNIEnv,
+    object: JObject,
+    name: JString,
+    values: JObjectArray,
+) -> jlong {
+    let mut data: Vec<NaiveTime> = Vec::new();
+    let num_values = env.get_array_length(&values).unwrap();
+
+    for i in 0..num_values {
+        let result = env
+            .get_object_array_element(&values, i)
+            .map(JString::from)
+            .unwrap();
+        let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
+        let time = NaiveTime::parse_from_str(val.as_str(), "%H:%M:%S%.f").unwrap_or_else(|_| {
+            panic!(
+                "Provided value `{}` cannot be parsed to time with format `%H:%M:%S`",
+                val
+            )
+        });
+
+        data.push(time)
+    }
+
+    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series = Series::new(PlSmallStr::from_string(series_name), data);
+
+    series_to_ptr(&mut env, object, Ok(series))
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
 pub fn new_datetime_series(
     mut env: JNIEnv,
     object: JObject,
@@ -232,6 +266,35 @@ pub fn new_list_series(
 
     let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
     let series = Series::new(PlSmallStr::from_string(series_name), data);
+
+    series_to_ptr(&mut env, object, Ok(series))
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+pub fn new_struct_series(
+    mut env: JNIEnv,
+    object: JObject,
+    name: JString,
+    values: JLongArray,
+) -> jlong {
+    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
+    let data: Vec<Series> = unsafe {
+        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
+            .to_vec()
+            .iter()
+            .map(|p| p.to_i64().unwrap())
+            .map(|ptr| {
+                let j_series = &mut *(ptr as *mut JSeries);
+                j_series.to_owned().series
+            })
+            .collect()
+    };
+
+    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+
+    let series = StructChunked::from_series(series_name.into(), data.len(), data.iter())
+        .unwrap()
+        .into_series();
 
     series_to_ptr(&mut env, object, Ok(series))
 }

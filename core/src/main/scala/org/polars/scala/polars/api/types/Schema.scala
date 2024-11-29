@@ -18,14 +18,13 @@ case class Field(name: String, dataType: DataType) {
 
 }
 
-class Schema private (private[polars] val json: String) {
+class Schema {
 
   private var _fields: Array[Field] = _
-  private var _fieldNames: Array[String] = _
 
   def getFields: Array[Field] = _fields
 
-  def getFieldNames: Array[String] = _fieldNames
+  def getFieldNames: Array[String] = _fields.map(f => f.name)
 
   def getField(i: Int): Option[Field] = Try(getFields(i)).toOption
 
@@ -41,9 +40,7 @@ class Schema private (private[polars] val json: String) {
 
   override def toString: String = treeString
 
-  deserialize()
-
-  def toField(field: (String, JsonNode, JsonNodeType)): Field = field match {
+  private def toField(field: (String, JsonNode, JsonNodeType)): Field = field match {
     // For Basic Types
     case (name, node, _ @JsonNodeType.STRING) =>
       Field(name, DataType.fromBasicType(node.textValue()))
@@ -104,7 +101,7 @@ class Schema private (private[polars] val json: String) {
 
         case _ =>
           throw new IllegalArgumentException("Invalid struct cannot be parsed as a JSON.")
-      }.toSeq
+      }.toArray
 
       Field(name, StructType(sf))
 
@@ -112,19 +109,36 @@ class Schema private (private[polars] val json: String) {
       throw new IllegalArgumentException("Invalid field cannot be parsed as a JSON.")
   }
 
-  private def deserialize(): Unit = Try(jsonMapper.reader.readTree(json)).toOption match {
-    case None =>
-      throw new IllegalArgumentException("Provided schema string cannot be parsed as a JSON.")
+  private def setFields(fields: Array[Field]): Schema = {
+    fields match {
+      case f if f == null || f.isEmpty =>
+        throw new IllegalArgumentException("Provided fields cannot be null or empty.")
 
-    case Some(node: JsonNode) if node.hasNonNull("fields") =>
-      val fields = node.get("fields").elements().asScala.toList
-      _fields = fields
-        .map(f => toField(f.get("name").textValue(), f.get("dtype"), f.get("dtype").getNodeType))
-        .toArray
-      _fieldNames = fields.map(f => f.get("name").toString).toArray
+      case _ =>
+        _fields = fields
+    }
 
-    case _ =>
-      throw new IllegalArgumentException("Provided schema string is an invalid JSON.")
+    this
+  }
+
+  private def deserialize(json: String): Schema = {
+    Try(jsonMapper.reader.readTree(json)).toOption match {
+      case None =>
+        throw new IllegalArgumentException("Provided schema string cannot be parsed as a JSON.")
+
+      case Some(node: JsonNode) if node.hasNonNull("fields") =>
+        val fields = node.get("fields").elements().asScala.toList
+        _fields = fields
+          .map(f =>
+            toField(f.get("name").textValue(), f.get("dtype"), f.get("dtype").getNodeType)
+          )
+          .toArray
+
+      case _ =>
+        throw new IllegalArgumentException("Provided schema string is an invalid JSON.")
+    }
+
+    this
   }
 
   /** Borrowed from Apache Spark source to represent Schema as a tree string. */
@@ -140,5 +154,7 @@ class Schema private (private[polars] val json: String) {
 }
 
 object Schema {
-  def from(jsonString: String): Schema = new Schema(jsonString)
+  def fromString(jsonString: String): Schema = new Schema().deserialize(jsonString)
+
+  def fromFields(fields: Array[Field]): Schema = new Schema().setFields(fields)
 }

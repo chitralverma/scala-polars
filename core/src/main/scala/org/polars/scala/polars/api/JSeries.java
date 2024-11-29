@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.polars.scala.polars.internal.jni.series;
+
 class JSeries {
     final static String EmptyString = "";
 
@@ -65,6 +67,7 @@ class JSeries {
             sList.add(thisSeries);
         }
 
-        return Series.ofSeries(name, sList);
+        long[] ptrs = sList.stream().map(Series::ptr).mapToLong(Long::longValue).toArray();
+        return Series.withPtr(series.new_list_series(name, ptrs));
     }
 }

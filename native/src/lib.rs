@@ -1,4 +1,6 @@
 #![allow(non_snake_case)]
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::expect_fun_call)]
 
 use jni::objects::{JObject, JString};
 use jni::sys::{jboolean, jstring, JNI_TRUE};
