@@ -11,7 +11,6 @@ pub mod internal_jni;
 pub mod j_data_frame;
 pub mod j_expr;
 pub mod j_lazy_frame;
-pub mod j_series;
 pub mod utils;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.common$")]
