@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
 use jni::objects::{JObject, JString};
-use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::io::avro::{AvroCompression, AvroWriter};
@@ -30,7 +29,7 @@ fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression
 pub fn writeAvro(
     mut env: JNIEnv,
     _object: JObject,
-    df_ptr: jlong,
+    df_ptr: *mut DataFrame,
     filePath: JString,
     options: JString,
 ) {

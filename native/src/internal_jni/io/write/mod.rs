@@ -9,7 +9,6 @@ use std::io::Write;
 use std::sync::Arc;
 
 use jni::objects::JString;
-use jni::sys::jlong;
 use jni::JNIEnv;
 use object_store::path::Path;
 use object_store::ObjectStore;
@@ -18,7 +17,6 @@ use polars::io::pl_async::get_runtime;
 use polars::prelude::*;
 
 use crate::internal_jni::utils::{get_file_path, get_string};
-use crate::j_data_frame::JDataFrame;
 
 pub type ObjectStoreRef = Arc<dyn ObjectStore>;
 pub type DynWriter = Box<dyn Write>;
@@ -78,7 +76,7 @@ async fn create_cloud_writer(
 
 fn get_df_and_writer(
     env: &mut JNIEnv,
-    df_ptr: jlong,
+    df_ptr: *mut DataFrame,
     filePath: JString,
     overwrite_mode: bool,
     writer_options: PlHashMap<String, String>,
@@ -105,8 +103,6 @@ fn get_df_and_writer(
         },
     };
 
-    let j_df = unsafe { &mut *(df_ptr as *mut JDataFrame) };
-    let dataframe = j_df.to_owned().df;
-
+    let dataframe = unsafe { &*df_ptr }.clone();
     Ok((dataframe, writer))
 }

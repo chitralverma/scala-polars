@@ -8,21 +8,14 @@ use polars::prelude::*;
 use rust_decimal::Decimal;
 
 use crate::internal_jni::utils::{find_java_class, get_n_rows, string_to_j_string};
-use crate::j_data_frame::JDataFrame;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.row$")]
-pub unsafe fn createIterator(
-    _: JNIEnv,
-    _: JClass,
-    jdf_ptr: *mut JDataFrame,
-    nRows: jlong,
-) -> jlong {
-    let n_rows = get_n_rows(nRows);
-    let j_df = &mut *jdf_ptr;
-    let mut df = j_df.df.clone();
+pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
+    let df = &mut *df_ptr;
 
-    let ri = RowIterator::new(&mut df, n_rows);
+    let n_rows = get_n_rows(nRows);
+    let ri = RowIterator::new(df, n_rows);
     Box::into_raw(Box::new(ri.clone())) as jlong
 }
 

@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
 use jni::objects::{JObject, JString};
-use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_traits::ToPrimitive;
@@ -44,7 +43,7 @@ fn parse_parquet_compression(
 pub fn writeParquet(
     mut env: JNIEnv,
     _object: JObject,
-    df_ptr: jlong,
+    df_ptr: *mut DataFrame,
     filePath: JString,
     options: JString,
 ) {

@@ -8,7 +8,6 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 
 pub mod internal_jni;
-pub mod j_data_frame;
 pub mod j_expr;
 pub mod j_lazy_frame;
 pub mod utils;

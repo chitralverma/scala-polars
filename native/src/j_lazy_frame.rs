@@ -1,10 +1,12 @@
+use anyhow::Context;
 use jni::objects::{GlobalRef, JBooleanArray, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
 use polars::prelude::{Expr, IdxSize, LazyFrame, PlSmallStr};
 use polars_core::prelude::{SortMultipleOptions, UniqueKeepStrategy};
 
-use crate::internal_jni::utils::{df_to_ptr, ldf_to_ptr, JavaArrayToVec};
+use crate::internal_jni::utils::{ldf_to_ptr, to_ptr, JavaArrayToVec};
+use crate::utils::error::ResultExt;
 
 #[derive(Clone)]
 pub struct JLazyFrame {
@@ -54,11 +56,14 @@ impl JLazyFrame {
         ldf_to_ptr(env, callback_obj, Ok(ldf))
     }
 
-    pub fn collect(&self, env: &mut JNIEnv, callback_obj: JObject) -> jlong {
+    pub fn collect(&self, env: &mut JNIEnv, _: JObject) -> jlong {
         let ldf = self.ldf.clone();
-        let df = ldf.collect();
+        let df = ldf
+            .collect()
+            .context("Failed to collect LazyFrame into DataFrame")
+            .unwrap_or_throw(env);
 
-        df_to_ptr(env, callback_obj, df)
+        to_ptr(df)
     }
 
     pub fn select(&self, env: &mut JNIEnv, callback_obj: JObject, exprs: Vec<Expr>) -> jlong {
