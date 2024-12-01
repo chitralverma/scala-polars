@@ -1,177 +1,182 @@
 #![allow(non_snake_case)]
 
-use jni::objects::ReleaseMode::NoCopyBack;
-use jni::objects::{JBooleanArray, JLongArray, JObject, JObjectArray, JString};
+use anyhow::Context;
+use jni::objects::{JBooleanArray, JClass, JLongArray, JObject, JObjectArray, JString};
 use jni::sys::{jboolean, jint, jlong, jstring, JNI_TRUE};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 use polars_core::series::IsSorted;
 
 use crate::internal_jni::utils::*;
 use crate::j_expr::JExpr;
-use crate::j_lazy_frame::JLazyFrame;
+use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let schema_string = serde_json::to_string(
-        &j_ldf
-            .ldf
-            .collect_schema()
-            .unwrap()
-            .to_arrow(CompatLevel::oldest()),
-    )
-    .unwrap();
+pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jstring {
+    let ldf = &mut *ldf_ptr;
+    let schema = ldf
+        .collect_schema()
+        .map(|op| op.to_arrow(CompatLevel::oldest()))
+        .context("Failed to get schema of LazyFrame")
+        .unwrap_or_throw(&mut env);
 
-    to_jstring(
-        &mut _env,
-        schema_string,
-        "Unable to get/ convert Schema to UTF8.",
-    )
+    serde_json::to_string(&schema)
+        .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
+        .context("Failed to serialize schema")
+        .unwrap_or_throw(&mut env)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn selectFromStrings(
-    mut _env: JNIEnv,
-    _object: JObject,
-    ptr: jlong,
+pub unsafe fn selectFromStrings(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     expr_strs: JObjectArray,
 ) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    let num_expr = _env.get_array_length(&expr_strs).unwrap();
+    let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, expr_strs)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided expression value as string"),
+            )
+        })
+        .map(col)
+        .collect();
 
-    let mut exprs: Vec<Expr> = Vec::new();
-
-    for i in 0..num_expr {
-        let result = _env
-            .get_object_array_element(&expr_strs, i)
-            .map(JString::from)
-            .unwrap();
-        let expr_str = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
-
-        exprs.push(col(expr_str.as_str()))
-    }
-
-    j_ldf.select(&mut _env, _object, exprs)
+    let ldf = (*ldf_ptr).clone().select(exprs);
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn selectFromExprs(mut env: JNIEnv, object: JObject, ptr: jlong, inputs: JLongArray) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-
-    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
-    let exprs: Vec<Expr> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_ldf = &mut *(ptr as *mut JExpr);
-                j_ldf.to_owned().expr
-            })
-            .collect()
-    };
-
-    j_ldf.select(&mut env, object, exprs)
-}
-
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn filterFromExprs(mut env: JNIEnv, object: JObject, ldf_ptr: jlong, expr_ptr: jlong) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
-
-    j_ldf.filter(&mut env, object, j_expr.expr.clone())
-}
-
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn sortFromExprs(
+pub unsafe fn selectFromExprs(
     mut env: JNIEnv,
-    object: JObject,
-    ldf_ptr: jlong,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
+    inputs: JLongArray,
+) -> jlong {
+    let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut JExpr)).to_owned().expr)
+        .collect();
+
+    let ldf = (*ldf_ptr).clone().select(exprs);
+    to_ptr(ldf)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub unsafe fn filterFromExprs(
+    _: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
+    expr_ptr: *mut JExpr,
+) -> jlong {
+    let ldf = (*ldf_ptr).clone().filter((*expr_ptr).expr.clone());
+    to_ptr(ldf)
+}
+
+#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+pub unsafe fn sortFromExprs(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     inputs: JLongArray,
     nullLast: JBooleanArray,
     maintainOrder: jboolean,
 ) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let input_exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut JExpr)).to_owned().expr)
+        .collect();
 
-    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
-    let exprs: Vec<Expr> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_ldf = &mut *(ptr as *mut JExpr);
-                j_ldf.to_owned().expr
-            })
-            .collect()
-    };
+    let nulls_last: Vec<bool> = JavaArrayToVec::to_vec(&mut env, nullLast);
 
-    j_ldf.sort(&mut env, object, exprs, nullLast, maintainOrder == JNI_TRUE)
+    // Extract non-sort expressions and their sort directions
+    let (exprs, descending): (Vec<Expr>, Vec<bool>) = input_exprs
+        .iter()
+        .map(|expr| extract_expr_and_direction(expr, false))
+        .unzip();
+
+    let ldf = (*ldf_ptr).clone().sort_by_exprs(
+        exprs,
+        SortMultipleOptions {
+            descending,
+            nulls_last,
+            maintain_order: maintainOrder == JNI_TRUE,
+            ..Default::default()
+        },
+    );
+
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn topKFromExprs(
+pub unsafe fn topKFromExprs(
     mut env: JNIEnv,
-    object: JObject,
-    ldf_ptr: jlong,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     k: jint,
     inputs: JLongArray,
     nullLast: JBooleanArray,
     maintainOrder: jboolean,
 ) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
+    let input_exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut JExpr)).to_owned().expr)
+        .collect();
 
-    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
-    let exprs: Vec<Expr> = unsafe {
-        arr.to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_ldf = &mut *(ptr as *mut JExpr);
-                j_ldf.to_owned().expr
-            })
-            .collect()
-    };
+    let nulls_last: Vec<bool> = JavaArrayToVec::to_vec(&mut env, nullLast);
 
-    j_ldf.top_k(
-        &mut env,
-        object,
+    // Extract non-sort expressions and their sort directions
+    let (exprs, descending): (Vec<Expr>, Vec<bool>) = input_exprs
+        .iter()
+        .map(|expr| extract_expr_and_direction(expr, false))
+        .unzip();
+
+    let ldf = (*ldf_ptr).clone().top_k(
         k as IdxSize,
         exprs,
-        nullLast,
-        maintainOrder == JNI_TRUE,
-    )
+        SortMultipleOptions {
+            descending,
+            nulls_last,
+            maintain_order: maintainOrder == JNI_TRUE,
+            ..Default::default()
+        },
+    );
+
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn withColumn(
+pub unsafe fn withColumn(
     mut env: JNIEnv,
-    object: JObject,
-    ldf_ptr: jlong,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     col_name: JString,
-    expr_ptr: jlong,
+    expr_ptr: *mut JExpr,
 ) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let name = get_string(&mut env, col_name, "Unable to get/ convert value to UTF8.");
-    let j_expr = unsafe { &mut *(expr_ptr as *mut JExpr) };
+    let name = j_string_to_string(
+        &mut env,
+        &col_name,
+        Some("Failed to parse the provided value as column name"),
+    );
 
-    let ldf = j_ldf
-        .ldf
+    let ldf = (*ldf_ptr)
         .clone()
-        .with_column(j_expr.expr.clone().alias(name.as_str()));
+        .with_column((*expr_ptr).expr.clone().alias(name));
 
-    ldf_to_ptr(&mut env, object, Ok(ldf))
+    to_ptr(ldf)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn optimization_toggle(
-    mut env: JNIEnv,
-    object: JObject,
-    ptr: jlong,
+pub unsafe fn optimization_toggle(
+    _: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     typeCoercion: jboolean,
     predicatePushdown: jboolean,
     projectionPushdown: jboolean,
@@ -181,238 +186,263 @@ pub fn optimization_toggle(
     commSubexprElim: jboolean,
     streaming: jboolean,
 ) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    j_ldf.optimization_toggle(
-        &mut env,
-        object,
-        typeCoercion == JNI_TRUE,
-        predicatePushdown == JNI_TRUE,
-        projectionPushdown == JNI_TRUE,
-        simplifyExpr == JNI_TRUE,
-        slicePushdown == JNI_TRUE,
-        commSubplanElim == JNI_TRUE,
-        commSubexprElim == JNI_TRUE,
-        streaming == JNI_TRUE,
-    )
+    let ldf = (*ldf_ptr)
+        .clone()
+        .with_type_coercion(typeCoercion == JNI_TRUE)
+        .with_predicate_pushdown(predicatePushdown == JNI_TRUE)
+        .with_projection_pushdown(projectionPushdown == JNI_TRUE)
+        .with_simplify_expr(simplifyExpr == JNI_TRUE)
+        .with_slice_pushdown(slicePushdown == JNI_TRUE)
+        .with_comm_subplan_elim(commSubplanElim == JNI_TRUE)
+        .with_comm_subexpr_elim(commSubexprElim == JNI_TRUE)
+        .with_streaming(streaming == JNI_TRUE);
+
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn cache(mut env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    j_ldf.cache(&mut env, object)
+pub unsafe fn cache(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
+    let ldf = (*ldf_ptr).clone().cache();
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn collect(mut env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    j_ldf.collect(&mut env, object)
+pub unsafe fn collect(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
+    let df = (*ldf_ptr)
+        .clone()
+        .collect()
+        .context("Failed to collect LazyFrame into DataFrame")
+        .unwrap_or_throw(&mut env);
+
+    to_ptr(df)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn concatLazyFrames(
+pub unsafe fn concatLazyFrames(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     inputs: JLongArray,
     parallel: jboolean,
     re_chunk: jboolean,
 ) -> jlong {
-    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
+    let ldfs: Vec<_> = JavaArrayToVec::to_vec(&mut env, inputs)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut LazyFrame)).to_owned())
+        .collect();
 
-    let vec: Vec<LazyFrame> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_ldf = &mut *(ptr as *mut JLazyFrame);
-                j_ldf.to_owned().ldf
-            })
-            .collect()
-    };
-
-    let concat_ldf = concat(
-        vec,
+    let concatenated_ldf = concat(
+        ldfs,
         UnionArgs {
-            rechunk: re_chunk == JNI_TRUE,
             parallel: parallel == JNI_TRUE,
+            rechunk: re_chunk == JNI_TRUE,
             ..Default::default()
         },
-    );
-    ldf_to_ptr(&mut env, object, concat_ldf)
+    )
+    .context("Failed to concatenate dataframes")
+    .unwrap_or_throw(&mut env);
+
+    to_ptr(concatenated_ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn limit(mut env: JNIEnv, object: JObject, ldf_ptr: jlong, n: jlong) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-
-    j_ldf.limit(&mut env, object, n as IdxSize)
+pub unsafe fn limit(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
+    let ldf = (*ldf_ptr).clone().limit(n as IdxSize);
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn tail(mut env: JNIEnv, object: JObject, ldf_ptr: jlong, n: jlong) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-
-    j_ldf.tail(&mut env, object, n as IdxSize)
+pub unsafe fn tail(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
+    let ldf = (*ldf_ptr).clone().tail(n as IdxSize);
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn drop(mut _env: JNIEnv, _object: JObject, ptr: jlong, col_names: JObjectArray) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    let num_expr = _env.get_array_length(&col_names).unwrap();
+pub unsafe fn drop(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
+    col_names: JObjectArray,
+) -> jlong {
+    let data: Vec<String> = JavaArrayToVec::to_vec(&mut env, col_names)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided value as column name"),
+            )
+        })
+        .collect();
 
-    let mut cols: Vec<String> = Vec::new();
-
-    for i in 0..num_expr {
-        let result = _env
-            .get_object_array_element(&col_names, i)
-            .map(JString::from)
-            .unwrap();
-        let col_name = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
-
-        cols.push(col_name)
-    }
-
-    j_ldf.drop(&mut _env, _object, cols)
+    let ldf = (*ldf_ptr).clone().drop(data);
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn rename(mut _env: JNIEnv, object: JObject, ldf_ptr: jlong, options: JObject) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-
-    let opts = _env
+pub unsafe fn rename(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
+    options: JObject,
+) -> jlong {
+    let map = env
         .get_map(&options)
-        .expect("Unable to get provided mapping.");
+        .context("Failed to get mapping to rename columns")
+        .unwrap_or_throw(&mut env);
 
-    let mut iterator = opts
-        .iter(&mut _env)
-        .expect("The provided mapping are not iterable.");
+    let mut map_iterator = map
+        .iter(&mut env)
+        .context("Failed to get mapping to rename columns")
+        .unwrap_or_throw(&mut env);
 
     let mut old_vec: Vec<String> = Vec::new();
     let mut new_vec: Vec<String> = Vec::new();
 
-    while let Ok(Some((new, old))) = iterator.next(&mut _env) {
-        let key_str: String = _env
-            .get_string(&JString::from(new))
-            .expect("Invalid old column name.")
-            .into();
+    while let Ok(Some((new, old))) = map_iterator.next(&mut env) {
+        let key_str = j_string_to_string(
+            &mut env,
+            &JString::from(new),
+            Some("Failed to parse the provided existing column name as string"),
+        );
 
-        let value_str: String = _env
-            .get_string(&JString::from(old))
-            .expect("Invalid new column name.")
-            .into();
+        let value_str = j_string_to_string(
+            &mut env,
+            &JString::from(old),
+            Some("Failed to parse the provided new column name as string"),
+        );
 
         old_vec.push(key_str);
         new_vec.push(value_str);
     }
 
-    j_ldf.rename(&mut _env, object, old_vec, new_vec)
+    let ldf = (*ldf_ptr).clone().rename(old_vec, new_vec, false);
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn explain(
-    mut _env: JNIEnv,
-    _object: JObject,
-    ldf_ptr: jlong,
+pub unsafe fn explain(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     optimized: jboolean,
     tree_format: jboolean,
 ) -> jstring {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-    let plan_str = if tree_format == JNI_TRUE {
+    let ldf = (*ldf_ptr).clone();
+    if tree_format == JNI_TRUE {
         if optimized == JNI_TRUE {
-            j_ldf.ldf.describe_optimized_plan_tree()
+            ldf.describe_optimized_plan_tree()
         } else {
-            j_ldf.ldf.describe_plan_tree()
+            ldf.describe_plan_tree()
         }
     } else {
-        j_ldf.ldf.explain(optimized == JNI_TRUE)
+        ldf.explain(optimized == JNI_TRUE)
     }
-    .expect("Unable to describe plan.");
-
-    to_jstring(&mut _env, plan_str, "Unable to get/ convert plan to UTF8.")
+    .map(|plan_str| string_to_j_string(&mut env, plan_str, None::<&str>))
+    .context("Failed to describe plan")
+    .unwrap_or_throw(&mut env)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn unique(
-    mut _env: JNIEnv,
-    _object: JObject,
-    ptr: jlong,
+pub unsafe fn unique(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
     subset: JObjectArray,
     keep: JString,
     maintainOrder: jboolean,
 ) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    let num_expr = _env.get_array_length(&subset).unwrap();
+    let cols: Vec<PlSmallStr> = JavaArrayToVec::to_vec(&mut env, subset)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided value as column name"),
+            )
+            .into()
+        })
+        .collect();
 
-    let mut cols: Vec<PlSmallStr> = Vec::new();
+    let subset: Option<Vec<PlSmallStr>> = if cols.is_empty() { None } else { Some(cols) };
 
-    for i in 0..num_expr {
-        let result = _env
-            .get_object_array_element(&subset, i)
-            .map(JString::from)
-            .unwrap();
-        let col_name = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
+    let keep = match j_string_to_string(
+        &mut env,
+        &keep,
+        Some("Failed to parse the provided value as UniqueKeepStrategy"),
+    )
+    .as_str()
+    {
+        "none" => UniqueKeepStrategy::None,
+        "first" => UniqueKeepStrategy::First,
+        "last" => UniqueKeepStrategy::Last,
+        _ => UniqueKeepStrategy::Any,
+    };
 
-        cols.push(PlSmallStr::from_string(col_name))
-    }
+    let ldf = (*ldf_ptr).clone();
+    let unique_ldf = match maintainOrder == JNI_TRUE {
+        true => ldf.unique_stable(subset, keep),
+        false => ldf.unique(
+            subset.map(|vec| vec.into_iter().map(|s| s.into_string()).collect()),
+            keep,
+        ),
+    };
 
-    let keep = get_string(&mut _env, keep, "Unable to get/ convert value to UTF8.");
-    let sub: Option<Vec<PlSmallStr>> = if cols.is_empty() { None } else { Some(cols) };
-
-    let keep = match keep.as_str() {
-        "any" => Ok(UniqueKeepStrategy::Any),
-        "none" => Ok(UniqueKeepStrategy::None),
-        "first" => Ok(UniqueKeepStrategy::First),
-        "last" => Ok(UniqueKeepStrategy::Last),
-        _ => Err(()),
-    }
-    .expect("Unable to get/ convert value to UniqueKeepStrategy.");
-
-    j_ldf.unique(&mut _env, _object, sub, keep, maintainOrder == JNI_TRUE)
+    to_ptr(unique_ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn drop_nulls(mut _env: JNIEnv, _object: JObject, ptr: jlong, subset: JObjectArray) -> jlong {
-    let j_ldf = unsafe { &mut *(ptr as *mut JLazyFrame) };
-    let num_expr = _env.get_array_length(&subset).unwrap();
-
-    let mut exprs: Vec<Expr> = Vec::new();
-
-    for i in 0..num_expr {
-        let result = _env
-            .get_object_array_element(&subset, i)
-            .map(JString::from)
-            .unwrap();
-        let expr_str = get_string(&mut _env, result, "Unable to get/ convert Expr to UTF8.");
-
-        exprs.push(col(expr_str.as_str()))
-    }
+pub unsafe fn drop_nulls(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
+    subset: JObjectArray,
+) -> jlong {
+    let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, subset)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided expression value as string"),
+            )
+        })
+        .map(col)
+        .collect();
 
     let sub: Option<Vec<Expr>> = if exprs.is_empty() { None } else { Some(exprs) };
 
-    j_ldf.drop_nulls(&mut _env, _object, sub)
+    let ldf = (*ldf_ptr).clone().drop_nulls(sub);
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
-pub fn set_sorted(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong, mapping: JObject) -> jlong {
-    let j_ldf = unsafe { &mut *(ldf_ptr as *mut JLazyFrame) };
-
-    let map = _env
+pub unsafe fn set_sorted(
+    mut env: JNIEnv,
+    _: JClass,
+    ldf_ptr: *mut LazyFrame,
+    mapping: JObject,
+) -> jlong {
+    let map = env
         .get_map(&mapping)
-        .expect("Unable to get provided mapping.");
+        .context("Failed to get mapping to rename columns")
+        .unwrap_or_throw(&mut env);
 
-    let mut iterator = map
-        .iter(&mut _env)
-        .expect("The provided mapping are not iterable.");
+    let mut map_iterator = map
+        .iter(&mut env)
+        .context("Failed to get mapping to rename columns")
+        .unwrap_or_throw(&mut env);
 
     let mut exprs: Vec<Expr> = Vec::new();
+    while let Ok(Some((new, is_descending))) = map_iterator.next(&mut env) {
+        let col_expr = col(j_string_to_string(
+            &mut env,
+            &JString::from(new),
+            Some("Failed to parse the provided column name as string"),
+        ));
 
-    while let Ok(Some((col_name, is_descending))) = iterator.next(&mut _env) {
-        let key_str: String = _env
-            .get_string(&JString::from(col_name))
-            .expect("Invalid old column name.")
-            .into();
-
-        let col_expr = col(key_str.as_str());
         let descending = unsafe { *(is_descending.cast::<jboolean>()) };
 
         let is_sorted = match descending == JNI_TRUE {
@@ -423,6 +453,16 @@ pub fn set_sorted(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong, mapping: J
         exprs.push(col_expr.set_sorted_flag(is_sorted));
     }
 
-    let ldf = j_ldf.ldf.clone().with_columns(exprs);
-    ldf_to_ptr(&mut _env, _object, Ok(ldf))
+    let ldf = (*ldf_ptr).clone().with_columns(exprs);
+    to_ptr(ldf)
+}
+
+// Helper function to extract non-sort expressions and directions
+fn extract_expr_and_direction(expr: &Expr, default_direction: bool) -> (Expr, bool) {
+    match expr {
+        Expr::Sort { expr, options } => {
+            extract_expr_and_direction(&expr.clone(), options.descending)
+        },
+        _ => (expr.clone(), default_direction),
+    }
 }
