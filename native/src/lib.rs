@@ -11,28 +11,30 @@ use jni_fn::jni_fn;
 use utils::error::ResultExt;
 
 pub mod internal_jni;
-pub mod j_expr;
 pub mod utils;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.common$")]
 pub fn version(mut env: JNIEnv, _object: JObject) -> jstring {
     let cargo_toml_raw = include_str!("../Cargo.toml");
-    let cargo_toml: toml::Table = toml::from_str(cargo_toml_raw).unwrap();
-    let polars_version = cargo_toml
-        .get("dependencies")
-        .and_then(|v| v.get("polars"))
-        .and_then(|v| v.get("version"));
+    let cargo_toml_res: anyhow::Result<toml::Table> =
+        toml::from_str(cargo_toml_raw).context("context");
 
-    let polars_version = match polars_version {
-        Some(toml::Value::String(s)) => s.as_str(),
-        _ => "unknown",
-    };
+    cargo_toml_res
+        .map(|cargo_toml| {
+            let polars_version = cargo_toml
+                .get("dependencies")
+                .and_then(|v| v.get("polars"))
+                .and_then(|v| v.get("version"));
 
-    string_to_j_string(
-        &mut env,
-        polars_version,
-        Some("Failed to get polars_rs version"),
-    )
+            let polars_version = match polars_version {
+                Some(toml::Value::String(s)) => s.as_str(),
+                _ => "unknown",
+            };
+
+            string_to_j_string(&mut env, polars_version, None::<&str>)
+        })
+        .context("Failed to get polars_rs version")
+        .unwrap_or_throw(&mut env)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.common$")]

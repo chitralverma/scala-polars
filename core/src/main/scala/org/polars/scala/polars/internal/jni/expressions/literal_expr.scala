@@ -20,6 +20,8 @@ private[polars] object literal_expr extends Natively {
 
   @native def fromDate(value: String): Long
 
-  @native def fromTimestamp(value: String): Long
+  @native def fromTime(value: String): Long
+
+  @native def fromDateTime(value: String): Long
 
 }

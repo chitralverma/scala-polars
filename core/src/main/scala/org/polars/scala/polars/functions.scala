@@ -1,7 +1,7 @@
 package org.polars.scala.polars
 
-import java.sql.{Date, Timestamp}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalTime, ZonedDateTime}
 
 import org.polars.scala.polars.api.expressions.{Column, Expression}
 import org.polars.scala.polars.internal.jni.expressions.{column_expr, literal_expr}
@@ -19,12 +19,14 @@ object functions {
       case v: Long => literal_expr.fromLong(v)
       case v: Float => literal_expr.fromFloat(v)
       case v: Double => literal_expr.fromDouble(v)
-      case v: Date =>
-        val dateStr = DateTimeFormatter.ISO_DATE.format(v.toLocalDate)
-        literal_expr.fromDate(dateStr)
-      case v: Timestamp =>
-        val timestampStr = DateTimeFormatter.ISO_DATE_TIME.format(v.toLocalDateTime)
-        literal_expr.fromTimestamp(timestampStr)
+      case v: LocalDate =>
+        literal_expr.fromDate(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE.format(v))
+      case v: LocalTime =>
+        literal_expr.fromTime(java.time.format.DateTimeFormatter.ISO_LOCAL_TIME.format(v))
+      case v: ZonedDateTime =>
+        literal_expr.fromDateTime(
+          java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(v)
+        )
       case v: String => literal_expr.fromString(v)
       case _ =>
         throw new IllegalArgumentException(

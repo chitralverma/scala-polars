@@ -9,7 +9,6 @@ use polars::prelude::*;
 use polars_core::series::IsSorted;
 
 use crate::internal_jni::utils::*;
-use crate::j_expr::JExpr;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
@@ -60,7 +59,7 @@ pub unsafe fn selectFromExprs(
 ) -> jlong {
     let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut JExpr)).to_owned().expr)
+        .map(|ptr| (*(ptr as *mut Expr)).to_owned())
         .collect();
 
     let ldf = (*ldf_ptr).clone().select(exprs);
@@ -72,9 +71,9 @@ pub unsafe fn filterFromExprs(
     _: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
-    expr_ptr: *mut JExpr,
+    expr_ptr: *mut Expr,
 ) -> jlong {
-    let ldf = (*ldf_ptr).clone().filter((*expr_ptr).expr.clone());
+    let ldf = (*ldf_ptr).clone().filter((*expr_ptr).clone());
     to_ptr(ldf)
 }
 
@@ -89,7 +88,7 @@ pub unsafe fn sortFromExprs(
 ) -> jlong {
     let input_exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut JExpr)).to_owned().expr)
+        .map(|ptr| (*(ptr as *mut Expr)).to_owned())
         .collect();
 
     let nulls_last: Vec<bool> = JavaArrayToVec::to_vec(&mut env, nullLast);
@@ -125,7 +124,7 @@ pub unsafe fn topKFromExprs(
 ) -> jlong {
     let input_exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut JExpr)).to_owned().expr)
+        .map(|ptr| (*(ptr as *mut Expr)).to_owned())
         .collect();
 
     let nulls_last: Vec<bool> = JavaArrayToVec::to_vec(&mut env, nullLast);
@@ -156,7 +155,7 @@ pub unsafe fn withColumn(
     _: JClass,
     ldf_ptr: *mut LazyFrame,
     col_name: JString,
-    expr_ptr: *mut JExpr,
+    expr_ptr: *mut Expr,
 ) -> jlong {
     let name = j_string_to_string(
         &mut env,
@@ -166,7 +165,7 @@ pub unsafe fn withColumn(
 
     let ldf = (*ldf_ptr)
         .clone()
-        .with_column((*expr_ptr).expr.clone().alias(name));
+        .with_column((*expr_ptr).clone().alias(name));
 
     to_ptr(ldf)
 }
