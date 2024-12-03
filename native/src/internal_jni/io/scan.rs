@@ -10,6 +10,7 @@ use jni_fn::jni_fn;
 use polars::io::HiveOptions;
 use polars::prelude::*;
 
+use super::{get_file_path, get_row_index};
 use crate::internal_jni::utils::*;
 use crate::utils::error::ResultExt;
 

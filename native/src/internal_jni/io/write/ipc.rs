@@ -1,11 +1,13 @@
 #![allow(non_snake_case)]
 
+use anyhow::Context;
 use jni::objects::{JObject, JString};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
-use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options, DynWriter};
+use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options};
+use crate::utils::error::ResultExt;
 
 fn parse_ipc_compression(compression: Option<String>) -> Option<IpcCompression> {
     match compression {
@@ -32,7 +34,7 @@ pub fn writeIPC(
     filePath: JString,
     options: JString,
 ) {
-    let mut options = parse_json_to_options(&mut env, options).unwrap();
+    let mut options = parse_json_to_options(&mut env, options);
 
     let compat_level =
         options
@@ -49,8 +51,8 @@ pub fn writeIPC(
 
     let compression = options.remove("write_compression");
 
-    let (mut dataframe, writer): (DataFrame, DynWriter) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options).unwrap();
+    let (mut dataframe, writer) =
+        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
 
     let ipc_compression = parse_ipc_compression(compression);
 
@@ -60,5 +62,8 @@ pub fn writeIPC(
         ipc_writer = ipc_writer.with_compat_level(value)
     }
 
-    ipc_writer.finish(&mut dataframe).unwrap();
+    ipc_writer
+        .finish(&mut dataframe)
+        .context("Failed to write IPC data")
+        .unwrap_or_throw(&mut env);
 }
