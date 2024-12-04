@@ -222,7 +222,7 @@ object DataFrame {
     *   [[org.polars.scala.polars.api.Series]]
     */
   def fromSeries(series: Series, more: Iterable[Series]): DataFrame =
-    fromSeries(series, more.toArray)
+    DataFrame.withPtr(data_frame.fromSeries(more.toSeq.+:(series).map(_.ptr).toArray))
 
   /** Initialize new [[org.polars.scala.polars.api.DataFrame]] from one or more
     * [[org.polars.scala.polars.api.Series]]. The name of a series is used as column name and its

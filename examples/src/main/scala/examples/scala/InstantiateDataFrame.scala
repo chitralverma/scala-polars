@@ -59,6 +59,21 @@ object InstantiateDataFrame {
         )
       )
       .show()
-  }
 
+    DataFrame
+      .fromSeries(
+        Series.ofInt("i32_col", Array[Int](1, 2, 3)),
+        Series.ofLong("i64_col", Array[Long](1L, 2L, 3L)),
+        Series.ofBoolean("bool_col", Array[Boolean](true, false, true)),
+        Series.ofSeries(
+          "struct_col",
+          Array[Series](
+            Series.ofLong("i64_col", Array[Long](1L, 2L, 3L)),
+            Series.ofBoolean("bool_col", Array[Boolean](true, false, true)),
+            Series.ofFloat("f32_col", Seq(1f, 2f, 3f))
+          )
+        )
+      )
+      .show()
+  }
 }
