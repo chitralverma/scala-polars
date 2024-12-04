@@ -54,7 +54,7 @@ object NativeBuildSettings {
                    |--release
                    |--lib
                    |--target $targetTriple
-                   |--out-dir $nativeOutputDir""".stripMargin.replaceAll("\n", " ")
+                   |--artifact-dir $nativeOutputDir""".stripMargin.replaceAll("\n", " ")
 
               executeProcess(cmd = cmd, cwd = Some(nativeRoot.value), sLog.value, infoOnly = true)
               logger.success(s"Successfully built native library at location '$nativeOutputDir'")

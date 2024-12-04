@@ -13,6 +13,7 @@ crate-type = ["cdylib"]
 doc = false
 
 [dependencies]
+anyhow = "1"
 jni = "0.21.1"
 jni_fn = "0.1"
 num-derive = "0.4"
@@ -83,7 +84,7 @@ features = [
     "aws",
     "gcp",
     "azure",
-    "http"
+    "http",
 ]
 
 [profile.release]

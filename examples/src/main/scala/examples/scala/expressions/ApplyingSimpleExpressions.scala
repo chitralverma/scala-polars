@@ -1,8 +1,5 @@
 package examples.scala.expressions
 
-import java.sql.Timestamp
-import java.time.Instant
-
 import scala.util.Random
 
 import org.polars.scala.polars.Polars
@@ -23,13 +20,15 @@ object ApplyingSimpleExpressions {
       .with_column("lower_than_four", col("id") <= 4)
       .filter(col("lower_than_four"))
       .with_column("long_value", lit(Random.nextLong()))
-      .with_column("current_ts", lit(Timestamp.from(Instant.now())))
+      .with_column("date", lit(java.time.LocalDate.now()))
+      .with_column("time", lit(java.time.LocalTime.now()))
+      .with_column("current_ts", lit(java.time.ZonedDateTime.now()))
       .sort(asc("name"), nullLast = true, maintainOrder = false)
       .set_sorted(Map("name" -> false))
       .top_k(2, "id", descending = true, nullLast = true, maintainOrder = false)
       .limit(2) // .head(2)
       .tail(2)
-      .drop("current_ts", "long_value")
+      .drop("long_value")
       .rename("lower_than_four", "less_than_four")
       .drop_nulls()
 

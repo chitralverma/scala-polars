@@ -2,7 +2,8 @@
 
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
-use jni::objects::{JObject, JString};
+use anyhow::Context;
+use jni::objects::{JClass, JString};
 use jni::sys::{jint, jlong};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
@@ -10,8 +11,8 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{expr_to_ptr, get_string};
-use crate::j_expr::JExpr;
+use crate::internal_jni::utils::{j_string_to_string, to_ptr};
+use crate::utils::error::ResultExt;
 
 #[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
 pub enum BinaryOperator {
@@ -44,28 +45,23 @@ pub enum UnaryOperator {
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn column(mut env: JNIEnv, object: JObject, col_name: JString) -> jlong {
-    let name = get_string(
+pub fn column(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
+    let name = j_string_to_string(
         &mut env,
-        col_name,
-        "Unable to get/ convert column name to UTF8.",
+        &value,
+        Some("Failed to parse provided column name as string"),
     );
 
     let expr = col(name.as_str());
-    expr_to_ptr(&mut env, object, expr)
+    to_ptr(expr)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn sort_column_by_name(
-    mut env: JNIEnv,
-    object: JObject,
-    col_name: JString,
-    descending: bool,
-) -> jlong {
-    let name = get_string(
+pub fn sort_column_by_name(mut env: JNIEnv, _: JClass, value: JString, descending: bool) -> jlong {
+    let name = j_string_to_string(
         &mut env,
-        col_name,
-        "Unable to get/ convert column name to UTF8.",
+        &value,
+        Some("Failed to parse provided column name as string"),
     );
 
     let expr = Expr::Sort {
@@ -76,65 +72,61 @@ pub fn sort_column_by_name(
         },
     };
 
-    expr_to_ptr(&mut env, object, expr)
+    to_ptr(expr)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn applyUnary(mut env: JNIEnv, object: JObject, ptr: jlong, operator: jint) -> jlong {
-    let left_expr = unsafe { &mut *(ptr as *mut JExpr) };
+pub unsafe fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jint) -> jlong {
+    let l_expr = (*expr_ptr).clone();
 
-    let option = UnaryOperator::from_i32(operator)
-        .unwrap_or_else(|| panic!("Unsupported unary operator with ID `{operator}` provided."));
+    let expr = UnaryOperator::from_i32(operator)
+        .and_then(|option| match option {
+            UnaryOperator::NOT => Some(l_expr.not()),
+            UnaryOperator::IsNull => Some(l_expr.is_null()),
+            UnaryOperator::IsNotNull => Some(l_expr.is_not_null()),
+            UnaryOperator::IsNan => Some(l_expr.is_nan()),
+            UnaryOperator::IsNotNan => Some(l_expr.is_not_nan()),
+            _ => None,
+        })
+        .context(format!(
+            "Failed to parse provided ID `{operator}` as unary operator."
+        ))
+        .unwrap_or_throw(&mut env);
 
-    let l_copy = left_expr.expr.clone();
-
-    let expr_opt = match option {
-        UnaryOperator::NOT => Some(l_copy.not()),
-        UnaryOperator::IsNull => Some(l_copy.is_null()),
-        UnaryOperator::IsNotNull => Some(l_copy.is_not_null()),
-        UnaryOperator::IsNan => Some(l_copy.is_nan()),
-        UnaryOperator::IsNotNan => Some(l_copy.is_not_nan()),
-        _ => None,
-    };
-
-    let expr = expr_opt
-        .unwrap_or_else(|| panic!("Unsupported unary operator with ID `{operator}` provided."));
-
-    expr_to_ptr(&mut env, object, expr)
+    to_ptr(expr)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
-pub fn applyBinary(
+pub unsafe fn applyBinary(
     mut env: JNIEnv,
-    object: JObject,
-    left_ptr: jlong,
-    right_ptr: jlong,
+    _: JClass,
+    left_ptr: *mut Expr,
+    right_ptr: *mut Expr,
     operator: jint,
 ) -> jlong {
-    let left_expr = unsafe { &mut *(left_ptr as *mut JExpr) };
-    let right_expr = unsafe { &mut *(right_ptr as *mut JExpr) };
+    let l_expr = (*left_ptr).clone();
+    let r_expr = (*right_ptr).clone();
 
-    let option = BinaryOperator::from_i32(operator)
-        .unwrap_or_else(|| panic!("Unsupported binary operator with ID `{operator}` provided."));
+    let expr = BinaryOperator::from_i32(operator)
+        .map(|option| match option {
+            BinaryOperator::EqualTo => l_expr.eq(r_expr),
+            BinaryOperator::NotEqualTo => l_expr.neq(r_expr),
+            BinaryOperator::LessThan => l_expr.lt(r_expr),
+            BinaryOperator::LessThanEqualTo => l_expr.lt_eq(r_expr),
+            BinaryOperator::GreaterThan => l_expr.gt(r_expr),
+            BinaryOperator::GreaterThanEqualTo => l_expr.gt_eq(r_expr),
+            BinaryOperator::Or => l_expr.or(r_expr),
+            BinaryOperator::And => l_expr.and(r_expr),
+            BinaryOperator::Plus => l_expr.add(r_expr),
+            BinaryOperator::Minus => l_expr.sub(r_expr),
+            BinaryOperator::Multiply => l_expr.mul(r_expr),
+            BinaryOperator::Divide => l_expr.div(r_expr),
+            BinaryOperator::Modulus => l_expr.rem(r_expr),
+        })
+        .context(format!(
+            "Failed to parse provided ID `{operator}` as binary operator."
+        ))
+        .unwrap_or_throw(&mut env);
 
-    let l_copy = left_expr.expr.clone();
-    let r_copy = right_expr.expr.clone();
-
-    let expr = match option {
-        BinaryOperator::EqualTo => l_copy.eq(r_copy),
-        BinaryOperator::NotEqualTo => l_copy.neq(r_copy),
-        BinaryOperator::LessThan => l_copy.lt(r_copy),
-        BinaryOperator::LessThanEqualTo => l_copy.lt_eq(r_copy),
-        BinaryOperator::GreaterThan => l_copy.gt(r_copy),
-        BinaryOperator::GreaterThanEqualTo => l_copy.gt_eq(r_copy),
-        BinaryOperator::Or => l_copy.or(r_copy),
-        BinaryOperator::And => l_copy.and(r_copy),
-        BinaryOperator::Plus => l_copy.add(r_copy),
-        BinaryOperator::Minus => l_copy.sub(r_copy),
-        BinaryOperator::Multiply => l_copy.mul(r_copy),
-        BinaryOperator::Divide => l_copy.div(r_copy),
-        BinaryOperator::Modulus => l_copy.rem(r_copy),
-    };
-
-    expr_to_ptr(&mut env, object, expr)
+    to_ptr(expr)
 }

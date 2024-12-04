@@ -1,306 +1,286 @@
 #![allow(non_snake_case)]
 
-use std::convert::Into;
+use std::iter::Iterator;
 
-use jni::objects::ReleaseMode::NoCopyBack;
-use jni::objects::{
-    JBooleanArray, JDoubleArray, JFloatArray, JIntArray, JLongArray, JObject, JObjectArray, JString,
-};
-use jni::sys::{jlong, JNI_TRUE};
+use anyhow::{Context, Error};
+use jni::objects::*;
+use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::export::chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{get_string, series_to_ptr};
-use crate::j_series::JSeries;
+use crate::internal_jni::utils::{j_string_to_string, to_ptr, JavaArrayToVec};
+use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_str_series(
+pub unsafe fn new_str_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JObjectArray,
 ) -> jlong {
-    let mut data: Vec<String> = Vec::new();
-    let num_values = env.get_array_length(&values).unwrap();
+    let data: Vec<String> = JavaArrayToVec::to_vec(&mut env, values)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided value as a series element"),
+            )
+        })
+        .collect();
 
-    for i in 0..num_values {
-        let result = env
-            .get_object_array_element(&values, i)
-            .map(JString::from)
-            .unwrap();
-        let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
-
-        data.push(val)
-    }
-
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_long_series(
-    mut env: JNIEnv,
-    object: JObject,
-    name: JString,
-    values: JLongArray,
-) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<i64> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .collect()
-    };
+pub fn new_long_series(mut env: JNIEnv, _: JClass, name: JString, values: JLongArray) -> jlong {
+    let data = JavaArrayToVec::to_vec(&mut env, values);
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_int_series(mut env: JNIEnv, object: JObject, name: JString, values: JIntArray) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<i32> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i32().unwrap())
-            .collect()
-    };
+pub fn new_int_series(mut env: JNIEnv, _: JClass, name: JString, values: JIntArray) -> jlong {
+    let data = JavaArrayToVec::to_vec(&mut env, values);
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_float_series(
-    mut env: JNIEnv,
-    object: JObject,
-    name: JString,
-    values: JFloatArray,
-) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<f32> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_f32().unwrap())
-            .collect()
-    };
+pub fn new_float_series(mut env: JNIEnv, _: JClass, name: JString, values: JFloatArray) -> jlong {
+    let data = JavaArrayToVec::to_vec(&mut env, values);
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_double_series(
-    mut env: JNIEnv,
-    object: JObject,
-    name: JString,
-    values: JDoubleArray,
-) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<f64> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_f64().unwrap())
-            .collect()
-    };
+pub fn new_double_series(mut env: JNIEnv, _: JClass, name: JString, values: JDoubleArray) -> jlong {
+    let data = JavaArrayToVec::to_vec(&mut env, values);
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
 pub fn new_boolean_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JBooleanArray,
 ) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<bool> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_u8().unwrap() == JNI_TRUE)
-            .collect()
-    };
+    let data = JavaArrayToVec::to_vec(&mut env, values);
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_date_series(
+pub unsafe fn new_date_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JObjectArray,
 ) -> jlong {
-    let mut data: Vec<NaiveDate> = Vec::new();
-    let num_values = env.get_array_length(&values).unwrap();
-
-    for i in 0..num_values {
-        let result = env
-            .get_object_array_element(&values, i)
-            .map(JString::from)
-            .unwrap();
-        let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
-        let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap_or_else(|_| {
-            panic!(
-                "Provided value `{}` cannot be parsed to date with format `%Y-%m-%d`",
-                val
+    let data: Vec<NaiveDate> = JavaArrayToVec::to_vec(&mut env, values)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided value as a series element"),
             )
-        });
+        })
+        .map(|s| {
+            let lit = s.as_str();
+            NaiveDate::parse_from_str(lit, "%Y-%m-%d").context(format!(
+                "Failed to parse value `{}` as date with format `%Y-%m-%d`",
+                lit
+            ))
+        })
+        .collect::<Result<Vec<NaiveDate>, Error>>()
+        .unwrap_or_throw(&mut env);
 
-        data.push(date)
-    }
-
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_time_series(
+pub unsafe fn new_time_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JObjectArray,
 ) -> jlong {
-    let mut data: Vec<NaiveTime> = Vec::new();
-    let num_values = env.get_array_length(&values).unwrap();
-
-    for i in 0..num_values {
-        let result = env
-            .get_object_array_element(&values, i)
-            .map(JString::from)
-            .unwrap();
-        let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
-        let time = NaiveTime::parse_from_str(val.as_str(), "%H:%M:%S%.f").unwrap_or_else(|_| {
-            panic!(
-                "Provided value `{}` cannot be parsed to time with format `%H:%M:%S`",
-                val
+    let data: Vec<NaiveTime> = JavaArrayToVec::to_vec(&mut env, values)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided value as a series element"),
             )
-        });
+        })
+        .map(|s| {
+            let lit = s.as_str();
+            NaiveTime::parse_from_str(lit, "%H:%M:%S%.f").context(format!(
+                "Failed to parse value `{}` as time with format `%H:%M:%S.f`",
+                lit
+            ))
+        })
+        .collect::<Result<Vec<NaiveTime>, Error>>()
+        .unwrap_or_throw(&mut env);
 
-        data.push(time)
-    }
-
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_datetime_series(
+pub unsafe fn new_datetime_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JObjectArray,
 ) -> jlong {
-    let mut data: Vec<NaiveDateTime> = Vec::new();
-    let num_values = env.get_array_length(&values).unwrap();
+    let data: Vec<NaiveDateTime> = JavaArrayToVec::to_vec(&mut env, values)
+        .into_iter()
+        .map(|o| JObject::from_raw(o))
+        .map(|o| {
+            j_string_to_string(
+                &mut env,
+                &JString::from(o),
+                Some("Failed to parse the provided value as a series element"),
+            )
+        })
+        .map(|s| {
+            let lit = s.as_str();
+            NaiveDateTime::parse_from_str(lit, "%FT%T%.f").context(format!(
+                "Failed to parse value `{}` as datetime with format `%FT%T%.f`",
+                lit
+            ))
+        })
+        .collect::<Result<Vec<NaiveDateTime>, Error>>()
+        .unwrap_or_throw(&mut env);
 
-    for i in 0..num_values {
-        let result = env
-            .get_object_array_element(&values, i)
-            .map(JString::from)
-            .unwrap();
-        let val = get_string(&mut env, result, "Unable to get/ convert Expr to UTF8.");
-        let datetime =
-            NaiveDateTime::parse_from_str(val.as_str(), "%FT%T%.f").unwrap_or_else(|_| {
-                panic!(
-                    "Provided value `{}` cannot be parsed to datetime with format `%FT%T%.f`",
-                    val
-                )
-            });
-
-        data.push(datetime)
-    }
-
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_list_series(
+pub unsafe fn new_list_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JLongArray,
 ) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<Series> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_series = &mut *(ptr as *mut JSeries);
-                j_series.to_owned().series
-            })
-            .collect()
-    };
+    let data: Vec<Series> = JavaArrayToVec::to_vec(&mut env, values)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut Series)).to_owned())
+        .collect();
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
     let series = Series::new(PlSmallStr::from_string(series_name), data);
 
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn new_struct_series(
+pub unsafe fn new_struct_series(
     mut env: JNIEnv,
-    object: JObject,
+    _: JClass,
     name: JString,
     values: JLongArray,
 ) -> jlong {
-    let arr = unsafe { env.get_array_elements(&values, NoCopyBack).unwrap() };
-    let data: Vec<Series> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_series = &mut *(ptr as *mut JSeries);
-                j_series.to_owned().series
-            })
-            .collect()
-    };
+    let data: Vec<Series> = JavaArrayToVec::to_vec(&mut env, values)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut Series)).to_owned())
+        .collect();
 
-    let series_name = get_string(&mut env, name, "Unable to get/ convert value to UTF8.");
+    let series_name = j_string_to_string(
+        &mut env,
+        &name,
+        Some("Failed to parse the provided value as a series name"),
+    );
+    let series = StructChunked::from_series(
+        PlSmallStr::from_string(series_name),
+        data.len(),
+        data.iter(),
+    )
+    .context("Failed to create struct series from provided list of series")
+    .unwrap_or_throw(&mut env)
+    .into_series();
 
-    let series = StructChunked::from_series(series_name.into(), data.len(), data.iter())
-        .unwrap()
-        .into_series();
-
-    series_to_ptr(&mut env, object, Ok(series))
+    to_ptr(series)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
-pub fn show(mut _env: JNIEnv, _object: JObject, ptr: jlong) {
-    let j_series = unsafe { &mut *(ptr as *mut JSeries) };
-    j_series.show()
+pub unsafe fn show(_: JNIEnv, _: JClass, series_ptr: *mut Series) {
+    let series = &*series_ptr;
+    println!("{:?}", series)
 }

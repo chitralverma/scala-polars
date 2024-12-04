@@ -1,100 +1,78 @@
 #![allow(non_snake_case)]
+use std::borrow::ToOwned;
+use std::iter::Iterator;
 
-use jni::objects::ReleaseMode::NoCopyBack;
-use jni::objects::{JLongArray, JObject};
+use anyhow::Context;
+use jni::objects::{JClass, JLongArray};
 use jni::sys::{jlong, jstring};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::export::num::ToPrimitive;
 use polars::prelude::*;
 use polars_core::utils::concat_df;
 
 use crate::internal_jni::utils::*;
-use crate::j_data_frame::JDataFrame;
-use crate::j_series::JSeries;
+use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn schemaString(mut _env: JNIEnv, _object: JObject, ldf_ptr: jlong) -> jstring {
-    let j_df = unsafe { &mut *(ldf_ptr as *mut JDataFrame) };
-    let schema_string =
-        serde_json::to_string(&j_df.df.schema().to_arrow(CompatLevel::oldest())).unwrap();
+pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, df_ptr: *mut DataFrame) -> jstring {
+    let df = &mut *df_ptr;
 
-    _env.new_string(schema_string)
-        .expect("Unable to get/ convert Schema to UTF8.")
-        .into_raw()
+    serde_json::to_string(&df.schema().to_arrow(CompatLevel::oldest()))
+        .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
+        .context("Failed to serialize schema")
+        .unwrap_or_throw(&mut env)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn show(mut _env: JNIEnv, _object: JObject, ptr: jlong) {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-    j_df.show()
+pub unsafe fn show(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame) {
+    let df = &mut *df_ptr;
+    println!("{:?}", df)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn count(mut _env: JNIEnv, _object: JObject, ptr: jlong) -> jlong {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-
-    j_df.df.shape().0 as i64
+pub unsafe fn count(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame) -> jlong {
+    (*df_ptr).shape().0 as i64
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn concatDataFrames(mut env: JNIEnv, object: JObject, inputs: JLongArray) -> jlong {
-    let arr = unsafe { env.get_array_elements(&inputs, NoCopyBack).unwrap() };
+pub unsafe fn concatDataFrames(mut env: JNIEnv, _: JClass, inputs: JLongArray) -> jlong {
+    let dfs: Vec<_> = JavaArrayToVec::to_vec(&mut env, inputs)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut DataFrame)).to_owned())
+        .collect();
 
-    let vec: Vec<DataFrame> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_ldf = &mut *(ptr as *mut JDataFrame);
-                j_ldf.to_owned().df
-            })
-            .collect()
-    };
+    let concatenated_df = concat_df(dfs.iter())
+        .context("Failed to concatenate dataframes")
+        .unwrap_or_throw(&mut env);
 
-    let concat_ldf = concat_df(vec.as_slice());
-    df_to_ptr(&mut env, object, concat_ldf)
+    to_ptr(concatenated_df)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn toLazy(mut env: JNIEnv, object: JObject, ptr: jlong) -> jlong {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-    let ldf = j_df.df.clone().lazy();
-
-    ldf_to_ptr(&mut env, object, Ok(ldf))
+pub unsafe fn toLazy(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame) -> jlong {
+    let ldf = (*df_ptr).clone().lazy();
+    to_ptr(ldf)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn limit(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-
-    j_df.limit(&mut env, object, n as usize)
+pub unsafe fn limit(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, n: jlong) -> jlong {
+    let limited_df = (*df_ptr).head(Some(n as usize));
+    to_ptr(limited_df)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn tail(mut env: JNIEnv, object: JObject, ptr: jlong, n: jlong) -> jlong {
-    let j_df = unsafe { &mut *(ptr as *mut JDataFrame) };
-
-    j_df.tail(&mut env, object, n as usize)
+pub unsafe fn tail(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, n: jlong) -> jlong {
+    let limited_df = (*df_ptr).tail(Some(n as usize));
+    to_ptr(limited_df)
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
-pub fn fromSeries(mut env: JNIEnv, callback_obj: JObject, ptrs: JLongArray) -> jlong {
-    let arr = unsafe { env.get_array_elements(&ptrs, NoCopyBack).unwrap() };
-    let data: Vec<Column> = unsafe {
-        std::slice::from_raw_parts(arr.as_ptr(), arr.len())
-            .to_vec()
-            .iter()
-            .map(|p| p.to_i64().unwrap())
-            .map(|ptr| {
-                let j_series = &mut *(ptr as *mut JSeries);
-                j_series.to_owned().series
-            })
-            .map(|s| s.into_column())
-            .collect()
-    };
+pub unsafe fn fromSeries(mut env: JNIEnv, _: JClass, ptrs: JLongArray) -> jlong {
+    let data: Vec<_> = JavaArrayToVec::to_vec(&mut env, ptrs)
+        .into_iter()
+        .map(|ptr| (*(ptr as *mut Series)).to_owned())
+        .collect();
 
-    let df = DataFrame::new(data);
-    df_to_ptr(&mut env, callback_obj, df)
+    let df = DataFrame::from_iter(data);
+    to_ptr(df)
 }

@@ -1,22 +1,23 @@
 #![allow(non_snake_case)]
 
+use anyhow::Context;
 use jni::objects::{JObject, JString};
-use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
-use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options, DynWriter};
+use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options};
+use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
 pub fn writeCSV(
     mut env: JNIEnv,
     _object: JObject,
-    df_ptr: jlong,
+    df_ptr: *mut DataFrame,
     filePath: JString,
     options: JString,
 ) {
-    let mut options = parse_json_to_options(&mut env, options).unwrap();
+    let mut options = parse_json_to_options(&mut env, options);
 
     let include_bom = options
         .remove("write_csv_include_bom")
@@ -62,8 +63,8 @@ pub fn writeCSV(
         .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
         .unwrap_or(false);
 
-    let (mut dataframe, writer): (DataFrame, DynWriter) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options).unwrap();
+    let (mut dataframe, writer) =
+        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
 
     let mut csv_writer = CsvWriter::new(writer)
         .with_date_format(date_format)
@@ -100,5 +101,8 @@ pub fn writeCSV(
         csv_writer = csv_writer.with_quote_style(value)
     }
 
-    csv_writer.finish(&mut dataframe).unwrap();
+    csv_writer
+        .finish(&mut dataframe)
+        .context("Failed to write CSV data")
+        .unwrap_or_throw(&mut env);
 }

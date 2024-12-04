@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 
+use anyhow::Context;
 use jni::objects::{JObject, JString};
-use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_traits::ToPrimitive;
 use polars::prelude::*;
 
-use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options, DynWriter};
+use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options};
+use crate::utils::error::ResultExt;
 
 fn parse_parquet_compression(
     compression: Option<String>,
@@ -44,11 +45,11 @@ fn parse_parquet_compression(
 pub fn writeParquet(
     mut env: JNIEnv,
     _object: JObject,
-    df_ptr: jlong,
+    df_ptr: *mut DataFrame,
     filePath: JString,
     options: JString,
 ) {
-    let mut options = parse_json_to_options(&mut env, options).unwrap();
+    let mut options = parse_json_to_options(&mut env, options);
 
     let is_parallel = options
         .remove("write_parquet_parallel")
@@ -80,8 +81,8 @@ pub fn writeParquet(
             _ => StatisticsOptions::default(),
         });
 
-    let (mut dataframe, writer): (DataFrame, DynWriter) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options).unwrap();
+    let (mut dataframe, writer) =
+        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
 
     let parquet_compression = parse_parquet_compression(compression, compression_level);
 
@@ -101,5 +102,8 @@ pub fn writeParquet(
         parquet_writer = parquet_writer.with_compression(value)
     }
 
-    parquet_writer.finish(&mut dataframe).unwrap();
+    parquet_writer
+        .finish(&mut dataframe)
+        .context("Failed to write Parquet data")
+        .unwrap_or_throw(&mut env);
 }
