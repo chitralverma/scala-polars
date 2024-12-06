@@ -24,8 +24,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: "8"
-          distribution: 'zulu'
-          cache: 'sbt'
+          distribution: "zulu"
+          cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -50,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       TARGET_TRIPLE: ${{ matrix.arch }}
-    needs: [ check-formatting ]
+    needs: [check-formatting]
     strategy:
       fail-fast: true
       matrix:
@@ -71,11 +73,11 @@ jobs:
             arch: x86_64-pc-windows-msvc
             packages: ""
 
-          - os: macos-12
+          - os: macos-latest
             arch: x86_64-apple-darwin
             packages: "brew install sbt"
 
-          - os: macos-12
+          - os: macos-latest
             arch: aarch64-apple-darwin
             packages: ""
     steps:
@@ -88,8 +90,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: "8"
-          distribution: 'zulu'
-          cache: 'sbt'
+          distribution: "zulu"
+          cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -115,14 +119,14 @@ jobs:
   test-build:
     name: ${{ matrix.os }} ${{ matrix.java }} test
     runs-on: ${{ matrix.os }}
-    needs: [ build-natives ]
+    needs: [build-natives]
     env:
       SKIP_NATIVE_GENERATION: true
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11', '17', '21' ]
-        os: ["ubuntu-latest", "windows-latest", "macos-12"]
+        java: ["8", "11", "17", "21"]
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
 
     steps:
       - uses: actions/checkout@v4
@@ -131,8 +135,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'zulu'
-          cache: 'sbt'
+          distribution: "zulu"
+          cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -154,7 +160,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       SKIP_NATIVE_GENERATION: true
-    needs: [ test-build ]
+    needs: [test-build]
     steps:
       - uses: actions/checkout@v4
 
@@ -167,8 +173,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: "8"
-          distribution: 'zulu'
-          cache: 'sbt'
+          distribution: "zulu"
+          cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
