@@ -56,8 +56,9 @@ async fn create_cloud_writer(
     overwrite_mode: bool,
 ) -> PolarsResult<CloudWriter> {
     let (cloud_location, object_store) = build_object_store(uri, cloud_options, false).await?;
+    let dyn_store = object_store.to_dyn_object_store().await;
     ensure_write_mode(
-        &object_store,
+        &dyn_store,
         uri,
         cloud_location.prefix.as_ref(),
         overwrite_mode,
@@ -65,7 +66,7 @@ async fn create_cloud_writer(
     .await?;
 
     let cloud_writer = CloudWriter::new_with_object_store(
-        object_store.clone(),
+        dyn_store.clone(),
         cloud_location.prefix.clone().into(),
     )?;
 
