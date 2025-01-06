@@ -16,8 +16,6 @@ object Polars {
 
   def csv: CSVInputBuilder = new CSVInputBuilder()
 
-  def ipc: IPCInputBuilder = new IPCInputBuilder()
-
   def ndJson: NdJsonInputBuilder = new NdJsonInputBuilder()
 
   def concat(lazyFrame: LazyFrame, lazyFrames: Array[LazyFrame]): LazyFrame =

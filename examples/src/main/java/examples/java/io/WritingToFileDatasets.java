@@ -27,7 +27,7 @@ public class WritingToFileDatasets {
 
     /* Read a dataset as a DataFrame lazily or eagerly */
     String path = CommonUtils.getResource("/files/web-ds/data.ipc");
-    DataFrame df = Polars.ipc().read(path);
+    DataFrame df = Polars.scan().ipc(path).collect();
 
     System.out.println("Showing ipc file as a DataFrame to stdout.");
     df.show();

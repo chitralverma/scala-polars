@@ -10,8 +10,8 @@ import org.polars.scala.polars.api.LazyFrame;
  *
  * <ul>
  *   <li>{@link Polars#csv() CSV} (delimited format like CSV, TSV, etc.)
- *   <li>{@link Polars#parquet() Apache Parquet}
- *   <li>{@link Polars#ipc() Apache Arrow IPC}
+ *   <li>{@link org.polars.scala.polars.api.io.Scannable#parquet Apache Parquet}
+ *   <li>{@link org.polars.scala.polars.api.io.Scannable#ipc Apache Arrow IPC}
  *   <li>{@link Polars#ndJson() New line delimited JSON}
  * </ul>
  *

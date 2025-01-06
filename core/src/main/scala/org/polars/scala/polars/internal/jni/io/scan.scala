@@ -6,6 +6,8 @@ private[polars] object scan extends Natively {
 
   @native def scanParquet(paths: Array[String], options: String): Long
 
+  @native def scanIPC(paths: Array[String], options: String): Long
+
   @native def scanCSV(
       filePath: String,
       nRows: Long,
@@ -29,16 +31,6 @@ private[polars] object scan extends Natively {
       cache: Boolean,
       reChunk: Boolean,
       lowMemory: Boolean,
-      rowCountColName: String,
-      rowCountColOffset: Int
-  ): Long
-
-  @native def scanIPC(
-      filePath: String,
-      nRows: Long,
-      cache: Boolean,
-      reChunk: Boolean,
-      memMap: Boolean,
       rowCountColName: String,
       rowCountColOffset: Int
   ): Long
