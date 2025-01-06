@@ -16,19 +16,7 @@ use polars::io::pl_async::get_runtime;
 use polars::prelude::*;
 
 use super::get_file_path;
-use crate::internal_jni::utils::j_string_to_string;
 use crate::utils::error::ResultExt;
-
-fn parse_json_to_options(env: &mut JNIEnv, options: JString) -> PlHashMap<String, String> {
-    Ok(j_string_to_string(
-        env,
-        &options,
-        Some("Failed to deserialize the provided options"),
-    ))
-    .and_then(|s| serde_json::from_str(&s))
-    .context("Failed to parse the provided options")
-    .unwrap_or_throw(env)
-}
 
 async fn ensure_write_mode(
     object_store_ref: &Arc<dyn ObjectStore>,
