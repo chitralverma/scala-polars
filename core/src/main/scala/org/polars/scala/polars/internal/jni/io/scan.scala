@@ -4,16 +4,7 @@ import org.polars.scala.polars.internal.jni.Natively
 
 private[polars] object scan extends Natively {
 
-  @native def scanParquet(
-      filePath: String,
-      nRows: Long,
-      cache: Boolean,
-      reChunk: Boolean,
-      lowMemory: Boolean,
-      hivePartitioning: Boolean,
-      rowCountColName: String,
-      rowCountColOffset: Int
-  ): Long
+  @native def scanParquet(paths: Array[String], options: String): Long
 
   @native def scanCSV(
       filePath: String,

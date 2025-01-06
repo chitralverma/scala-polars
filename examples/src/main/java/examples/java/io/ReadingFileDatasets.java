@@ -33,7 +33,7 @@ public class ReadingFileDatasets {
 
     /* For one Parquet file */
     String path = CommonUtils.getResource("/files/web-ds/data.parquet");
-    DataFrame df = Polars.parquet().scan(path).collect();
+    DataFrame df = Polars.scan().parquet(path).collect();
 
     System.out.println("Showing parquet file as a DataFrame to stdout.");
     df.show();
@@ -41,7 +41,7 @@ public class ReadingFileDatasets {
     System.out.printf("Total rows: %s%n%n", df.count());
 
     /* For multiple Parquet file(s) */
-    DataFrame multiLdf = Polars.parquet().read(path, path, path);
+    DataFrame multiLdf = Polars.scan().parquet(path, path, path).collect();
 
     System.out.println("Showing multiple parquet files as 1 DataFrame to stdout.");
     multiLdf.show();
@@ -49,12 +49,12 @@ public class ReadingFileDatasets {
 
     /* Providing additional options with Parquet file input */
     DataFrame pqDfWithOpts =
-        Polars.parquet()
-            .lowMemory(true)
-            .nRows(3)
-            .cache(false)
-            .rowCountColName("SerialNum")
-            .scan(path)
+        Polars.scan()
+            .option("scan_parquet_low_memory", "true")
+            .option("scan_parquet_n_rows", "3")
+            .option("scan_parquet_cache", "false")
+            .option("scan_parquet_row_index_name", "SerialNum")
+            .parquet(path)
             .collect();
 
     System.out.println("Showing parquet file as a DataFrame to stdout.");

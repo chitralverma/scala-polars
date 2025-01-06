@@ -1,5 +1,6 @@
 package org.polars.scala.polars
 
+import org.polars.scala.polars.api.io.Scannable
 import org.polars.scala.polars.api.io.builders._
 import org.polars.scala.polars.api.{DataFrame, LazyFrame}
 import org.polars.scala.polars.config.Config
@@ -11,9 +12,9 @@ object Polars {
 
   def version(): String = common.version()
 
-  def csv: CSVInputBuilder = new CSVInputBuilder()
+  def scan: Scannable = new Scannable()
 
-  def parquet: ParquetInputBuilder = new ParquetInputBuilder()
+  def csv: CSVInputBuilder = new CSVInputBuilder()
 
   def ipc: IPCInputBuilder = new IPCInputBuilder()
 

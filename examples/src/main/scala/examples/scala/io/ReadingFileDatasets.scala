@@ -7,7 +7,7 @@ import examples.scala.utils.CommonUtils
 
 /** Polars supports various input file formats like the following,
   *   - [[Polars.csv CSV]] (delimited format like CSV, TSV, etc.)
-  *   - [[Polars.parquet Apache Parquet]]
+  *   - [[org.polars.scala.polars.api.io.Scannable.parquet Apache Parquet]]
   *   - [[Polars.ipc Apache Arrow IPC]]
   *   - [[Polars.ndJson New line delimited JSON]]
   *
@@ -30,8 +30,8 @@ object ReadingFileDatasets {
 
     /* For one Parquet file */
     val path = CommonUtils.getResource("/files/web-ds/data.parquet")
-    val df = Polars.parquet
-      .scan(path)
+    val df = Polars.scan
+      .parquet(path)
       .collect()
 
     println("Showing parquet file as a DataFrame to stdout.")
@@ -40,19 +40,19 @@ object ReadingFileDatasets {
     printf("Total rows: %s%n%n", df.count())
 
     /* For multiple Parquet file(s) */
-    val multiLdf = Polars.parquet.read(path, path, path)
+    val multiLdf = Polars.scan.parquet(path, path, path).collect()
 
     println("Showing multiple parquet files as 1 DataFrame to stdout.")
     multiLdf.show()
     printf("Total rows: %s%n%n", multiLdf.count())
 
     /* Providing additional options with Parquet file input */
-    val pqDfWithOpts = Polars.parquet
-      .lowMemory(true)
-      .nRows(3)
-      .cache(false)
-      .rowCountColName("SerialNum")
-      .scan(path)
+    val pqDfWithOpts = Polars.scan
+      .option("scan_parquet_low_memory", "true")
+      .option("scan_parquet_n_rows", "3")
+      .option("scan_parquet_cache", "false")
+      .option("scan_parquet_row_index_name", "SerialNum")
+      .parquet(path)
       .collect()
 
     println("Showing parquet file as a DataFrame to stdout.")
