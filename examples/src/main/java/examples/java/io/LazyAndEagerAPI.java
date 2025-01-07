@@ -40,7 +40,7 @@ public class LazyAndEagerAPI {
   public static void main(String[] args) {
     /* Lazily read data from file based datasets */
     String path = CommonUtils.getResource("/files/web-ds/data.csv");
-    LazyFrame ldf = Polars.csv().nRows(2).scan(path);
+    LazyFrame ldf = Polars.scan().option("scan_csv_n_rows", "2").csv(path);
 
     /* Materialize LazyFrame to DataFrame */
     DataFrame df = ldf.collect();
@@ -52,7 +52,7 @@ public class LazyAndEagerAPI {
     System.out.printf("Total columns: %s%n%n", df.schema().getFields().length);
 
     /* Lazily read only first 3 rows */
-    df = Polars.csv().nRows(3).scan(path).collect();
+    df = Polars.scan().option("scan_csv_n_rows", "3").csv(path).collect();
     System.out.printf("Total rows: %s%n%n", df.count());
 
     System.out.println("Rows:");
@@ -68,7 +68,7 @@ public class LazyAndEagerAPI {
     System.out.printf("Show schema: %s%n%n", backToLdf.schema());
 
     /* Eagerly read data from file based datasets */
-    df = Polars.csv().read(path);
+    df = Polars.scan().csv(path).collect();
 
     System.out.println("Showing CSV file as a DataFrame to stdout");
     df.show();

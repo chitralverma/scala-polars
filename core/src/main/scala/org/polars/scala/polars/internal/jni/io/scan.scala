@@ -8,21 +8,7 @@ private[polars] object scan extends Natively {
 
   @native def scanIPC(paths: Array[String], options: String): Long
 
-  @native def scanCSV(
-      filePath: String,
-      nRows: Long,
-      delimiter: Char,
-      hasHeader: Boolean,
-      inferSchemaRows: Long,
-      skipRowsAfterHeader: Int,
-      ignoreErrors: Boolean,
-      parseDates: Boolean,
-      cache: Boolean,
-      reChunk: Boolean,
-      lowMemory: Boolean,
-      rowCountColName: String,
-      rowCountColOffset: Int
-  ): Long
+  @native def scanCSV(paths: Array[String], options: String): Long
 
   @native def scanNdJson(
       filePath: String,

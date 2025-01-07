@@ -39,6 +39,7 @@ pub fn writeCSV(
     let separator = options
         .remove("write_csv_separator")
         .and_then(|s| s.parse::<u8>().ok());
+
     let quote_char = options
         .remove("write_csv_quote_char")
         .and_then(|s| s.parse::<u8>().ok());

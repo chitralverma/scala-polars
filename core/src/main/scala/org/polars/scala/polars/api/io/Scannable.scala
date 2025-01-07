@@ -51,7 +51,7 @@ class Scannable private[polars] () {
     *
     * Supported options:
     *   - `scan_parquet_n_rows`: Sets the maximum rows to read from parquet files. All rows are
-    *     scanned if not specified.
+    *     scanned if not specified. Default: `null`.
     *   - `scan_parquet_parallel`: This determines the direction and strategy of parallelism.
     *     Supported values ‘auto’, ‘columns’, ‘row_groups’, ‘prefiltered’, ‘none’.
     *     - auto (default): Automatically determine over which unit to parallelize.
@@ -113,7 +113,7 @@ class Scannable private[polars] () {
     *
     * Supported options:
     *   - `scan_ipc_n_rows`: Sets the maximum rows to read from ipc files. All rows are scanned if
-    *     not specified.
+    *     not specified. Default: `null`.
     *   - `scan_ipc_cache`: Cache the result after scanning. Default: `true`.
     *   - `scan_ipc_rechunk`: In case of reading multiple files via a glob pattern re-chunk the
     *     final DataFrame into contiguous memory chunks. Default: `false`.
@@ -147,121 +147,82 @@ class Scannable private[polars] () {
       )
     )
 
-  // /** Saves the content of the [[DataFrame]] in Avro format at the specified path (local and
-  //   * cloud).
-  //   *
-  //   * Supported options:
-  //   *   - `write_avro_record_name`: Sets the name of avro record. Default: "".
-  //   *   - `write_compression`: Sets the compression codec used for blocks. Supported values
-  //   *     'uncompressed', 'deflate', 'snappy'. Default: uncompressed.
-  //   *
-  //   * @param filePath
-  //   *   output file location
-  //   */
-  // def avro(filePath: String): Unit =
-  //   writeAvro(
-  //     ptr = ptr,
-  //     filePath = filePath,
-  //     options = jsonMapper.writeValueAsString(_options)
-  //   )
-
-  // /** Saves the content of the [[DataFrame]] in CSV format at the specified path (local and
-  //   * cloud).
-  //   *
-  //   * Supported options:
-  //   *   - `write_csv_include_bom`: Sets whether to include UTF-8 Byte Order Mark (BOM) in the CSV
-  //   *     output. Default: `false`.
-  //   *   - `write_csv_include_header`: Sets whether to include header in the CSV output. Default:
-  //   *     `true`.
-  //   *   - `write_csv_float_scientific`: Sets whether to use scientific form always (true), never
-  //   *     (false), or automatically (if not set) for `Float` and `Double` datatypes.
-  //   *   - `write_csv_float_precision`: Sets the number of decimal places to write for `Float` and
-  //   *     `Double` datatypes.
-  //   *   - `write_csv_separator`: Sets the CSV file's column separator, defaulting to `,`
-  //   *     character.
-  //   *   - `write_csv_quote_char`: Sets the single byte character used for quoting, defaulting to
-  //   *     `"` character.
-  //   *   - `write_csv_date_format`: Sets the CSV file's date format defined by
-  //   *     [[https://docs.rs/chrono/latest/chrono/format/strftime/index.html chrono]]. If no format
-  //   *     specified, the default fractional-second precision is inferred from the maximum timeunit
-  //   *     found in the frame's Datetime cols (if any).
-  //   *   - `write_csv_time_format`: Sets the CSV file's time format defined by
-  //   *     [[https://docs.rs/chrono/latest/chrono/format/strftime/index.html chrono]].
-  //   *   - `write_csv_datetime_format`: Sets the CSV file's datetime format defined by
-  //   *     [[https://docs.rs/chrono/latest/chrono/format/strftime/index.html chrono]].
-  //   *   - `write_csv_line_terminator`: Sets the CSV file's line terminator. Default: "\n".
-  //   *   - `write_csv_null_value`: Sets the CSV file's null value representation defaulting to the
-  //   *     empty string.
-  //   *   - `write_csv_quote_style`: Sets the CSV file's quoting style which indicates when to
-  //   *     insert quotes around a field. Supported values 'necessary', 'always', 'non_numeric',
-  //   *     'never'.
-  //   *     - necessary (default): This puts quotes around fields only when necessary. They are
-  //   *       necessary when fields contain a quote, separator or record terminator. Quotes are also
-  //   *       necessary when writing an empty record (which is indistinguishable from a record with
-  //   *       one empty field).
-  //   *     - always: This puts quotes around every field. Always.
-  //   *     - never: This never puts quotes around fields, even if that results in invalid CSV data
-  //   *       (e.g.: by not quoting strings containing the separator).
-  //   *     - non_numeric: This puts quotes around all fields that are non-numeric. Namely, when
-  //   *       writing a field that does not parse as a valid float or integer, then quotes will be
-  //   *       used even if they aren't strictly necessary.
-  //   *
-  //   * @note
-  //   *   compression is not supported for this format.
-  //   * @param filePath
-  //   *   output file location
-  //   */
-  // def csv(filePath: String): Unit =
-  //   writeCSV(
-  //     ptr = ptr,
-  //     filePath = filePath,
-  //     options = jsonMapper.writeValueAsString(_options)
-  //   )
-
-  // /** Saves the content of the [[DataFrame]] in JSON format at the specified path (local and
-  //   * cloud).
-  //   *
-  //   * A single JSON array containing each DataFrame row as an object. The length of the array is
-  //   * the number of rows in the DataFrame. Use this to create valid JSON that can be deserialized
-  //   * back into an array in one fell swoop.
-  //   *
-  //   * @note
-  //   *   compression is not supported for this format.
-  //   *
-  //   * @param filePath
-  //   *   output file location
-  //   */
-  // def json(filePath: String): Unit = {
-  //   option("write_json_format", "json")
-  //   writeJson(
-  //     ptr = ptr,
-  //     filePath = filePath,
-  //     options = jsonMapper.writeValueAsString(_options)
-  //   )
-  // }
-
-  // /** Saves the content of the [[DataFrame]] in Newline Delimited JSON (ndjson) format at the
-  //   * specified path (local and cloud).
-  //   *
-  //   * Each DataFrame row is serialized as a JSON object on a separate line. The number of lines in
-  //   * the output is the number of rows in the DataFrame.
-  //   *
-  //   * The [[https://pola-rs.github.io/polars/py-polars/html/reference/config.html JSON Lines]]
-  //   * format makes it easy to read records in a streaming fashion, one (line) at a time. But the
-  //   * output in its entirety is not valid JSON; only the individual lines are. It is recommended
-  //   * to use the file extension `.jsonl` when saving as JSON Lines.
-  //   *
-  //   * @note
-  //   *   compression is not supported for this format.
-  //   * @param filePath
-  //   *   output file location
-  //   */
-  // def json_lines(filePath: String): Unit = {
-  //   option("write_json_format", "json_lines")
-  //   writeJson(
-  //     ptr = ptr,
-  //     filePath = filePath,
-  //     options = jsonMapper.writeValueAsString(_options)
-  //   )
-  // }
+  /** Scans the contents of a dataset in CSV format from the specified path(s) (local and cloud).
+    * Provided paths support globbing and expansion.
+    *
+    * Supported options:
+    *   - `scan_csv_n_rows`: Sets the maximum rows to read from csv files. All rows are scanned if
+    *     not specified. Default: `null`.
+    *   - `scan_csv_encoding`: Sets the encoding of the csv file to scan. Supported values
+    *     ‘lossy_utf8’, ‘utf8’.
+    *     - utf8 (default): Utf8 encoding.
+    *     - lossy_utf8: Utf8 encoding and unknown bytes are replaced with �.
+    *   - `scan_csv_row_index_name`: If set, this inserts a row index column with the given name.
+    *     Default: `null`
+    *   - `scan_csv_row_index_offset`: Sets the offset (>=0) to start the row index column (only
+    *     used if `scan_csv_row_index_name` is set). Default: 0
+    *   - `scan_csv_cache`: Cache the result after scanning. Default: `true`.
+    *   - `scan_csv_glob`: Expand path given via globbing rules. Default: `true`.
+    *   - `scan_csv_low_memory`: Reduce memory pressure at the expense of performance. Default:
+    *     `false`.
+    *   - `scan_csv_rechunk`: In case of reading multiple files via a glob pattern re-chunk the
+    *     final DataFrame into contiguous memory chunks. Default: `false`.
+    *   - `scan_csv_include_file_paths`: If set, this option includes the path of the source
+    *     file(s) as a column with provided name. Default: `null`
+    *   - `scan_csv_raise_if_empty`: When there is no data in the source, NoDataError is raised.
+    *     If this parameter is set to False, an empty LazyFrame (with no columns) is returned
+    *     instead. Default: `true`.
+    *   - `scan_csv_ignore_errors`: Try to keep reading lines if some lines yield errors. Default:
+    *     `false`.
+    *   - `scan_csv_has_header`: Indicate if the first row of the dataset is a header or not. If
+    *     set to False, column names will be autogenerated in the following format: column_x, with
+    *     x being an enumeration over every column in the dataset, starting at 1. Default: `true`.
+    *   - `scan_csv_missing_is_null`: Treat missing fields as null. Default: `true`.
+    *   - `scan_csv_ignore_errors`: Try to keep reading lines if some lines yield errors. Default:
+    *     `false`.
+    *   - `scan_csv_truncate_ragged_lines`: Truncate lines that are longer than the schema.
+    *     Default: `false`.
+    *   - `scan_csv_try_parse_dates`: Try to automatically parse dates. Most ISO8601-like formats
+    *     can be inferred, as well as a handful of others. If this does not succeed, the column
+    *     remains of data type `String`. Default: `false`.
+    *   - `scan_csv_decimal_comma`: Parse floats using a comma as the decimal separator instead of
+    *     a period. Default: `false`.
+    *   - `scan_csv_chunk_size`: Sets the chunk size used by the parser. This influences
+    *     performance. This can be used as a way to reduce memory usage during the parsing at the
+    *     cost of performance. Default: 2^18^.
+    *   - `scan_csv_skip_rows`: Skip the first n rows during parsing. The header will be parsed at
+    *     row n. Default: 0.
+    *   - `scan_csv_skip_rows_after_header`: Skip this number of rows after the header location.
+    *     Default: 0.
+    *   - `scan_csv_skip_infer_schema_length`: Sets the number of rows to use when inferring the
+    *     csv schema. Setting to `null` will do a full table scan which is very slow. Default:
+    *     100.
+    *   - `scan_csv_separator`: Sets the CSV file's column separator as a byte character. Default:
+    *     `,`
+    *   - `scan_csv_quote_char`: Set the char used as quote char. If set to `null` quoting is
+    *     disabled. Default: `"`
+    *   - `scan_csv_eol_char`: Set the char used as end of line. Default: `\n`
+    *   - `scan_csv_null_value`: Value to interpret as null/ missing value, all values equal to
+    *     this string will be null. Default: `null`
+    *   - `scan_csv_comment_prefix`: A string used to indicate the start of a comment line.
+    *     Comment lines are skipped during parsing. Common examples of comment prefixes are # and
+    *     //. Default: `null`
+    *
+    * @param path
+    *   input file location
+    * @param paths
+    *   additional input file locations
+    *
+    * @note
+    *   If multiple paths are provided, connection options are inferred from the first path. So
+    *   all provided paths must be of the same object store.
+    */
+  @varargs
+  def csv(path: String, paths: String*): LazyFrame =
+    LazyFrame.withPtr(
+      scanCSV(
+        paths = paths.+:(path).toArray[String],
+        options = jsonMapper.writeValueAsString(_options)
+      )
+    )
 }

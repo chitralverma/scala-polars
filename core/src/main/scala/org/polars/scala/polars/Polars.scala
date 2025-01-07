@@ -14,8 +14,6 @@ object Polars {
 
   def scan: Scannable = new Scannable()
 
-  def csv: CSVInputBuilder = new CSVInputBuilder()
-
   def ndJson: NdJsonInputBuilder = new NdJsonInputBuilder()
 
   def concat(lazyFrame: LazyFrame, lazyFrames: Array[LazyFrame]): LazyFrame =
