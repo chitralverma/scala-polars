@@ -1,6 +1,6 @@
 package org.polars.scala.polars
 
-import org.polars.scala.polars.api.io.builders._
+import org.polars.scala.polars.api.io.Scannable
 import org.polars.scala.polars.api.{DataFrame, LazyFrame}
 import org.polars.scala.polars.config.Config
 import org.polars.scala.polars.internal.jni.{common, data_frame, lazy_frame}
@@ -11,13 +11,17 @@ object Polars {
 
   def version(): String = common.version()
 
-  def csv: CSVInputBuilder = new CSVInputBuilder()
-
-  def parquet: ParquetInputBuilder = new ParquetInputBuilder()
-
-  def ipc: IPCInputBuilder = new IPCInputBuilder()
-
-  def ndJson: NdJsonInputBuilder = new NdJsonInputBuilder()
+  /** Returns a [[org.polars.scala.polars.api.io.Scannable Scannable]] that can be used to lazily
+    * scan datasets of various formats ([[org.polars.scala.polars.api.io.Scannable.parquet
+    * parquet]], [[org.polars.scala.polars.api.io.Scannable.ipc ipc]],
+    * [[org.polars.scala.polars.api.io.Scannable.csv csv]] and
+    * [[org.polars.scala.polars.api.io.Scannable.jsonLines jsonLines]]) from local filesystems and
+    * cloud object stores (aws, gcp and azure) as a
+    * [[org.polars.scala.polars.api.LazyFrame LazyFrame]].
+    * @return
+    *   [[org.polars.scala.polars.api.io.Scannable Scannable]]
+    */
+  def scan: Scannable = new Scannable()
 
   def concat(lazyFrame: LazyFrame, lazyFrames: Array[LazyFrame]): LazyFrame =
     concat(lazyFrame, lazyFrames, reChunk = false, parallel = true)

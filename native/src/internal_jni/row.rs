@@ -127,7 +127,7 @@ impl<'a> IntoJava<'a> for &StructArray {
                         fld.name.clone(),
                         vec![arr],
                         fld.dtype(),
-                        Some(&fld.metadata),
+                        fld.metadata.as_deref(),
                     ),
                 )
             }

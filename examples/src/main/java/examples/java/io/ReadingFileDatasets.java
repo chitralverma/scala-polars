@@ -9,10 +9,11 @@ import org.polars.scala.polars.api.LazyFrame;
  * Polars supports various input file formats like the following,
  *
  * <ul>
- *   <li>{@link Polars#csv() CSV} (delimited format like CSV, TSV, etc.)
- *   <li>{@link Polars#parquet() Apache Parquet}
- *   <li>{@link Polars#ipc() Apache Arrow IPC}
- *   <li>{@link Polars#ndJson() New line delimited JSON}
+ *   <li>{@link org.polars.scala.polars.api.io.Scannable#csv CSV} (delimited format like CSV, TSV,
+ *       etc.)
+ *   <li>{@link org.polars.scala.polars.api.io.Scannable#parquet Apache Parquet}
+ *   <li>{@link org.polars.scala.polars.api.io.Scannable#ipc Apache Arrow IPC}
+ *   <li>{@link org.polars.scala.polars.api.io.Scannable#jsonLines New line delimited JSON}
  * </ul>
  *
  * <p>All the above formats are compatible with the lazy or eager input API and users can supply 1
@@ -33,7 +34,7 @@ public class ReadingFileDatasets {
 
     /* For one Parquet file */
     String path = CommonUtils.getResource("/files/web-ds/data.parquet");
-    DataFrame df = Polars.parquet().scan(path).collect();
+    DataFrame df = Polars.scan().parquet(path).collect();
 
     System.out.println("Showing parquet file as a DataFrame to stdout.");
     df.show();
@@ -41,7 +42,7 @@ public class ReadingFileDatasets {
     System.out.printf("Total rows: %s%n%n", df.count());
 
     /* For multiple Parquet file(s) */
-    DataFrame multiLdf = Polars.parquet().read(path, path, path);
+    DataFrame multiLdf = Polars.scan().parquet(path, path, path).collect();
 
     System.out.println("Showing multiple parquet files as 1 DataFrame to stdout.");
     multiLdf.show();
@@ -49,12 +50,12 @@ public class ReadingFileDatasets {
 
     /* Providing additional options with Parquet file input */
     DataFrame pqDfWithOpts =
-        Polars.parquet()
-            .lowMemory(true)
-            .nRows(3)
-            .cache(false)
-            .rowCountColName("SerialNum")
-            .scan(path)
+        Polars.scan()
+            .option("scan_parquet_low_memory", "true")
+            .option("scan_parquet_n_rows", "3")
+            .option("scan_parquet_cache", "false")
+            .option("scan_parquet_row_index_name", "SerialNum")
+            .parquet(path)
             .collect();
 
     System.out.println("Showing parquet file as a DataFrame to stdout.");

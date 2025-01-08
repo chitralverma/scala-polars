@@ -23,7 +23,7 @@ object WritingToFileDatasets {
 
     /* Read a dataset as a DataFrame lazily or eagerly */
     val path = CommonUtils.getResource("/files/web-ds/data.ipc")
-    val df = Polars.ipc.read(path)
+    val df = Polars.scan.ipc(path).collect
 
     println("Showing ipc file as a DataFrame to stdout.")
     df.show()

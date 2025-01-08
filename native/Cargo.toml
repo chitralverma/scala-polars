@@ -18,14 +18,14 @@ jni = "0.21.1"
 jni_fn = "0.1"
 num-derive = "0.4"
 num-traits = "0.2"
-object_store = { version = "0.10", features = ["aws", "azure", "gcp", "http"] }
-polars-core = { version = "0.44", default-features = false }
+object_store = { version = "0.11", features = ["aws", "azure", "gcp", "http"] }
+polars-core = { version = "0.45", default-features = false }
 rust_decimal = "1.36.0"
 serde_json = "1"
 toml = "0.8"
 
 [dependencies.polars]
-version = "0.44"
+version = "0.45"
 default-features = false
 features = [
     "json",
@@ -71,7 +71,6 @@ features = [
     "regex",
     "binary_encoding",
     "polars_cloud",
-    "cloud_write",
     "performant",
     "lazy",
     "fmt",

@@ -16,19 +16,7 @@ use polars::io::pl_async::get_runtime;
 use polars::prelude::*;
 
 use super::get_file_path;
-use crate::internal_jni::utils::j_string_to_string;
 use crate::utils::error::ResultExt;
-
-fn parse_json_to_options(env: &mut JNIEnv, options: JString) -> PlHashMap<String, String> {
-    Ok(j_string_to_string(
-        env,
-        &options,
-        Some("Failed to deserialize the provided options"),
-    ))
-    .and_then(|s| serde_json::from_str(&s))
-    .context("Failed to parse the provided options")
-    .unwrap_or_throw(env)
-}
 
 async fn ensure_write_mode(
     object_store_ref: &Arc<dyn ObjectStore>,
@@ -56,8 +44,9 @@ async fn create_cloud_writer(
     overwrite_mode: bool,
 ) -> PolarsResult<CloudWriter> {
     let (cloud_location, object_store) = build_object_store(uri, cloud_options, false).await?;
+    let dyn_store = object_store.to_dyn_object_store().await;
     ensure_write_mode(
-        &object_store,
+        &dyn_store,
         uri,
         cloud_location.prefix.as_ref(),
         overwrite_mode,
@@ -65,7 +54,7 @@ async fn create_cloud_writer(
     .await?;
 
     let cloud_writer = CloudWriter::new_with_object_store(
-        object_store.clone(),
+        dyn_store.clone(),
         cloud_location.prefix.clone().into(),
     )?;
 

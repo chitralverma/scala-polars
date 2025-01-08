@@ -29,7 +29,7 @@ object LazyAndEagerAPI {
   def main(args: Array[String]): Unit = {
     /* Lazily read data from file based datasets */
     val path = CommonUtils.getResource("/files/web-ds/data.csv")
-    val ldf = Polars.csv.scan(path)
+    val ldf = Polars.scan.csv(path)
 
     /* Materialize LazyFrame to DataFrame */
     var df: DataFrame = ldf.collect()
@@ -41,7 +41,7 @@ object LazyAndEagerAPI {
     printf("Total columns: %s%n%n", df.schema.getFields.length)
 
     /* Lazily read only first 3 rows */
-    df = Polars.csv.nRows(3).scan(path).collect()
+    df = Polars.scan.option("scan_csv_n_rows", "3").csv(path).collect()
     printf("Total rows: %s%n%n", df.count())
 
     println("Rows:")
@@ -53,7 +53,7 @@ object LazyAndEagerAPI {
     printf("Show schema: %s%n%n", backToLdf.schema)
 
     /* Eagerly read data from file based datasets */
-    df = Polars.csv.read(path)
+    df = Polars.scan.csv(path).collect
 
     println("Showing CSV file as a DataFrame to stdout")
     df.show()

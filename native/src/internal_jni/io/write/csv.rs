@@ -6,7 +6,8 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
-use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options};
+use crate::internal_jni::io::parse_json_to_options;
+use crate::internal_jni::io::write::get_df_and_writer;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
@@ -38,6 +39,7 @@ pub fn writeCSV(
     let separator = options
         .remove("write_csv_separator")
         .and_then(|s| s.parse::<u8>().ok());
+
     let quote_char = options
         .remove("write_csv_quote_char")
         .and_then(|s| s.parse::<u8>().ok());

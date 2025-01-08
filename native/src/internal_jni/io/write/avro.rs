@@ -7,7 +7,8 @@ use jni_fn::jni_fn;
 use polars::io::avro::{AvroCompression, AvroWriter};
 use polars::prelude::*;
 
-use crate::internal_jni::io::write::{get_df_and_writer, parse_json_to_options};
+use crate::internal_jni::io::parse_json_to_options;
+use crate::internal_jni::io::write::get_df_and_writer;
 use crate::utils::error::ResultExt;
 
 fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression> {
