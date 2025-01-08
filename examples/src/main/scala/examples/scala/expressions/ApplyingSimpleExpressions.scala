@@ -12,7 +12,7 @@ object ApplyingSimpleExpressions {
 
     /* Read a dataset as a DataFrame lazily or eagerly */
     val path = CommonUtils.getResource("/files/web-ds/data.json")
-    val input = Polars.ndJson.scan(path)
+    val input = Polars.scan.jsonLines(path)
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
     var ldf = input.cache

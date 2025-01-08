@@ -14,7 +14,7 @@ public class ApplyingSimpleExpressions {
   public static void main(String[] args) {
     /* Read a dataset as a DataFrame lazily or eagerly */
     String path = CommonUtils.getResource("/files/web-ds/data.json");
-    LazyFrame input = Polars.ndJson().scan(path);
+    LazyFrame input = Polars.scan().jsonLines(path);
 
     /* Apply multiple operations on the LazyFrame or DataFrame */
     LazyFrame ldf =

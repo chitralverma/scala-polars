@@ -206,7 +206,7 @@ class Writeable private[polars] (ptr: Long) {
     * @param filePath
     *   output file location
     */
-  def json_lines(filePath: String): Unit = {
+  def jsonLines(filePath: String): Unit = {
     option("write_json_format", "json_lines")
     writeJson(
       ptr = ptr,

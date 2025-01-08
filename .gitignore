@@ -16,3 +16,4 @@ target/
 .settings/
 .metals
 .bloop
+metals.sbt

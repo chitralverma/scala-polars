@@ -189,7 +189,5 @@ pub unsafe fn scanCSV(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: 
         .context("Failed to perform csv scan")
         .unwrap_or_throw(&mut env);
 
-    // dbg!(ldf.collect());
-
     to_ptr(ldf)
 }

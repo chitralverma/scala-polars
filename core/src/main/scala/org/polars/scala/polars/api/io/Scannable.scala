@@ -51,7 +51,7 @@ class Scannable private[polars] () {
     *
     * Supported options:
     *   - `scan_parquet_n_rows`: Sets the maximum rows to read from parquet files. All rows are
-    *     scanned if not specified. Default: `null`.
+    *     scanned if not specified. Default: `null`
     *   - `scan_parquet_parallel`: This determines the direction and strategy of parallelism.
     *     Supported values ‘auto’, ‘columns’, ‘row_groups’, ‘prefiltered’, ‘none’.
     *     - auto (default): Automatically determine over which unit to parallelize.
@@ -70,25 +70,25 @@ class Scannable private[polars] () {
     *   - `scan_parquet_row_index_offset`: Sets the offset (>=0) to start the row index column
     *     (only used if `scan_parquet_row_index_name` is set). Default: 0
     *   - `scan_parquet_use_statistics`: Use statistics in the parquet to determine if pages can
-    *     be skipped from reading. Default: `true`.
-    *   - `scan_parquet_cache`: Cache the result after scanning. Default: `true`.
-    *   - `scan_parquet_glob`: Expand path given via globbing rules. Default: `true`.
+    *     be skipped from reading. Default: `true`
+    *   - `scan_parquet_cache`: Cache the result after scanning. Default: `true`
+    *   - `scan_parquet_glob`: Expand path given via globbing rules. Default: `true`
     *   - `scan_parquet_low_memory`: Reduce memory pressure at the expense of performance.
-    *     Default: `false`.
+    *     Default: `false`
     *   - `scan_parquet_rechunk`: In case of reading multiple files via a glob pattern re-chunk
-    *     the final DataFrame into contiguous memory chunks. Default: `false`.
+    *     the final DataFrame into contiguous memory chunks. Default: `false`
     *   - `scan_parquet_allow_missing_columns`: When reading a list of parquet files, if a column
     *     existing in the first file cannot be found in subsequent files, the default behavior is
     *     to raise an error. However, if this option is set to `true`, a full-NULL column is
     *     returned instead of throwing error for the files that do not contain the column.
-    *     Default: `false`.
+    *     Default: `false`
     *   - `scan_parquet_include_file_paths`: If set, this option includes the path of the source
     *     file(s) as a column with provided name. Default: `null`
     *   - `scan_parquet_hive_scan_partitions`: Infer statistics and schema from hive partitions
     *     and use them to prune reads. Set as `false` to automatically enable for single directory
-    *     scans. Default: `true`.
+    *     scans. Default: `true`
     *   - `scan_parquet_hive_try_parse_dates`: Whether to try parsing hive values as date/datetime
-    *     types. Default: `true`.
+    *     types. Default: `true`
     *
     * @param path
     *   input file location
@@ -113,10 +113,10 @@ class Scannable private[polars] () {
     *
     * Supported options:
     *   - `scan_ipc_n_rows`: Sets the maximum rows to read from ipc files. All rows are scanned if
-    *     not specified. Default: `null`.
-    *   - `scan_ipc_cache`: Cache the result after scanning. Default: `true`.
+    *     not specified. Default: `null`
+    *   - `scan_ipc_cache`: Cache the result after scanning. Default: `true`
     *   - `scan_ipc_rechunk`: In case of reading multiple files via a glob pattern re-chunk the
-    *     final DataFrame into contiguous memory chunks. Default: `false`.
+    *     final DataFrame into contiguous memory chunks. Default: `false`
     *   - `scan_ipc_row_index_name`: If set, this inserts a row index column with the given name.
     *     Default: `null`
     *   - `scan_ipc_row_index_offset`: Sets the offset (>=0) to start the row index column (only
@@ -125,9 +125,9 @@ class Scannable private[polars] () {
     *     file(s) as a column with provided name. Default: `null`
     *   - `scan_ipc_hive_scan_partitions`: Infer statistics and schema from hive partitions and
     *     use them to prune reads. Set as `false` to automatically enable for single directory
-    *     scans. Default: `true`.
+    *     scans. Default: `true`
     *   - `scan_ipc_hive_try_parse_dates`: Whether to try parsing hive values as date/datetime
-    *     types. Default: `true`.
+    *     types. Default: `true`
     *
     * @param path
     *   input file location
@@ -161,42 +161,39 @@ class Scannable private[polars] () {
     *     Default: `null`
     *   - `scan_csv_row_index_offset`: Sets the offset (>=0) to start the row index column (only
     *     used if `scan_csv_row_index_name` is set). Default: 0
-    *   - `scan_csv_cache`: Cache the result after scanning. Default: `true`.
-    *   - `scan_csv_glob`: Expand path given via globbing rules. Default: `true`.
+    *   - `scan_csv_cache`: Cache the result after scanning. Default: `true`
+    *   - `scan_csv_glob`: Expand path given via globbing rules. Default: `true`
     *   - `scan_csv_low_memory`: Reduce memory pressure at the expense of performance. Default:
-    *     `false`.
+    *     `false`
     *   - `scan_csv_rechunk`: In case of reading multiple files via a glob pattern re-chunk the
-    *     final DataFrame into contiguous memory chunks. Default: `false`.
+    *     final DataFrame into contiguous memory chunks. Default: `false`
     *   - `scan_csv_include_file_paths`: If set, this option includes the path of the source
     *     file(s) as a column with provided name. Default: `null`
     *   - `scan_csv_raise_if_empty`: When there is no data in the source, NoDataError is raised.
     *     If this parameter is set to False, an empty LazyFrame (with no columns) is returned
-    *     instead. Default: `true`.
+    *     instead. Default: `true`
     *   - `scan_csv_ignore_errors`: Try to keep reading lines if some lines yield errors. Default:
-    *     `false`.
+    *     `false`
     *   - `scan_csv_has_header`: Indicate if the first row of the dataset is a header or not. If
     *     set to False, column names will be autogenerated in the following format: column_x, with
-    *     x being an enumeration over every column in the dataset, starting at 1. Default: `true`.
-    *   - `scan_csv_missing_is_null`: Treat missing fields as null. Default: `true`.
-    *   - `scan_csv_ignore_errors`: Try to keep reading lines if some lines yield errors. Default:
-    *     `false`.
+    *     x being an enumeration over every column in the dataset, starting at 1. Default: `true`
+    *   - `scan_csv_missing_is_null`: Treat missing fields as null. Default: `true`
     *   - `scan_csv_truncate_ragged_lines`: Truncate lines that are longer than the schema.
-    *     Default: `false`.
+    *     Default: `false`
     *   - `scan_csv_try_parse_dates`: Try to automatically parse dates. Most ISO8601-like formats
     *     can be inferred, as well as a handful of others. If this does not succeed, the column
-    *     remains of data type `String`. Default: `false`.
+    *     remains of data type `String`. Default: `false`
     *   - `scan_csv_decimal_comma`: Parse floats using a comma as the decimal separator instead of
-    *     a period. Default: `false`.
+    *     a period. Default: `false`
     *   - `scan_csv_chunk_size`: Sets the chunk size used by the parser. This influences
     *     performance. This can be used as a way to reduce memory usage during the parsing at the
-    *     cost of performance. Default: 2^18^.
+    *     cost of performance. Default: 2^18^
     *   - `scan_csv_skip_rows`: Skip the first n rows during parsing. The header will be parsed at
-    *     row n. Default: 0.
+    *     row n. Default: 0
     *   - `scan_csv_skip_rows_after_header`: Skip this number of rows after the header location.
-    *     Default: 0.
+    *     Default: 0
     *   - `scan_csv_skip_infer_schema_length`: Sets the number of rows to use when inferring the
-    *     csv schema. Setting to `null` will do a full table scan which is very slow. Default:
-    *     100.
+    *     csv schema. Setting to `null` will do a full table scan which is very slow. Default: 100
     *   - `scan_csv_separator`: Sets the CSV file's column separator as a byte character. Default:
     *     `,`
     *   - `scan_csv_quote_char`: Set the char used as quote char. If set to `null` quoting is
@@ -221,6 +218,50 @@ class Scannable private[polars] () {
   def csv(path: String, paths: String*): LazyFrame =
     LazyFrame.withPtr(
       scanCSV(
+        paths = paths.+:(path).toArray[String],
+        options = jsonMapper.writeValueAsString(_options)
+      )
+    )
+
+  /** Scans the contents of a dataset in Newline Delimited JSON (ndjson) format from the specified
+    * path(s) (local and cloud). Provided paths support globbing and expansion.
+    *
+    * Supported options:
+    *   - `scan_ndjson_n_rows`: Sets the maximum rows to read from ndjson files. All rows are
+    *     scanned if not specified. During multithreaded parsing the upper bound n cannot be
+    *     guaranteed. Default: `null`
+    *   - `scan_ndjson_row_index_name`: If set, this inserts a row index column with the given
+    *     name. Default: `null`
+    *   - `scan_ndjson_row_index_offset`: Sets the offset (>=0) to start the row index column
+    *     (only used if `scan_ndjson_row_index_name` is set). Default: 0
+    *   - `scan_ndjson_low_memory`: Reduce memory pressure at the expense of performance. Default:
+    *     `false`
+    *   - `scan_ndjson_rechunk`: In case of reading multiple files via a glob pattern re-chunk the
+    *     final DataFrame into contiguous memory chunks. Default: `false`
+    *   - `scan_ndjson_include_file_paths`: If set, this option includes the path of the source
+    *     file(s) as a column with provided name. Default: `null`
+    *   - `scan_ndjson_ignore_errors`: Try to keep reading lines if parsing fails because of
+    *     schema mismatches. Default: `false`
+    *   - `scan_ndjson_batch_size`: Sets the number of rows to read in each batch. This influences
+    *     performance. This can be used as a way to reduce memory usage during the parsing at the
+    *     cost of performance. Default: `null`
+    *   - `scan_ndjson_infer_schema_length`: Sets the number of rows to use when inferring the
+    *     json schema. Setting to `null` will do a full table scan which is very slow. Default:
+    *     100
+    *
+    * @param path
+    *   input file location
+    * @param paths
+    *   additional input file locations
+    *
+    * @note
+    *   If multiple paths are provided, connection options are inferred from the first path. So
+    *   all provided paths must be of the same object store.
+    */
+  @varargs
+  def jsonLines(path: String, paths: String*): LazyFrame =
+    LazyFrame.withPtr(
+      scanJsonLines(
         paths = paths.+:(path).toArray[String],
         options = jsonMapper.writeValueAsString(_options)
       )

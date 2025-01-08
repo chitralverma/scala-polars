@@ -10,15 +10,6 @@ private[polars] object scan extends Natively {
 
   @native def scanCSV(paths: Array[String], options: String): Long
 
-  @native def scanNdJson(
-      filePath: String,
-      nRows: Long,
-      inferSchemaRows: Long,
-      cache: Boolean,
-      reChunk: Boolean,
-      lowMemory: Boolean,
-      rowCountColName: String,
-      rowCountColOffset: Int
-  ): Long
+  @native def scanJsonLines(paths: Array[String], options: String): Long
 
 }
