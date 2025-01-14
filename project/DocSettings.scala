@@ -90,12 +90,11 @@ object DocSettings {
           "apiNote:a:API Note:",
           "-Xdoclint:none"
         ),
-        JavaUnidoc / unidoc / unidocAllSources := {
+        JavaUnidoc / unidoc / unidocAllSources :=
           ignoreUndocumentedSources(
             allSourceFiles = (JavaUnidoc / unidoc / unidocAllSources).value,
             sourceFilePatternsToKeep = unidocSourceFilePatterns.value
-          )
-        },
+          ),
 
         // Settings for plain, old Java doc needed for successful doc generation during publishing.
         Compile / doc / javacOptions ++= Seq(
@@ -116,12 +115,11 @@ object DocSettings {
           "-doc-title",
           fullDocTitle((projectToUpdate / name).value, version.value, isScalaDoc = true)
         ),
-        ScalaUnidoc / unidoc / unidocAllSources := {
+        ScalaUnidoc / unidoc / unidocAllSources :=
           ignoreUndocumentedSources(
             allSourceFiles = (ScalaUnidoc / unidoc / unidocAllSources).value,
             sourceFilePatternsToKeep = unidocSourceFilePatterns.value
           )
-        }
       )
 
       javaUnidocSettings ++ scalaUnidocSettings

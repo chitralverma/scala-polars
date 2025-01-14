@@ -7,7 +7,7 @@ import Versions.*
 object ProjectDependencies {
 
   lazy val dependencies: Seq[Setting[_]] = Seq(
-    libraryDependencies ++= {
+    libraryDependencies ++=
       Seq(
         "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompat,
         "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
@@ -27,7 +27,6 @@ object ProjectDependencies {
             case _ => Seq.empty
           }
         )
-    }
   )
 
 }
