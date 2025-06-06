@@ -2,7 +2,7 @@ addSbtPlugin("com.github.sbt" % "sbt-jni" % "1.7.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-java-formatter" % "0.10.0")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.3")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.4")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.2.2")
 
