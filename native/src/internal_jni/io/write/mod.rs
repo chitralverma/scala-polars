@@ -11,7 +11,7 @@ use jni::objects::JString;
 use jni::JNIEnv;
 use object_store::path::Path;
 use object_store::ObjectStore;
-use polars::io::cloud::{build_object_store, CloudOptions, CloudWriter};
+use polars::io::cloud::{build_object_store, BlockingCloudWriter, CloudOptions};
 use polars::io::pl_async::get_runtime;
 use polars::prelude::*;
 
@@ -32,7 +32,7 @@ async fn ensure_write_mode(
             msg: Some("Failed to connect to object store, recheck the provided options".into()),
         }),
         Ok(_) if !overwrite_mode => Err(
-            polars_err!(ComputeError: "File already exists at the provided location `{uri}` and overwrite option is not set"),
+            polars_err!(ComputeError: "File already exists at the provided location `{uri}` and `write_mode` option is not set to `overwrite` "),
         ),
         _ => Ok(()),
     }
@@ -42,7 +42,7 @@ async fn create_cloud_writer(
     uri: &str,
     cloud_options: Option<&CloudOptions>,
     overwrite_mode: bool,
-) -> PolarsResult<CloudWriter> {
+) -> PolarsResult<BlockingCloudWriter> {
     let (cloud_location, object_store) = build_object_store(uri, cloud_options, false).await?;
     let dyn_store = object_store.to_dyn_object_store().await;
     ensure_write_mode(
@@ -53,7 +53,7 @@ async fn create_cloud_writer(
     )
     .await?;
 
-    let cloud_writer = CloudWriter::new_with_object_store(
+    let cloud_writer = BlockingCloudWriter::new_with_object_store(
         dyn_store.clone(),
         cloud_location.prefix.clone().into(),
     )?;
@@ -67,13 +67,13 @@ fn get_df_and_writer(
     filePath: JString,
     overwrite_mode: bool,
     writer_options: PlHashMap<String, String>,
-) -> (DataFrame, CloudWriter) {
+) -> (DataFrame, BlockingCloudWriter) {
     let full_path = get_file_path(env, filePath);
     let uri = full_path.as_str();
 
     let cloud_options = CloudOptions::from_untyped_config(uri, &writer_options);
-    let writer: CloudWriter = get_runtime()
-        .block_on_potential_spawn(async {
+    let writer: BlockingCloudWriter = get_runtime()
+        .block_on(async {
             create_cloud_writer(uri, cloud_options.ok().as_ref(), overwrite_mode).await
         })
         .context("Failed to create writer")

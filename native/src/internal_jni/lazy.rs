@@ -194,7 +194,7 @@ pub unsafe fn optimization_toggle(
         .with_slice_pushdown(slicePushdown == JNI_TRUE)
         .with_comm_subplan_elim(commSubplanElim == JNI_TRUE)
         .with_comm_subexpr_elim(commSubexprElim == JNI_TRUE)
-        .with_streaming(streaming == JNI_TRUE);
+        .with_new_streaming(streaming == JNI_TRUE);
 
     to_ptr(ldf)
 }
