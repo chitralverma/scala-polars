@@ -3,11 +3,11 @@
 use std::iter::Iterator;
 
 use anyhow::{Context, Error};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use jni::objects::*;
 use jni::sys::jlong;
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::export::chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use polars::prelude::*;
 
 use crate::internal_jni::utils::{j_string_to_string, to_ptr, JavaArrayToVec};

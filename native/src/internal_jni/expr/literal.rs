@@ -1,13 +1,12 @@
 #![allow(non_snake_case)]
 
 use anyhow::Context;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jdouble, jfloat, jint, jlong};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::export::chrono::{NaiveDate, NaiveDateTime};
 use polars::prelude::*;
-use polars_core::export::chrono::{NaiveTime, Timelike};
 
 use crate::internal_jni::utils::{j_string_to_string, to_ptr};
 use crate::utils::error::ResultExt;
@@ -94,7 +93,11 @@ pub fn fromTime(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     let total_seconds = time.num_seconds_from_midnight() as i64;
     let nanos = time.nanosecond() as i64;
 
-    let expr = Expr::Literal(LiteralValue::Time((total_seconds) * 1_000_000_000 + nanos));
+    let expr = LiteralValue::Scalar(Scalar::new(
+        DataType::Time,
+        AnyValue::Time((total_seconds) * 1_000_000_000 + nanos),
+    ))
+    .lit();
     to_ptr(expr)
 }
 

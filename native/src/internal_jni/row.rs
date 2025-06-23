@@ -64,7 +64,7 @@ pub struct RowIterator<'a> {
     width: usize,
     start: usize,
     pub end: usize,
-    pub schema: Schema,
+    pub schema: SchemaRef,
 }
 
 impl<'a> RowIterator<'a> {
@@ -86,7 +86,7 @@ impl<'a> RowIterator<'a> {
             vals: buf,
             width,
             start: 0,
-            schema,
+            schema: schema.clone(),
             end: std::cmp::min(end.unwrap_or(data_frame.height()), data_frame.height()),
         }
     }
@@ -353,7 +353,7 @@ fn box_datetime<'a>(
         let zone_id: JObject = unsafe {
             JObject::from_raw(string_to_j_string(
                 env,
-                zone,
+                zone.as_str(),
                 Some(format!("Failed to parse value `{zone}` into ZoneId")),
             ))
         };
