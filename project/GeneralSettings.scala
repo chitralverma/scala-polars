@@ -39,8 +39,8 @@ object GeneralSettings {
       "-language:postfixOps",
       "-unchecked",
       "-Xfatal-warnings"
-    ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-11")
-          else Seq("-release", "11")),
+    ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
+          else Seq("-release", "8")),
     fork := true,
     turbo := true,
     assembly / assemblyMergeStrategy := {

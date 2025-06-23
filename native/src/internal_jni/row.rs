@@ -91,7 +91,7 @@ impl<'a> RowIterator<'a> {
         }
     }
 
-    pub fn advance(&mut self) -> Option<Vec<AnyValue>> {
+    pub fn advance(&mut self) -> Option<Vec<AnyValue<'_>>> {
         if self.start < self.end {
             let start_index = self.start * self.width;
             let end_index = (self.start + 1) * self.width;

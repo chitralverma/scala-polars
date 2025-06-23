@@ -137,8 +137,7 @@ pub unsafe fn new_date_series(
         .map(|s| {
             let lit = s.as_str();
             NaiveDate::parse_from_str(lit, "%Y-%m-%d").context(format!(
-                "Failed to parse value `{}` as date with format `%Y-%m-%d`",
-                lit
+                "Failed to parse value `{lit}` as date with format `%Y-%m-%d`"
             ))
         })
         .collect::<Result<Vec<NaiveDate>, Error>>()
@@ -174,8 +173,7 @@ pub unsafe fn new_time_series(
         .map(|s| {
             let lit = s.as_str();
             NaiveTime::parse_from_str(lit, "%H:%M:%S%.f").context(format!(
-                "Failed to parse value `{}` as time with format `%H:%M:%S.f`",
-                lit
+                "Failed to parse value `{lit}` as time with format `%H:%M:%S.f`"
             ))
         })
         .collect::<Result<Vec<NaiveTime>, Error>>()
@@ -211,8 +209,7 @@ pub unsafe fn new_datetime_series(
         .map(|s| {
             let lit = s.as_str();
             NaiveDateTime::parse_from_str(lit, "%FT%T%.f").context(format!(
-                "Failed to parse value `{}` as datetime with format `%FT%T%.f`",
-                lit
+                "Failed to parse value `{lit}` as datetime with format `%FT%T%.f`"
             ))
         })
         .collect::<Result<Vec<NaiveDateTime>, Error>>()
@@ -282,5 +279,5 @@ pub unsafe fn new_struct_series(
 #[jni_fn("org.polars.scala.polars.internal.jni.series$")]
 pub unsafe fn show(_: JNIEnv, _: JClass, series_ptr: *mut Series) {
     let series = &*series_ptr;
-    println!("{:?}", series)
+    println!("{series:?}")
 }

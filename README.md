@@ -39,7 +39,7 @@ The project is mainly divided into 2 submodules,
 
 ## Compatibility
 
-- JDK version `>=11`
+- JDK version `>=8`
 - Scala version `2.12.x`, `2.13.x` and `3.3.x`. Default is `2.13.x`
 - Rust version `>=1.58`
 
@@ -49,7 +49,7 @@ The project is mainly divided into 2 submodules,
 
 The following tooling is required to start building `scala-polars`,
 
-- JDK 11+ ([OpenJDK](https://openjdk.org/projects/jdk/)
+- JDK 8+ ([OpenJDK](https://openjdk.org/projects/jdk/)
   or [Oracle Java SE](https://www.oracle.com/java/technologies/javase/))
 - [Rust](https://www.rust-lang.org/tools/install) (cargo, rustc etc.)
 - [sbt](https://www.scala-sbt.org/index.html)

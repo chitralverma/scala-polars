@@ -26,7 +26,7 @@ pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, df_ptr: *mut DataFrame) -
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]
 pub unsafe fn show(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame) {
     let df = &mut *df_ptr;
-    println!("{:?}", df)
+    println!("{df:?}")
 }
 
 #[jni_fn("org.polars.scala.polars.internal.jni.data_frame$")]

@@ -69,8 +69,7 @@ pub fn fromDate(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
 
     let date = NaiveDate::parse_from_str(string_value.as_str(), "%Y-%m-%d")
         .context(format!(
-            "Failed to parse value `{}` as date with format `%Y-%m-%d`",
-            string_value
+            "Failed to parse value `{string_value}` as date with format `%Y-%m-%d`"
         ))
         .unwrap_or_throw(&mut env);
 
@@ -88,8 +87,7 @@ pub fn fromTime(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
 
     let time = NaiveTime::parse_from_str(string_value.as_str(), "%H:%M:%S%.f")
         .context(format!(
-            "Failed to parse value `{}` as time with format `%H:%M:%S%.f`",
-            string_value
+            "Failed to parse value `{string_value}` as time with format `%H:%M:%S%.f`"
         ))
         .unwrap_or_throw(&mut env);
 
@@ -110,8 +108,7 @@ pub fn fromDateTime(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
 
     let datetime = NaiveDateTime::parse_from_str(string_value.as_str(), "%FT%T%.f")
         .context(format!(
-            "Failed to parse value `{}` as datetime with format `%FT%T%.f`",
-            string_value
+            "Failed to parse value `{string_value}` as datetime with format `%FT%T%.f`"
         ))
         .unwrap_or_throw(&mut env);
 
