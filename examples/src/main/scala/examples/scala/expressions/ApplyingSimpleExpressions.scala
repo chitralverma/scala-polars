@@ -2,9 +2,8 @@ package examples.scala.expressions
 
 import scala.util.Random
 
-import org.polars.scala.polars.Polars
-import org.polars.scala.polars.functions._
-
+import com.github.chitralverma.polars.Polars
+import com.github.chitralverma.polars.functions._
 import examples.scala.utils.CommonUtils
 
 object ApplyingSimpleExpressions {

@@ -1,15 +1,14 @@
 package examples.scala.io
 
-import org.polars.scala.polars.Polars
-
+import com.github.chitralverma.polars.Polars
 import examples.scala.utils.CommonUtils
 
 /** Polars supports various output file formats like the following,
-  *   - [[org.polars.scala.polars.api.io.Writeable.parquet Apache Parquet]]
-  *   - [[org.polars.scala.polars.api.io.Writeable.ipc Apache IPC]]
+  *   - [[com.github.chitralverma.polars.api.io.Writeable.parquet Apache Parquet]]
+  *   - [[com.github.chitralverma.polars.api.io.Writeable.ipc Apache IPC]]
   *
-  * A [[org.polars.scala.polars.api.DataFrame DataFrame]] can be written to an object storage as a
-  * file in one of the supported formats mentioned above.
+  * A [[com.github.chitralverma.polars.api.DataFrame DataFrame]] can be written to an object
+  * storage as a file in one of the supported formats mentioned above.
   *
   * Since each format and storage may have its own additional options, Polars allows a simple
   * builder pattern which can be used to supply these options.

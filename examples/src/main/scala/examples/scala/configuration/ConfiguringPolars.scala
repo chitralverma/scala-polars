@@ -3,7 +3,7 @@ package examples.scala.configuration
 import java.io.File
 import java.nio.file.{Files, Path}
 
-import org.polars.scala.polars.Polars
+import com.github.chitralverma.polars.Polars
 
 object ConfiguringPolars {
 

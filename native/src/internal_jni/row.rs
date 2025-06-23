@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 use crate::internal_jni::utils::{find_java_class, get_n_rows, string_to_j_string};
 use crate::utils::error::ResultExt;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.row$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
 pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
     let df = &mut *df_ptr;
 
@@ -19,7 +19,7 @@ pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows
     Box::into_raw(Box::new(ri.clone())) as jlong
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.row$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
 pub unsafe fn advanceIterator(
     mut env: JNIEnv,
     _: JClass,
@@ -48,7 +48,7 @@ pub unsafe fn advanceIterator(
     }
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.row$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
 pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
     let ri = &*ri_ptr;
 
@@ -91,7 +91,7 @@ impl<'a> RowIterator<'a> {
         }
     }
 
-    pub fn advance(&mut self) -> Option<Vec<AnyValue>> {
+    pub fn advance(&mut self) -> Option<Vec<AnyValue<'_>>> {
         if self.start < self.end {
             let start_index = self.start * self.width;
             let end_index = (self.start + 1) * self.width;

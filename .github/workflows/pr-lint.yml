@@ -20,8 +20,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: "8"
-          distribution: 'temurin'
+          distribution: 'zulu'
           cache: 'sbt'
+
+      - uses: sbt/setup-sbt@v1
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly

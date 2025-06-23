@@ -1,8 +1,8 @@
 package examples.java;
 
+import com.github.chitralverma.polars.api.Series;
 import java.util.Arrays;
 import java.util.Collections;
-import org.polars.scala.polars.api.Series;
 
 public class InstantiateSeries {
   public static void main(String[] args) {
