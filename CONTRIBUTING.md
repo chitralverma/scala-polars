@@ -45,6 +45,7 @@ The above process might look complicated, and it actually is 😂, but since all
 place, the user facing process is fairly straight-forward. This can be done by going through the following steps in
 sequence firstly ensure JDK 8+, sbt and the latest rust
 compiler are installed, then follow the commands below as per the need.
+
 ---
 
 ## 🏗 Build Commands
