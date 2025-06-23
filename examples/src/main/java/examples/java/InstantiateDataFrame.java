@@ -1,8 +1,8 @@
 package examples.java;
 
+import com.github.chitralverma.polars.api.DataFrame;
+import com.github.chitralverma.polars.api.Series;
 import java.util.Arrays;
-import org.polars.scala.polars.api.DataFrame;
-import org.polars.scala.polars.api.Series;
 
 public class InstantiateDataFrame {
 

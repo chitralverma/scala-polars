@@ -1,6 +1,6 @@
 package examples.scala
 
-import org.polars.scala.polars.api.Series
+import com.github.chitralverma.polars.api.Series
 
 object InstantiateSeries {
 

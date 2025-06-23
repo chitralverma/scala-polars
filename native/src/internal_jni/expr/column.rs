@@ -44,7 +44,7 @@ pub enum UnaryOperator {
     Cast = 8,
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub fn column(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     let name = j_string_to_string(
         &mut env,
@@ -56,7 +56,7 @@ pub fn column(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub fn sort_column_by_name(mut env: JNIEnv, _: JClass, value: JString, descending: bool) -> jlong {
     let name = j_string_to_string(
         &mut env,
@@ -75,7 +75,7 @@ pub fn sort_column_by_name(mut env: JNIEnv, _: JClass, value: JString, descendin
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub unsafe fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jint) -> jlong {
     let l_expr = (*expr_ptr).clone();
 
@@ -96,7 +96,7 @@ pub unsafe fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operat
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.column_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub unsafe fn applyBinary(
     mut env: JNIEnv,
     _: JClass,

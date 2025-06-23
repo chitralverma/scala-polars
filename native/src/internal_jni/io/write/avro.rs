@@ -28,7 +28,7 @@ fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression
     }
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
 pub fn writeAvro(
     mut env: JNIEnv,
     _object: JObject,

@@ -2,10 +2,10 @@ package examples.scala.expressions
 
 import scala.util.Random
 
-import org.polars.scala.polars.Polars
-import org.polars.scala.polars.functions._
-
+import com.github.chitralverma.polars.Polars
 import examples.scala.utils.CommonUtils
+
+import com.github.chitralverma.polars.functions._
 
 object ApplyingSimpleExpressions {
   def main(args: Array[String]): Unit = {

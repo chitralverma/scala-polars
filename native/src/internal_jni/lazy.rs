@@ -11,7 +11,7 @@ use polars_core::series::IsSorted;
 use crate::internal_jni::utils::*;
 use crate::utils::error::ResultExt;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jstring {
     let ldf = &mut *ldf_ptr;
     let schema = ldf
@@ -26,7 +26,7 @@ pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) 
         .unwrap_or_throw(&mut env)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn selectFromStrings(
     mut env: JNIEnv,
     _: JClass,
@@ -50,7 +50,7 @@ pub unsafe fn selectFromStrings(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn selectFromExprs(
     mut env: JNIEnv,
     _: JClass,
@@ -66,7 +66,7 @@ pub unsafe fn selectFromExprs(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn filterFromExprs(
     _: JNIEnv,
     _: JClass,
@@ -77,7 +77,7 @@ pub unsafe fn filterFromExprs(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn sortFromExprs(
     mut env: JNIEnv,
     _: JClass,
@@ -112,7 +112,7 @@ pub unsafe fn sortFromExprs(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn topKFromExprs(
     mut env: JNIEnv,
     _: JClass,
@@ -149,7 +149,7 @@ pub unsafe fn topKFromExprs(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn withColumn(
     mut env: JNIEnv,
     _: JClass,
@@ -171,7 +171,7 @@ pub unsafe fn withColumn(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn optimization_toggle(
     _: JNIEnv,
     _: JClass,
@@ -199,13 +199,13 @@ pub unsafe fn optimization_toggle(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn cache(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
     let ldf = (*ldf_ptr).clone().cache();
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn collect(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
     let df = (*ldf_ptr)
         .clone()
@@ -216,7 +216,7 @@ pub unsafe fn collect(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jl
     to_ptr(df)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn concatLazyFrames(
     mut env: JNIEnv,
     _: JClass,
@@ -243,19 +243,19 @@ pub unsafe fn concatLazyFrames(
     to_ptr(concatenated_ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn limit(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
     let ldf = (*ldf_ptr).clone().limit(n as IdxSize);
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn tail(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
     let ldf = (*ldf_ptr).clone().tail(n as IdxSize);
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn drop(
     mut env: JNIEnv,
     _: JClass,
@@ -278,7 +278,7 @@ pub unsafe fn drop(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn rename(
     mut env: JNIEnv,
     _: JClass,
@@ -319,7 +319,7 @@ pub unsafe fn rename(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn explain(
     mut env: JNIEnv,
     _: JClass,
@@ -342,7 +342,7 @@ pub unsafe fn explain(
     .unwrap_or_throw(&mut env)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn unique(
     mut env: JNIEnv,
     _: JClass,
@@ -391,7 +391,7 @@ pub unsafe fn unique(
     to_ptr(unique_ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn drop_nulls(
     mut env: JNIEnv,
     _: JClass,
@@ -417,7 +417,7 @@ pub unsafe fn drop_nulls(
     to_ptr(ldf)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.lazy_frame$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub unsafe fn set_sorted(
     mut env: JNIEnv,
     _: JClass,
