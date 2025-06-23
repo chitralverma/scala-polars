@@ -15,7 +15,7 @@ object NativeBuildSettings {
   )
 
   lazy val managedNativeLibraries = taskKey[Seq[Path]](
-    "Maps locally built, platform-dependant libraries to their locations on the classpath."
+    "Maps locally built, platform-dependent libraries to their locations on the classpath."
   )
 
   lazy val settings: Seq[Setting[_]] = Seq(
@@ -47,7 +47,7 @@ object NativeBuildSettings {
               val nativeOutputDir = resourceManaged.value.toPath.resolve(s"native/$arch/")
               val cargoTomlPath = s"${baseDirectory.value.getParent}/native/Cargo.toml"
 
-              // Build native project using cargo
+              // Build the native project using cargo
               val cmd =
                 s"""cargo build
                    |-Z unstable-options
@@ -69,7 +69,7 @@ object NativeBuildSettings {
 
                   IO.copyDirectory(nativeOutputDir.toFile, dest.toFile)
 
-                case None =>
+                case None => ()
               }
 
             case Some(_) =>
@@ -142,7 +142,27 @@ object NativeBuildSettings {
 
           resource
         }
-    }.taskValue
+    }.taskValue,
+
+    // Exclude native libs from sources.jar
+    Compile / packageSrc / mappings := {
+      val nativeDir =
+        (Compile / resourceManaged).value.toPath.resolve("native").toFile.getAbsolutePath
+      val original = (Compile / packageSrc / mappings).value
+      original.filterNot { case (file, _) =>
+        file.getAbsolutePath.startsWith(nativeDir)
+      }
+    },
+
+    // Exclude native libs from javadoc.jar
+    Compile / packageDoc / mappings := {
+      val nativeDir =
+        (Compile / resourceManaged).value.toPath.resolve("native").toFile.getAbsolutePath
+      val original = (Compile / packageDoc / mappings).value
+      original.filterNot { case (file, _) =>
+        file.getAbsolutePath.startsWith(nativeDir)
+      }
+    }
   )
 
 }
