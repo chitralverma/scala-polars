@@ -1,0 +1,15 @@
+name: Test PGP_SECRET Import
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test-gpg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decode and import PGP secret key
+        run: |
+          echo "$PGP_SECRET" | base64 -d | gpg --import
+          gpg --list-secret-keys
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
