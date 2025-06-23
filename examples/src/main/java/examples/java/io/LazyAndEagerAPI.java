@@ -1,10 +1,10 @@
 package examples.java.io;
 
+import com.github.chitralverma.polars.Polars;
+import com.github.chitralverma.polars.api.DataFrame;
+import com.github.chitralverma.polars.api.LazyFrame;
+import com.github.chitralverma.polars.api.Row;
 import examples.scala.utils.CommonUtils;
-import org.polars.scala.polars.Polars;
-import org.polars.scala.polars.api.DataFrame;
-import org.polars.scala.polars.api.LazyFrame;
-import org.polars.scala.polars.api.Row;
 import scala.collection.Iterator;
 
 /**

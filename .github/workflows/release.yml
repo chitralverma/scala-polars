@@ -59,7 +59,7 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: aarch64-unknown-linux-gnu
-            packages: "sudo apt update && sudo apt-get install gcc-aarch64-linux-gnu"
+            packages: "sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu"
 
           - os: ubuntu-latest
             arch: x86_64-unknown-linux-gnu
@@ -190,7 +190,12 @@ jobs:
         working-directory: ${{env.NATIVE_LIB_LOCATION}}
 
       - name: Publish Artifacts
-        run: sbt +aetherDeploy
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        run: sbt ci-release
 
       - name: Publish API Docs
         run: |

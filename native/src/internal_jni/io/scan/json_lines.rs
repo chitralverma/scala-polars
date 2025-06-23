@@ -16,7 +16,7 @@ use crate::internal_jni::io::{get_file_path, parse_json_to_options};
 use crate::internal_jni::utils::{to_ptr, JavaArrayToVec};
 use crate::utils::error::ResultExt;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.io.scan$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.io.scan$")]
 pub unsafe fn scanJsonLines(
     mut env: JNIEnv,
     _: JClass,

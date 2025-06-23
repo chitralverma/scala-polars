@@ -27,7 +27,7 @@ fn parse_ipc_compression(compression: Option<String>) -> Option<IpcCompression> 
     }
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
 pub fn writeIPC(
     mut env: JNIEnv,
     _object: JObject,

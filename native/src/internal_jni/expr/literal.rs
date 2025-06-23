@@ -12,13 +12,13 @@ use polars_core::export::chrono::{NaiveTime, Timelike};
 use crate::internal_jni::utils::{j_string_to_string, to_ptr};
 use crate::utils::error::ResultExt;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn nullLit(_: JNIEnv, _: JClass) -> jlong {
     let expr = NULL.lit();
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromString(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     let string_value = j_string_to_string(
         &mut env,
@@ -29,37 +29,37 @@ pub fn fromString(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromBool(_: JNIEnv, _: JClass, value: jboolean) -> jlong {
     let expr = lit(value);
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromInt(_: JNIEnv, _: JClass, value: jint) -> jlong {
     let expr = lit(value);
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromLong(_: JNIEnv, _: JClass, value: jlong) -> jlong {
     let expr = lit(value);
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromFloat(_: JNIEnv, _: JClass, value: jfloat) -> jlong {
     let expr = lit(value);
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromDouble(_: JNIEnv, _: JClass, value: jdouble) -> jlong {
     let expr = lit(value);
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromDate(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     let string_value = j_string_to_string(
         &mut env,
@@ -77,7 +77,7 @@ pub fn fromDate(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromTime(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     let string_value = j_string_to_string(
         &mut env,
@@ -98,7 +98,7 @@ pub fn fromTime(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     to_ptr(expr)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.expressions.literal_expr$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.literal_expr$")]
 pub fn fromDateTime(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
     let string_value = j_string_to_string(
         &mut env,

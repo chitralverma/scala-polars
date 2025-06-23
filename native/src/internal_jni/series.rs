@@ -13,7 +13,7 @@ use polars::prelude::*;
 use crate::internal_jni::utils::{j_string_to_string, to_ptr, JavaArrayToVec};
 use crate::utils::error::ResultExt;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn new_str_series(
     mut env: JNIEnv,
     _: JClass,
@@ -42,7 +42,7 @@ pub unsafe fn new_str_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub fn new_long_series(mut env: JNIEnv, _: JClass, name: JString, values: JLongArray) -> jlong {
     let data = JavaArrayToVec::to_vec(&mut env, values);
 
@@ -56,7 +56,7 @@ pub fn new_long_series(mut env: JNIEnv, _: JClass, name: JString, values: JLongA
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub fn new_int_series(mut env: JNIEnv, _: JClass, name: JString, values: JIntArray) -> jlong {
     let data = JavaArrayToVec::to_vec(&mut env, values);
 
@@ -70,7 +70,7 @@ pub fn new_int_series(mut env: JNIEnv, _: JClass, name: JString, values: JIntArr
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub fn new_float_series(mut env: JNIEnv, _: JClass, name: JString, values: JFloatArray) -> jlong {
     let data = JavaArrayToVec::to_vec(&mut env, values);
 
@@ -84,7 +84,7 @@ pub fn new_float_series(mut env: JNIEnv, _: JClass, name: JString, values: JFloa
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub fn new_double_series(mut env: JNIEnv, _: JClass, name: JString, values: JDoubleArray) -> jlong {
     let data = JavaArrayToVec::to_vec(&mut env, values);
 
@@ -98,7 +98,7 @@ pub fn new_double_series(mut env: JNIEnv, _: JClass, name: JString, values: JDou
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub fn new_boolean_series(
     mut env: JNIEnv,
     _: JClass,
@@ -117,7 +117,7 @@ pub fn new_boolean_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn new_date_series(
     mut env: JNIEnv,
     _: JClass,
@@ -153,7 +153,7 @@ pub unsafe fn new_date_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn new_time_series(
     mut env: JNIEnv,
     _: JClass,
@@ -189,7 +189,7 @@ pub unsafe fn new_time_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn new_datetime_series(
     mut env: JNIEnv,
     _: JClass,
@@ -225,7 +225,7 @@ pub unsafe fn new_datetime_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn new_list_series(
     mut env: JNIEnv,
     _: JClass,
@@ -247,7 +247,7 @@ pub unsafe fn new_list_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn new_struct_series(
     mut env: JNIEnv,
     _: JClass,
@@ -276,7 +276,7 @@ pub unsafe fn new_struct_series(
     to_ptr(series)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.series$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub unsafe fn show(_: JNIEnv, _: JClass, series_ptr: *mut Series) {
     let series = &*series_ptr;
     println!("{series:?}")

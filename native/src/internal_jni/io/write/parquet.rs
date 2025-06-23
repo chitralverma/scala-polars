@@ -42,7 +42,7 @@ fn parse_parquet_compression(
     }
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
 pub fn writeParquet(
     mut env: JNIEnv,
     _object: JObject,

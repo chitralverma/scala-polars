@@ -14,8 +14,9 @@ object GeneralSettings {
   val supportedScalaVersions: Seq[String] = Seq(scala212, scala213, scala33)
 
   lazy val commonSettings = Seq(
-    organization := "org.polars",
+    organization := "com.github.chitralverma",
     versionScheme := Some("early-semver"),
+    homepage := Some(url("https://github.com/chitralverma/scala-polars")),
     licenses := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(

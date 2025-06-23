@@ -22,7 +22,11 @@ lazy val core = project
   )
   .settings(ProjectDependencies.dependencies)
   .settings(GeneralSettings.commonSettings)
-  .settings(PublishingSettings.settings)
+  .settings(
+    publish / skip := false,
+    publishArtifact := true,
+    publishMavenStyle := true
+  )
   .settings(
     nativeRoot := baseDirectory.value.toPath.resolveSibling("native").toFile,
     inConfig(Compile)(NativeBuildSettings.settings)

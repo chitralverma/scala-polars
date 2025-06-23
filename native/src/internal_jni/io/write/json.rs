@@ -10,7 +10,7 @@ use crate::internal_jni::io::parse_json_to_options;
 use crate::internal_jni::io::write::get_df_and_writer;
 use crate::utils::error::ResultExt;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.io.write$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
 pub fn writeJson(
     mut env: JNIEnv,
     _object: JObject,

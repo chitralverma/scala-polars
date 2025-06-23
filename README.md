@@ -1,118 +1,192 @@
-scala-polars
-============
+# scala-polars
 
-`scala-polars` is a library for using the awesome [Polars](https://www.pola.rs/) DataFrame library in
-Scala and Java projects.
+**`scala-polars`** brings the blazing-fast [Polars](https://www.pola.rs/) DataFrame library to Scala and Java projects.
 
-## About
+---
 
-### About Polars
+## 🚀 Overview
 
-Polars is a blazing fast DataFrames library implemented in Rust using
-[Apache Arrow Columnar Format](https://arrow.apache.org/docs/format/Columnar.html) as the memory model.
+Polars is a lightning-fast DataFrame library built in Rust using
+the [Apache Arrow Columnar Format](https://arrow.apache.org/docs/format/Columnar.html). `scala-polars` bridges the gap
+between the JVM and Polars by exposing it through a JNI-based Scala API, allowing developers to process data with native
+performance in a fully JVM-compatible way.
 
-- Lazy / eager execution
-- Multithreaded
-- SIMD
-- Query optimization
-- Powerful expression API
-- Hybrid Streaming (larger than RAM datasets)
-- Rust | Python | NodeJS | ...
+---
 
-### About scala-polars
+## 🔍 Features
 
-This library has been written mostly in scala and leverages [JNI](https://en.wikipedia.org/wiki/Java_Native_Interface)
-to offload heavy data processing tasks to its native counterpart written completely in rust. The aim of this library is
-to provide an easy-to-use interface for Scala/ Java developers though which they can leverage the amazing Polars library
-in their existing projects.
+- **Native performance**: backed by Polars' highly optimized Rust core
+- **Seamless Scala/Java integration** via JNI
+- **Lazy & eager execution modes**
+- **Multithreaded & SIMD-accelerated**
+- **Memory-efficient**: handles out-of-core datasets
+- **Works out of the box** using SBT (includes native build automation)
 
-The project is mainly divided into 2 submodules,
+---
 
-- `core` - Contains the user facing interfaces written in scala that will be used to work with data. Internally this
-  module relies on native submodule.
-- `native` - This is an internal module written in rust which relies on the official rust implementation of Polars.
+## 📦 Installation
 
-### Examples
+### SBT
 
-- [Java Examples](examples/src/main/java/examples/java/)
-- [Scala Examples](examples/src/main/scala/examples/scala/)
+```scala
+resolvers += Resolver.sonatypeCentralSnapshots
 
-## Compatibility
-
-- JDK version `>=8`
-- Scala version `2.12.x`, `2.13.x` and `3.3.x`. Default is `2.13.x`
-- Rust version `>=1.58`
-
-## Building
-
-### Prerequisites
-
-The following tooling is required to start building `scala-polars`,
-
-- JDK 8+ ([OpenJDK](https://openjdk.org/projects/jdk/)
-  or [Oracle Java SE](https://www.oracle.com/java/technologies/javase/))
-- [Rust](https://www.rust-lang.org/tools/install) (cargo, rustc etc.)
-- [sbt](https://www.scala-sbt.org/index.html)
-
-### How to Compile?
-
-sbt is the primary build tool for this project and all the required interlinking has been done in such a way that your
-IntelliJ IDE or an external build works in the same way. This means that whether you are in development mode or want to
-build to distribute, the process of the build remains the same and is more or less abstracted.
-
-The build process that sbt triggers involves the following steps,
-
-- Compile the rust code present in the `native` module to a binary.
-- Compile the scala and java (if any) facade code.
-- Copy the built rust binary to the classpath of scala code during its build at a fixed location.
-
-All of the above steps happen automatically when you run an sbt build job that triggers `compile` phase. Other than
-this, during package phase, the scala, java code and the built rust binary is added to the built jar(s). To keep
-everything monolithic, the `native` module is not packaged as a jar, only `core` module is.
-
-The above process might look complicated, and it actually is 😂, but since all the internally sbt wiring is already in
-place, the user facing process is fairly straight-forward. This can be done by going through the following steps in
-sequence firstly ensure JDK 8+, sbt and the latest rust
-compiler are installed, then follow the commands below as per the need.
-
-**Compilation**
-
-```shell
-# To compile the whole project (scala/ java/ rust) in one go
-sbt compile
+libraryDependencies += "com.github.chitralverma" %% "scala-polars" % "SOME-VERSION-SNAPSHOT"
 ```
 
-**Local packaging/ installation**
+> 💡 Find the latest snapshot versions
+> on [Sonatype Central](https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/com/github/chitralverma/scala-polars_2.12/)
 
-```shell
-# To package the project and install locally as slim jars with default scala version.
+### Maven
+
+```xml
+<repositories>
+    <repository>
+        <name>Central Portal Snapshots</name>
+        <id>central-portal-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
+    </repository>
+</repositories>
+
+<dependencies>
+    ...
+    <dependency>
+        <groupId>com.github.chitralverma</groupId>
+        <artifactId>scala-polars_2.12</artifactId>
+        <version>SOME-VERSION-SNAPSHOT</version>
+    </dependency>
+    ...
+</dependencies>
+```
+
+### Gradle
+
+```groovy
+repositories {
+    maven {
+        name = 'Central Portal Snapshots'
+        url = 'https://central.sonatype.com/repository/maven-snapshots/'
+
+        // Only search this repository for the specific dependency
+        content {
+            includeModule("com.github.chitralverma", "scala-polars_2.12")
+        }
+    }
+    mavenCentral()
+}
+implementation("com.github.chitralverma:scala-polars_2.12:SOME-VERSION-SNAPSHOT")
+```
+> Note: Use `scala-polars_2.13` for Scala 2.13.x projects or `scala-polars_3` for Scala 3.x projects as the artifact ID
+---
+
+## 🧱 Modules
+
+- `core`: Scala interface users directly interact with
+- `native`: Rust backend that embeds Polars and is compiled into a JNI shared library
+
+---
+
+## 🧪 Getting Started
+
+### Scala 
+
+```scala
+import com.github.chitralverma.polars.api.{DataFrame, Series}
+
+val df = DataFrame
+  .fromSeries(
+    Series.ofInt("i32_col", Array[Int](1, 2, 3)),
+    Series.ofLong("i64_col", Array[Long](1L, 2L, 3L)),
+    Series.ofBoolean("bool_col", Array[Boolean](true, false, true)),
+    Series.ofList(
+      "nested_str_col",
+      Array[Array[String]](Array("a", "b", "c"), Array("a", "b", "c"), Array("a", "b", "c"))
+    )
+  )
+
+val result = df.select("i32_col", "i64_col")
+result.show()
+```
+
+### Java
+```java
+import com.github.chitralverma.polars.api.DataFrame;
+import com.github.chitralverma.polars.api.Series;
+
+DataFrame df = DataFrame.fromSeries(
+    Series.ofInt("i32_col", new int[] {1, 2, 3}),
+    Series.ofLong("i64_col", new long[] {1L, 2L, 3L}),
+    Series.ofBoolean("bool_col", new boolean[] {true, false, true}),
+    Series.ofList(
+        "nested_str_col",
+        new String[][] {
+                {"a", "b", "c"},
+                {"a", "b", "c"},
+                {"a", "b", "c"},
+        }
+    )
+)
+.select("i32_col", "i64_col");
+
+df.show();
+```
+
+👉 See full:
+
+- [Scala Examples](examples/src/main/scala/examples/scala/)
+- [Java Examples](examples/src/main/java/examples/java/)
+
+---
+
+## 🔧 Compatibility
+
+- **Scala**: 2.12, 2.13, 3.x
+- **Java**: 8+
+- **Rust**: 1.58+
+- **OS**: macOS, Linux, Windows
+
+---
+
+## 🏗 Build from Source
+
+### Requirements
+
+- JDK 8+
+- [Rust](https://www.rust-lang.org/tools/install)
+- [sbt](https://www.scala-sbt.org/)
+
+### Commands
+
+```bash
+# Compile Rust + Scala + Java
+sbt compile
+
+# Publish locally
 sbt publishLocal
 
-# To package the project and install locally as slim jars for all supported scala versions.
-sbt +publishLocal
-```
-
-**Build Assembly (fat jar)**
-
-```shell
-# To package the project and install locally as fat jars with default scala version.
+# Fat JAR (default Scala version)
 sbt assembly
 
-# To package the project and install locally as slim jars for all supported scala versions.
-sbt +assembly
-```
-
-**Generate Native Binary Only**
-
-```shell
-# To compile only the native module containing rust code to binary.
+# Rust native only
 sbt generateNativeLibrary
 ```
 
-## License
+---
 
-Apache License 2.0, see [LICENSE](LICENSE).
+## 📄 License
 
-## Community
+Apache 2.0 — see [LICENSE](LICENSE)
 
-Reach out to the Polars community on [Discord](https://discord.gg/4UfP5cfBE7).
+---
+
+## 🤝 Community
+
+- Discuss Polars on [Polars Discord](https://discord.gg/4UfP5cfBE7)
+- To contribute, see [CONTRIBUTING.md](CONTRIBUTING.md)

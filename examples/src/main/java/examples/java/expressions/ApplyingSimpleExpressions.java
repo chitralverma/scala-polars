@@ -1,13 +1,13 @@
 package examples.java.expressions;
 
-import static org.polars.scala.polars.functions.*;
+import static com.github.chitralverma.polars.functions.*;
 
+import com.github.chitralverma.polars.Polars;
+import com.github.chitralverma.polars.api.DataFrame;
+import com.github.chitralverma.polars.api.LazyFrame;
 import examples.scala.utils.CommonUtils;
 import java.util.Collections;
 import java.util.Random;
-import org.polars.scala.polars.Polars;
-import org.polars.scala.polars.api.DataFrame;
-import org.polars.scala.polars.api.LazyFrame;
 
 public class ApplyingSimpleExpressions {
 

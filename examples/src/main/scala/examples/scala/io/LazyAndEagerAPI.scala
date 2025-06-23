@@ -1,8 +1,7 @@
 package examples.scala.io
 
-import org.polars.scala.polars.Polars
-import org.polars.scala.polars.api.{DataFrame, LazyFrame}
-
+import com.github.chitralverma.polars.Polars
+import com.github.chitralverma.polars.api.{DataFrame, LazyFrame}
 import examples.scala.utils.CommonUtils
 
 /** Polars provides 2 API for reading datasets lazily (`scan`) or eagerly (`read`).

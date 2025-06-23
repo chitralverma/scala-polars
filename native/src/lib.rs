@@ -13,7 +13,7 @@ use utils::error::ResultExt;
 pub mod internal_jni;
 pub mod utils;
 
-#[jni_fn("org.polars.scala.polars.internal.jni.common$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.common$")]
 pub fn version(mut env: JNIEnv, _object: JObject) -> jstring {
     let cargo_toml_raw = include_str!("../Cargo.toml");
     let cargo_toml_res: anyhow::Result<toml::Table> =
@@ -37,7 +37,7 @@ pub fn version(mut env: JNIEnv, _object: JObject) -> jstring {
         .unwrap_or_throw(&mut env)
 }
 
-#[jni_fn("org.polars.scala.polars.internal.jni.common$")]
+#[jni_fn("com.github.chitralverma.polars.internal.jni.common$")]
 pub fn setConfigs(mut env: JNIEnv, _object: JObject, options: JObject) -> jboolean {
     let map = env
         .get_map(&options)

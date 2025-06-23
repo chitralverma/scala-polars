@@ -1,11 +1,11 @@
 package examples.java.configuration;
 
+import com.github.chitralverma.polars.Polars;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import org.polars.scala.polars.Polars;
 
 public class ConfiguringPolars {
 

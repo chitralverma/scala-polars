@@ -1,6 +1,6 @@
 package examples.scala
 
-import org.polars.scala.polars.api.{DataFrame, Series}
+import com.github.chitralverma.polars.api.{DataFrame, Series}
 
 object InstantiateDataFrame {
 
