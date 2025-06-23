@@ -3,9 +3,8 @@ package examples.scala.expressions
 import scala.util.Random
 
 import com.github.chitralverma.polars.Polars
-import examples.scala.utils.CommonUtils
-
 import com.github.chitralverma.polars.functions._
+import examples.scala.utils.CommonUtils
 
 object ApplyingSimpleExpressions {
   def main(args: Array[String]): Unit = {

@@ -5,8 +5,8 @@ import com.github.chitralverma.polars.api.{DataFrame, LazyFrame}
 import examples.scala.utils.CommonUtils
 
 /** Polars supports various input file formats like the following,
-  *   - [[com.github.chitralverma.polars.api.io.Scannable.csv CSV]] (delimited format
-  *     like CSV, TSV, etc.)
+  *   - [[com.github.chitralverma.polars.api.io.Scannable.csv CSV]] (delimited format like CSV,
+  *     TSV, etc.)
   *   - [[com.github.chitralverma.polars.api.io.Scannable.parquet Apache Parquet]]
   *   - [[com.github.chitralverma.polars.api.io.Scannable.ipc Apache Arrow IPC]]
   *   - [[com.github.chitralverma.polars.api.io.Scannable.jsonLines New line delimited JSON]]

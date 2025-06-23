@@ -8,8 +8,7 @@ import examples.scala.utils.CommonUtils;
  * Polars supports various output file formats like the following,
  *
  * <ul>
- *   <li>{@link com.github.chitralverma.polars.api.io.Writeable#parquet(String) Apache
- *       Parquet}
+ *   <li>{@link com.github.chitralverma.polars.api.io.Writeable#parquet(String) Apache Parquet}
  *   <li>{@link com.github.chitralverma.polars.api.io.Writeable#ipc(String) Apache IPC}
  * </ul>
  *

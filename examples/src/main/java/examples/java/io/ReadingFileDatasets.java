@@ -9,12 +9,11 @@ import examples.scala.utils.CommonUtils;
  * Polars supports various input file formats like the following,
  *
  * <ul>
- *   <li>{@link com.github.chitralverma.polars.api.io.Scannable#csv CSV} (delimited
- *       format like CSV, TSV, etc.)
+ *   <li>{@link com.github.chitralverma.polars.api.io.Scannable#csv CSV} (delimited format like CSV,
+ *       TSV, etc.)
  *   <li>{@link com.github.chitralverma.polars.api.io.Scannable#parquet Apache Parquet}
  *   <li>{@link com.github.chitralverma.polars.api.io.Scannable#ipc Apache Arrow IPC}
- *   <li>{@link com.github.chitralverma.polars.api.io.Scannable#jsonLines New line
- *       delimited JSON}
+ *   <li>{@link com.github.chitralverma.polars.api.io.Scannable#jsonLines New line delimited JSON}
  * </ul>
  *
  * <p>All the above formats are compatible with the lazy or eager input API and users can supply 1

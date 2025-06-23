@@ -4,10 +4,7 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalTime, ZonedDateTime}
 
 import com.github.chitralverma.polars.api.expressions.{Column, Expression}
-import com.github.chitralverma.polars.internal.jni.expressions.{
-  column_expr,
-  literal_expr
-}
+import com.github.chitralverma.polars.internal.jni.expressions.{column_expr, literal_expr}
 
 object functions {
 

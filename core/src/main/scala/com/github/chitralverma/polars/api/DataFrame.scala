@@ -191,9 +191,9 @@ object DataFrame {
 
   private[polars] def withPtr(ptr: Long) = new DataFrame(ptr)
 
-  /** Initialize new [[com.github.chitralverma.polars.api.DataFrame]] from one or
-    * more [[com.github.chitralverma.polars.api.Series]]. The name of a series is
-    * used as column name and its values are the values of this column.
+  /** Initialize new [[com.github.chitralverma.polars.api.DataFrame]] from one or more
+    * [[com.github.chitralverma.polars.api.Series]]. The name of a series is used as column name
+    * and its values are the values of this column.
     *
     * @param series
     *   Series
@@ -208,9 +208,9 @@ object DataFrame {
   def fromSeries(series: Series, more: Series*): DataFrame =
     DataFrame.withPtr(data_frame.fromSeries(more.+:(series).map(_.ptr).toArray))
 
-  /** Initialize new [[com.github.chitralverma.polars.api.DataFrame]] from one or
-    * more [[com.github.chitralverma.polars.api.Series]]. The name of a series is
-    * used as column name and its values are the values of this column.
+  /** Initialize new [[com.github.chitralverma.polars.api.DataFrame]] from one or more
+    * [[com.github.chitralverma.polars.api.Series]]. The name of a series is used as column name
+    * and its values are the values of this column.
     *
     * @param series
     *   Series
@@ -224,9 +224,9 @@ object DataFrame {
   def fromSeries(series: Series, more: Iterable[Series]): DataFrame =
     DataFrame.withPtr(data_frame.fromSeries(more.toSeq.+:(series).map(_.ptr).toArray))
 
-  /** Initialize new [[com.github.chitralverma.polars.api.DataFrame]] from one or
-    * more [[com.github.chitralverma.polars.api.Series]]. The name of a series is
-    * used as column name and its values are the values of this column.
+  /** Initialize new [[com.github.chitralverma.polars.api.DataFrame]] from one or more
+    * [[com.github.chitralverma.polars.api.Series]]. The name of a series is used as column name
+    * and its values are the values of this column.
     *
     * @param series
     *   Series
