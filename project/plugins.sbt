@@ -12,7 +12,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
 
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.11.1")
 
-addSbtPlugin("com.github.sbt" % "sbt-ghpages" % "0.8.0")
+addSbtPlugin("com.github.sbt" % "sbt-ghpages" % "0.9.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
