@@ -4,7 +4,7 @@ addSbtPlugin("com.github.sbt" % "sbt-java-formatter" % "0.9.0")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.2")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.3")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.6.4")
 
