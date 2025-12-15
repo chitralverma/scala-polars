@@ -112,7 +112,7 @@ jobs:
           sbt generateNativeLibrary
 
       - name: Temporarily save native library for ${{ matrix.arch }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: native_libs-${{ matrix.arch }}
           path: ${{env.NATIVE_LIB_LOCATION}}
