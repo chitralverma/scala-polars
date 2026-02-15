@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
 use anyhow::Context;
-use jni::objects::{JBooleanArray, JClass, JLongArray, JObject, JObjectArray, JString};
-use jni::sys::{jboolean, jint, jlong, jstring, JNI_TRUE};
 use jni::JNIEnv;
+use jni::objects::{JBooleanArray, JClass, JLongArray, JObject, JObjectArray, JString};
+use jni::sys::{JNI_TRUE, jboolean, jint, jlong, jstring};
 use jni_fn::jni_fn;
 use polars::prelude::*;
 use polars_core::series::IsSorted;
@@ -12,8 +12,8 @@ use crate::internal_jni::utils::*;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jstring {
-    let ldf = &mut *ldf_ptr;
+pub fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jstring {
+    let ldf = &mut from_ptr(ldf_ptr);
     let schema = ldf
         .collect_schema()
         .map(|op| op.to_arrow(CompatLevel::oldest()))
@@ -27,7 +27,7 @@ pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) 
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn selectFromStrings(
+pub fn selectFromStrings(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -35,23 +35,22 @@ pub unsafe fn selectFromStrings(
 ) -> jlong {
     let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, expr_strs)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided expression value as string"),
             )
         })
         .map(col)
         .collect();
 
-    let ldf = (*ldf_ptr).clone().select(exprs);
+    let ldf = from_ptr(ldf_ptr).select(exprs);
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn selectFromExprs(
+pub fn selectFromExprs(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -59,26 +58,26 @@ pub unsafe fn selectFromExprs(
 ) -> jlong {
     let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut Expr)).to_owned())
+        .map(|ptr| (from_ptr(ptr as *mut Expr)).to_owned())
         .collect();
 
-    let ldf = (*ldf_ptr).clone().select(exprs);
+    let ldf = from_ptr(ldf_ptr).select(exprs);
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn filterFromExprs(
+pub fn filterFromExprs(
     _: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
     expr_ptr: *mut Expr,
 ) -> jlong {
-    let ldf = (*ldf_ptr).clone().filter((*expr_ptr).clone());
+    let ldf = from_ptr(ldf_ptr).filter(from_ptr(expr_ptr));
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn sortFromExprs(
+pub fn sortFromExprs(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -88,7 +87,7 @@ pub unsafe fn sortFromExprs(
 ) -> jlong {
     let input_exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut Expr)).to_owned())
+        .map(|ptr| from_ptr(ptr as *mut Expr))
         .collect();
 
     let nulls_last: Vec<bool> = JavaArrayToVec::to_vec(&mut env, nullLast);
@@ -99,7 +98,7 @@ pub unsafe fn sortFromExprs(
         .map(|expr| extract_expr_and_direction(expr, false))
         .unzip();
 
-    let ldf = (*ldf_ptr).clone().sort_by_exprs(
+    let ldf = from_ptr(ldf_ptr).sort_by_exprs(
         exprs,
         SortMultipleOptions {
             descending,
@@ -113,7 +112,7 @@ pub unsafe fn sortFromExprs(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn topKFromExprs(
+pub fn topKFromExprs(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -124,7 +123,7 @@ pub unsafe fn topKFromExprs(
 ) -> jlong {
     let input_exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut Expr)).to_owned())
+        .map(|ptr| from_ptr(ptr as *mut Expr))
         .collect();
 
     let nulls_last: Vec<bool> = JavaArrayToVec::to_vec(&mut env, nullLast);
@@ -135,7 +134,7 @@ pub unsafe fn topKFromExprs(
         .map(|expr| extract_expr_and_direction(expr, false))
         .unzip();
 
-    let ldf = (*ldf_ptr).clone().top_k(
+    let ldf = from_ptr(ldf_ptr).top_k(
         k as IdxSize,
         exprs,
         SortMultipleOptions {
@@ -150,7 +149,7 @@ pub unsafe fn topKFromExprs(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn withColumn(
+pub fn withColumn(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -163,16 +162,14 @@ pub unsafe fn withColumn(
         Some("Failed to parse the provided value as column name"),
     );
 
-    let ldf = (*ldf_ptr)
-        .clone()
-        .with_column((*expr_ptr).clone().alias(name));
+    let ldf = from_ptr(ldf_ptr).with_column(from_ptr(expr_ptr).alias(name));
 
     to_ptr(ldf)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn optimization_toggle(
+pub fn optimization_toggle(
     _: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -185,8 +182,7 @@ pub unsafe fn optimization_toggle(
     commSubexprElim: jboolean,
     streaming: jboolean,
 ) -> jlong {
-    let ldf = (*ldf_ptr)
-        .clone()
+    let ldf = from_ptr(ldf_ptr)
         .with_type_coercion(typeCoercion == JNI_TRUE)
         .with_predicate_pushdown(predicatePushdown == JNI_TRUE)
         .with_projection_pushdown(projectionPushdown == JNI_TRUE)
@@ -200,15 +196,14 @@ pub unsafe fn optimization_toggle(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn cache(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
-    let ldf = (*ldf_ptr).clone().cache();
+pub fn cache(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
+    let ldf = from_ptr(ldf_ptr).cache();
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn collect(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
-    let df = (*ldf_ptr)
-        .clone()
+pub fn collect(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
+    let df = from_ptr(ldf_ptr)
         .collect()
         .context("Failed to collect LazyFrame into DataFrame")
         .unwrap_or_throw(&mut env);
@@ -217,7 +212,7 @@ pub unsafe fn collect(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jl
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn concatLazyFrames(
+pub fn concatLazyFrames(
     mut env: JNIEnv,
     _: JClass,
     inputs: JLongArray,
@@ -226,7 +221,7 @@ pub unsafe fn concatLazyFrames(
 ) -> jlong {
     let ldfs: Vec<_> = JavaArrayToVec::to_vec(&mut env, inputs)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut LazyFrame)).to_owned())
+        .map(|ptr| from_ptr(ptr as *mut LazyFrame))
         .collect();
 
     let concatenated_ldf = concat(
@@ -244,47 +239,36 @@ pub unsafe fn concatLazyFrames(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn limit(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
-    let ldf = (*ldf_ptr).clone().limit(n as IdxSize);
+pub fn limit(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
+    let ldf = from_ptr(ldf_ptr).limit(n as IdxSize);
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn tail(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
-    let ldf = (*ldf_ptr).clone().tail(n as IdxSize);
+pub fn tail(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, n: jlong) -> jlong {
+    let ldf = from_ptr(ldf_ptr).tail(n as IdxSize);
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn drop(
-    mut env: JNIEnv,
-    _: JClass,
-    ldf_ptr: *mut LazyFrame,
-    col_names: JObjectArray,
-) -> jlong {
-    let data: Vec<String> = JavaArrayToVec::to_vec(&mut env, col_names)
+pub fn drop(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, col_names: JObjectArray) -> jlong {
+    let names: Vec<String> = JavaArrayToVec::to_vec(&mut env, col_names)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided value as column name"),
             )
         })
         .collect();
 
-    let ldf = (*ldf_ptr).clone().drop(data);
+    let ldf = from_ptr(ldf_ptr).drop(by_name(names, false, false));
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn rename(
-    mut env: JNIEnv,
-    _: JClass,
-    ldf_ptr: *mut LazyFrame,
-    options: JObject,
-) -> jlong {
+pub fn rename(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, options: JObject) -> jlong {
     let map = env
         .get_map(&options)
         .context("Failed to get mapping to rename columns")
@@ -315,19 +299,19 @@ pub unsafe fn rename(
         new_vec.push(value_str);
     }
 
-    let ldf = (*ldf_ptr).clone().rename(old_vec, new_vec, false);
+    let ldf = from_ptr(ldf_ptr).rename(old_vec, new_vec, false);
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn explain(
+pub fn explain(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
     optimized: jboolean,
     tree_format: jboolean,
 ) -> jstring {
-    let ldf = (*ldf_ptr).clone();
+    let ldf = from_ptr(ldf_ptr);
     if tree_format == JNI_TRUE {
         if optimized == JNI_TRUE {
             ldf.describe_optimized_plan_tree()
@@ -343,7 +327,7 @@ pub unsafe fn explain(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn unique(
+pub fn unique(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
@@ -353,18 +337,21 @@ pub unsafe fn unique(
 ) -> jlong {
     let cols: Vec<PlSmallStr> = JavaArrayToVec::to_vec(&mut env, subset)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided value as column name"),
             )
             .into()
         })
         .collect();
 
-    let subset: Option<Vec<PlSmallStr>> = if cols.is_empty() { None } else { Some(cols) };
+    let subset = if cols.is_empty() {
+        None
+    } else {
+        Some(by_name(cols, false, false))
+    };
 
     let keep = match j_string_to_string(
         &mut env,
@@ -379,51 +366,46 @@ pub unsafe fn unique(
         _ => UniqueKeepStrategy::Any,
     };
 
-    let ldf = (*ldf_ptr).clone();
+    let ldf = from_ptr(ldf_ptr);
     let unique_ldf = match maintainOrder == JNI_TRUE {
         true => ldf.unique_stable(subset, keep),
-        false => ldf.unique(
-            subset.map(|vec| vec.into_iter().map(|s| s.into_string()).collect()),
-            keep,
-        ),
+        false => ldf.unique(subset, keep),
     };
 
     to_ptr(unique_ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn drop_nulls(
+pub fn drop_nulls(
     mut env: JNIEnv,
     _: JClass,
     ldf_ptr: *mut LazyFrame,
     subset: JObjectArray,
 ) -> jlong {
-    let exprs: Vec<Expr> = JavaArrayToVec::to_vec(&mut env, subset)
+    let cols: Vec<PlSmallStr> = JavaArrayToVec::to_vec(&mut env, subset)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
-                Some("Failed to parse the provided expression value as string"),
+                o,
+                Some("Failed to parse the provided value as column name"),
             )
+            .into()
         })
-        .map(col)
         .collect();
 
-    let sub: Option<Vec<Expr>> = if exprs.is_empty() { None } else { Some(exprs) };
+    let subset = if cols.is_empty() {
+        None
+    } else {
+        Some(by_name(cols, false, false))
+    };
 
-    let ldf = (*ldf_ptr).clone().drop_nulls(sub);
+    let ldf = from_ptr(ldf_ptr).drop_nulls(subset);
     to_ptr(ldf)
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub unsafe fn set_sorted(
-    mut env: JNIEnv,
-    _: JClass,
-    ldf_ptr: *mut LazyFrame,
-    mapping: JObject,
-) -> jlong {
+pub fn set_sorted(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, mapping: JObject) -> jlong {
     let map = env
         .get_map(&mapping)
         .context("Failed to get mapping to rename columns")
@@ -452,7 +434,7 @@ pub unsafe fn set_sorted(
         exprs.push(col_expr.set_sorted_flag(is_sorted));
     }
 
-    let ldf = (*ldf_ptr).clone().with_columns(exprs);
+    let ldf = from_ptr(ldf_ptr).with_columns(exprs);
     to_ptr(ldf)
 }
 

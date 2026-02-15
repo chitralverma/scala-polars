@@ -1,6 +1,6 @@
 use anyhow::Error;
-use jni::errors::Result as JniResult;
 use jni::JNIEnv;
+use jni::errors::Result as JniResult;
 
 use crate::internal_jni::utils::find_java_class;
 

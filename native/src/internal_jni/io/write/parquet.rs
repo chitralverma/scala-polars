@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 
 use anyhow::Context;
-use jni::objects::{JObject, JString};
 use jni::JNIEnv;
+use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
 use num_traits::ToPrimitive;
 use polars::prelude::*;
+use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
 
 use crate::internal_jni::io::parse_json_to_options;
 use crate::internal_jni::io::write::get_df_and_writer;
@@ -19,8 +20,6 @@ fn parse_parquet_compression(
         (Some(t), l) => match t.to_lowercase().as_str() {
             "uncompressed" => Some(ParquetCompression::Uncompressed),
             "snappy" => Some(ParquetCompression::Snappy),
-            "lz4" => Some(ParquetCompression::Lz4Raw),
-            "lzo" => Some(ParquetCompression::Lzo),
             "gzip" => {
                 let level = l.and_then(|v| GzipLevel::try_new(v.to_u8()?).ok());
                 Some(ParquetCompression::Gzip(level))
@@ -33,8 +32,11 @@ fn parse_parquet_compression(
                 let level = l.and_then(|v| ZstdLevel::try_new(v).ok());
                 Some(ParquetCompression::Zstd(level))
             },
+            "lz4" => Some(ParquetCompression::Lz4Raw),
             e => {
-                polars_warn!(format!("Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}. Using defaults."));
+                polars_warn!(
+                    "Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}. Using defaults."
+                );
                 None
             },
         },

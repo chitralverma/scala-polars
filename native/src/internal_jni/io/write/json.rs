@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use anyhow::Context;
-use jni::objects::{JObject, JString};
 use jni::JNIEnv;
+use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
 use polars::prelude::*;
 

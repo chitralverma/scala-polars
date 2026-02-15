@@ -1,7 +1,7 @@
 use anyhow::Context;
+use jni::JNIEnv;
 use jni::objects::JString;
 use jni::sys::jint;
-use jni::JNIEnv;
 use polars::io::RowIndex;
 use polars::prelude::{IdxSize, PlHashMap};
 

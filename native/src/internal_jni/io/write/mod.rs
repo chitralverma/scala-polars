@@ -7,12 +7,13 @@ pub mod parquet;
 use std::sync::Arc;
 
 use anyhow::Context;
-use jni::objects::JString;
 use jni::JNIEnv;
+use jni::objects::JString;
 use object_store::path::Path;
-use object_store::ObjectStore;
-use polars::io::cloud::{build_object_store, BlockingCloudWriter, CloudOptions};
+use object_store::{ObjectStore, ObjectStoreExt};
+use polars::io::cloud::{BlockingCloudWriter, CloudOptions, build_object_store};
 use polars::io::pl_async::get_runtime;
+use polars::io::{get_upload_chunk_size, get_upload_concurrency};
 use polars::prelude::*;
 
 use super::get_file_path;
@@ -43,7 +44,8 @@ async fn create_cloud_writer(
     cloud_options: Option<&CloudOptions>,
     overwrite_mode: bool,
 ) -> PolarsResult<BlockingCloudWriter> {
-    let (cloud_location, object_store) = build_object_store(uri, cloud_options, false).await?;
+    let (cloud_location, object_store) =
+        build_object_store(uri.into(), cloud_options, false).await?;
     let dyn_store = object_store.to_dyn_object_store().await;
     ensure_write_mode(
         &dyn_store,
@@ -56,6 +58,8 @@ async fn create_cloud_writer(
     let cloud_writer = BlockingCloudWriter::new_with_object_store(
         dyn_store.clone(),
         cloud_location.prefix.clone().into(),
+        get_upload_chunk_size(),
+        get_upload_concurrency(),
     )?;
 
     Ok(cloud_writer)
@@ -69,12 +73,12 @@ fn get_df_and_writer(
     writer_options: PlHashMap<String, String>,
 ) -> (DataFrame, BlockingCloudWriter) {
     let full_path = get_file_path(env, filePath);
-    let uri = full_path.as_str();
+    let uri = PlRefPath::new(full_path);
 
-    let cloud_options = CloudOptions::from_untyped_config(uri, &writer_options);
+    let cloud_options = CloudOptions::from_untyped_config(uri.scheme(), &writer_options);
     let writer: BlockingCloudWriter = get_runtime()
         .block_on(async {
-            create_cloud_writer(uri, cloud_options.ok().as_ref(), overwrite_mode).await
+            create_cloud_writer(uri.as_str(), cloud_options.ok().as_ref(), overwrite_mode).await
         })
         .context("Failed to create writer")
         .unwrap_or_throw(env);

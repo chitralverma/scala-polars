@@ -1,18 +1,18 @@
 use anyhow::Context;
+use jni::JNIEnv;
 use jni::objects::*;
 use jni::sys::*;
-use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_traits::ToPrimitive;
 use polars::prelude::*;
 use rust_decimal::Decimal;
 
-use crate::internal_jni::utils::{find_java_class, get_n_rows, string_to_j_string};
+use crate::internal_jni::utils::{find_java_class, from_ptr, get_n_rows, string_to_j_string};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
-    let df = &mut *df_ptr;
+pub fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
+    let df = &mut from_ptr(df_ptr);
 
     let n_rows = get_n_rows(nRows);
     let ri = RowIterator::new(df, n_rows);
@@ -20,12 +20,8 @@ pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub unsafe fn advanceIterator(
-    mut env: JNIEnv,
-    _: JClass,
-    ri_ptr: *mut RowIterator,
-) -> jobjectArray {
-    let ri = &mut *ri_ptr;
+pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jobjectArray {
+    let ri = &mut from_ptr(ri_ptr);
     let adv = ri.advance();
 
     if let Some(next_avs) = adv {
@@ -49,8 +45,8 @@ pub unsafe fn advanceIterator(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
-    let ri = &*ri_ptr;
+pub fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
+    let ri = &from_ptr(ri_ptr);
 
     serde_json::to_string(&ri.schema.to_arrow(CompatLevel::oldest()))
         .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
@@ -236,9 +232,11 @@ impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
             AnyValue::Boolean(v) => {
                 box_primitive(env, v as u8, "java/lang/Boolean", "(Z)Ljava/lang/Boolean;")
             },
-            AnyValue::Decimal(num, scale) => Decimal::from_i128_with_scale(num, scale as u32)
-                .to_f64()
-                .map_or_else(|| JObject::null(), |v| box_double(env, v)),
+            AnyValue::Decimal(num, _precision, scale) => {
+                Decimal::from_i128_with_scale(num, scale as u32)
+                    .to_f64()
+                    .map_or_else(|| JObject::null(), |v| box_double(env, v))
+            },
             AnyValue::String(s) => unsafe {
                 JObject::from_raw(string_to_j_string(
                     env,

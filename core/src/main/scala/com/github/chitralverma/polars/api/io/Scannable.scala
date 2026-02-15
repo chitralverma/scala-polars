@@ -99,7 +99,6 @@ class Scannable private[polars] () {
     * and path expansion.
     *
     * Supported options:
-    *   - `scan_ipc_n_rows`: Maximum number of rows to read. Default: `null`.
     *   - `scan_ipc_cache`: Caches the scan result. Default: `true`.
     *   - `scan_ipc_rechunk`: Re-chunks the final DataFrame for memory contiguity when reading
     *     multiple files. Default: `false`.

@@ -4,9 +4,9 @@
 
 use anyhow::Context;
 use internal_jni::utils::{j_string_to_string, string_to_j_string};
-use jni::objects::{JObject, JString};
-use jni::sys::{jboolean, jstring, JNI_TRUE};
 use jni::JNIEnv;
+use jni::objects::{JObject, JString};
+use jni::sys::{JNI_TRUE, jboolean, jstring};
 use jni_fn::jni_fn;
 use utils::error::ResultExt;
 
@@ -62,7 +62,7 @@ pub fn setConfigs(mut env: JNIEnv, _object: JObject, options: JObject) -> jboole
             Some("Failed to parse the provided config value as string"),
         );
 
-        std::env::set_var(key_str, value_str);
+        unsafe { std::env::set_var(key_str, value_str) };
     }
 
     JNI_TRUE
