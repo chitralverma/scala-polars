@@ -9,9 +9,14 @@ import com.github.chitralverma.polars.api.types._
 import com.github.chitralverma.polars.internal.jni.row
 import com.github.chitralverma.polars.jsonMapper
 
-class RowIterator private (private[polars] val ptr: Long) {
+class RowIterator private (private[polars] val ptr: Long, private val parent: DataFrame) {
 
   private[polars] def lazyIterator(nRows: Long): Iterator[Row] = new Iterator[Row] {
+
+    // Hold a reference to the parent DataFrame to prevent it from being GC'd.
+    // The native iterator borrows memory from the parent DataFrame.
+    private val _parent = parent
+
     private val iteratorPtr = row.createIterator(ptr, nRows)
     private val schema = {
       val schemaString = row.schemaString(iteratorPtr)
@@ -37,7 +42,7 @@ class RowIterator private (private[polars] val ptr: Long) {
 
 object RowIterator {
 
-  private[polars] def withPtr(ptr: Long) = new RowIterator(ptr)
+  private[polars] def withPtr(ptr: Long, parent: DataFrame) = new RowIterator(ptr, parent)
 }
 
 class Row private (private[polars] val arr: Array[Object], schema: Schema) {

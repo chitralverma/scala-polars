@@ -7,30 +7,26 @@ use num_traits::ToPrimitive;
 use polars::prelude::*;
 use rust_decimal::Decimal;
 
-use crate::internal_jni::utils::{find_java_class, from_ptr, get_n_rows, string_to_j_string};
+use crate::internal_jni::utils::{find_java_class, get_n_rows, string_to_j_string};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
 pub fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
-    let df = &mut from_ptr(df_ptr);
+    let df = unsafe { &mut *df_ptr };
 
     let n_rows = get_n_rows(nRows);
     let ri = RowIterator::new(df, n_rows);
-    Box::into_raw(Box::new(ri.clone())) as jlong
+    Box::into_raw(Box::new(ri)) as jlong
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
 pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jobjectArray {
-    let ri = &mut from_ptr(ri_ptr);
+    let ri = unsafe { &mut *ri_ptr };
     let adv = ri.advance();
 
     if let Some(next_avs) = adv {
         let j_array = env
-            .new_object_array(
-                next_avs.len() as jsize,
-                "java/lang/Object",
-                JObject::null(),
-            )
+            .new_object_array(next_avs.len() as jsize, "java/lang/Object", JObject::null())
             .context("Failed to initialize array for row values")
             .unwrap_or_throw(&mut env);
 
@@ -50,7 +46,7 @@ pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> 
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
 pub fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
-    let ri = &from_ptr(ri_ptr);
+    let ri = unsafe { &*ri_ptr };
 
     serde_json::to_string(&ri.schema.to_arrow(CompatLevel::oldest()))
         .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
@@ -69,6 +65,7 @@ pub struct RowIterator<'a> {
 
 impl<'a> RowIterator<'a> {
     pub fn new(data_frame: &'a mut DataFrame, end: Option<usize>) -> Self {
+        data_frame.align_chunks_par();
         let width = data_frame.width();
         let size = width * data_frame.height();
         let mut buf = vec![AnyValue::Null; size];
@@ -89,7 +86,7 @@ impl<'a> RowIterator<'a> {
         }
     }
 
-    pub fn advance(&mut self) -> Option<Vec<AnyValue<'a>>> {
+    pub fn advance(&mut self) -> Option<Vec<AnyValue<'_>>> {
         if self.start < self.end {
             let start_index = self.start * self.width;
             let end_index = (self.start + 1) * self.width;
