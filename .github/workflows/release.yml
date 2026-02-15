@@ -14,12 +14,14 @@ env:
   NATIVE_LIB_LOCATION: /tmp/native-libs/
   SBT_OPTS: "-Dsbt.ci=true"
   JAVA_OPTS: "-XX:+UseG1GC -Xms2G -Xmx8G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8"
+  NATIVE_RELEASE: true
 
 jobs:
   check-formatting:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      SKIP_NATIVE_GENERATION: true
     steps:
       - uses: actions/checkout@v6
 
@@ -107,8 +109,6 @@ jobs:
           prefix-key: ${{ matrix.arch }}
 
       - name: Cross publish artifacts containing native library
-        env:
-          NATIVE_RELEASE: true
         run: |
           rustup target add ${{ matrix.arch }}
           sbt generateNativeLibrary

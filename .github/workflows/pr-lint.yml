@@ -7,6 +7,7 @@ permissions:
 
 env:
   RUSTFLAGS: -C debuginfo=0
+  SKIP_NATIVE_GENERATION: true
 
 jobs:
   check-formatting:
