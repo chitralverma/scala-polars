@@ -131,6 +131,7 @@ where
     .into()
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn j_object_to_string<T>(env: &mut JNIEnv, o: jobject, msg: Option<T>) -> String
 where
     T: AsRef<str> + Send + Sync + Display + 'static,
@@ -151,6 +152,7 @@ pub fn to_ptr<T: Clone>(v: T) -> jlong {
     Box::into_raw(Box::new(v.clone())) as jlong
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn from_ptr<T: Clone>(ptr: *mut T) -> T {
     unsafe { (*ptr).clone() }
 }

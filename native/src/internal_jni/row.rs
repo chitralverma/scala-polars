@@ -26,7 +26,11 @@ pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> 
 
     if let Some(next_avs) = adv {
         let j_array = env
-            .new_object_array(next_avs.len() as jsize, "java/lang/Object", JObject::null())
+            .new_object_array(
+                next_avs.len() as jsize,
+                "java/lang/Object",
+                JObject::null(),
+            )
             .context("Failed to initialize array for row values")
             .unwrap_or_throw(&mut env);
 
@@ -65,8 +69,6 @@ pub struct RowIterator<'a> {
 
 impl<'a> RowIterator<'a> {
     pub fn new(data_frame: &'a mut DataFrame, end: Option<usize>) -> Self {
-        data_frame.as_single_chunk_par();
-
         let width = data_frame.width();
         let size = width * data_frame.height();
         let mut buf = vec![AnyValue::Null; size];
@@ -87,7 +89,7 @@ impl<'a> RowIterator<'a> {
         }
     }
 
-    pub fn advance(&mut self) -> Option<Vec<AnyValue<'_>>> {
+    pub fn advance(&mut self) -> Option<Vec<AnyValue<'a>>> {
         if self.start < self.end {
             let start_index = self.start * self.width;
             let end_index = (self.start + 1) * self.width;

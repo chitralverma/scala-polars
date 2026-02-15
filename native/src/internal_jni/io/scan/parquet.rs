@@ -1,6 +1,3 @@
-use std::path::PathBuf;
-use std::sync::Arc;
-
 use anyhow::Context;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JObjectArray, JString};
@@ -94,20 +91,21 @@ pub unsafe fn scanParquet(
         .and_then(|s| s.parse::<bool>().ok())
         .unwrap_or(true);
 
-    let paths_vec: Vec<PathBuf> = JavaArrayToVec::to_vec(&mut env, paths)
+    let paths_vec: Vec<PlRefPath> = JavaArrayToVec::to_vec(&mut env, paths)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
+        .map(|o| unsafe { JObject::from_raw(o) })
         .map(|o| get_file_path(&mut env, JString::from(o)))
-        .map(PathBuf::from)
+        .map(PlRefPath::new)
         .collect();
 
-    let first_path = paths_vec
-        .first()
-        .and_then(|p| p.to_str())
-        .context("Failed to get first path from provided list of paths")
-        .unwrap_or_throw(&mut env);
+    let sources = ScanSources::Paths(paths_vec.into());
+    let cloud_scheme = sources
+        .first_path()
+        .cloned()
+        .as_ref()
+        .and_then(|x| x.scheme());
 
-    let cloud_options = CloudOptions::from_untyped_config(first_path, &options).ok();
+    let cloud_options = CloudOptions::from_untyped_config(cloud_scheme, options).ok();
 
     let scan_args = ScanArgsParquet {
         n_rows,
@@ -130,7 +128,7 @@ pub unsafe fn scanParquet(
         schema: None,
     };
 
-    let ldf = LazyFrame::scan_parquet_files(Arc::from(paths_vec.into_boxed_slice()), scan_args)
+    let ldf = LazyFrame::scan_parquet_sources(sources, scan_args)
         .context("Failed to perform parquet scan")
         .unwrap_or_throw(&mut env);
 
