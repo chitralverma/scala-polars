@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use anyhow::Context;
-use jni::objects::{JObject, JString};
 use jni::JNIEnv;
+use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
@@ -44,9 +44,11 @@ pub fn writeCSV(
         .remove("write_csv_quote_char")
         .and_then(|s| s.parse::<u8>().ok());
 
-    let date_format = options.remove("write_csv_date_format");
-    let time_format = options.remove("write_csv_time_format");
-    let datetime_format = options.remove("write_csv_datetime_format");
+    let date_format = options.remove("write_csv_date_format").map(|s| s.into());
+    let time_format = options.remove("write_csv_time_format").map(|s| s.into());
+    let datetime_format = options
+        .remove("write_csv_datetime_format")
+        .map(|s| s.into());
 
     let line_terminator = options.remove("write_csv_line_terminator");
     let null_value = options.remove("write_csv_null_value");
@@ -92,11 +94,11 @@ pub fn writeCSV(
     }
 
     if let Some(value) = line_terminator {
-        csv_writer = csv_writer.with_line_terminator(value)
+        csv_writer = csv_writer.with_line_terminator(value.into())
     }
 
     if let Some(value) = null_value {
-        csv_writer = csv_writer.with_null_value(value)
+        csv_writer = csv_writer.with_null_value(value.into())
     }
 
     if let Some(value) = quote_style {

@@ -1,17 +1,15 @@
-#![allow(non_snake_case)]
-
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 use anyhow::Context;
+use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::{jint, jlong};
-use jni::JNIEnv;
 use jni_fn::jni_fn;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{j_string_to_string, to_ptr};
+use crate::internal_jni::utils::{from_ptr, j_string_to_string, to_ptr};
 use crate::utils::error::ResultExt;
 
 #[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
@@ -76,8 +74,8 @@ pub fn sort_column_by_name(mut env: JNIEnv, _: JClass, value: JString, descendin
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub unsafe fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jint) -> jlong {
-    let l_expr = (*expr_ptr).clone();
+pub fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jint) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
 
     let expr = UnaryOperator::from_i32(operator)
         .and_then(|option| match option {
@@ -97,15 +95,15 @@ pub unsafe fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operat
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub unsafe fn applyBinary(
+pub fn applyBinary(
     mut env: JNIEnv,
     _: JClass,
     left_ptr: *mut Expr,
     right_ptr: *mut Expr,
     operator: jint,
 ) -> jlong {
-    let l_expr = (*left_ptr).clone();
-    let r_expr = (*right_ptr).clone();
+    let l_expr = from_ptr(left_ptr);
+    let r_expr = from_ptr(right_ptr);
 
     let expr = BinaryOperator::from_i32(operator)
         .map(|option| match option {

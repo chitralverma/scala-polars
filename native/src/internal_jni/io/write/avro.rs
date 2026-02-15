@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use anyhow::Context;
-use jni::objects::{JObject, JString};
 use jni::JNIEnv;
+use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
 use polars::io::avro::{AvroCompression, AvroWriter};
 use polars::prelude::*;
@@ -18,9 +18,9 @@ fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression
             "deflate" => Some(AvroCompression::Deflate),
             "snappy" => Some(AvroCompression::Snappy),
             e => {
-                polars_warn!(format!(
+                polars_warn!(
                     "Compression must be one of {{'uncompressed', 'deflate', 'snappy'}}, got {e}. Using defaults."
-                ));
+                );
                 None
             },
         },

@@ -62,7 +62,7 @@ class Writeable private[polars] (ptr: Long) {
     *     512^2^ rows.
     *   - `write_compression`: Sets the compression codec used for pages, for more compatibility
     *     guarantees, consider using Snappy. Supported values 'uncompressed', 'snappy', 'gzip',
-    *     'lzo', 'brotli', 'lz4', 'zstd'. Default: zstd.
+    *     'brotli', 'lz4', 'zstd'. Default: zstd.
     *   - `write_compression_level`: Sets a valid level for codecs like 'gzip', 'brotli', 'zstd'.
     *     Defaults to compression default.
     *   - `write_parquet_stats`: Allows computation and writing of column statistics. Supported
@@ -86,6 +86,8 @@ class Writeable private[polars] (ptr: Long) {
     *     Default: newest.
     *   - `write_compression`: Sets the compression codec used for pages. Supported values
     *     'uncompressed', 'lz4', 'zstd'. Default: zstd.
+    *   - `write_compression_level`: Sets a valid level for codecs like 'zstd'.
+    *     Defaults to compression default.
     *
     * @param filePath
     *   output file location

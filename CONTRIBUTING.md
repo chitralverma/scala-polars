@@ -62,6 +62,12 @@ sbt compile
 sbt generateNativeLibrary
 ```
 
+### Native Rust library only (Release profile)
+
+```bash
+NATIVE_RELEASE=true sbt generateNativeLibrary
+```
+
 ### Locally publish
 
 ```bash

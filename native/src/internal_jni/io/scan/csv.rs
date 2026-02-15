@@ -1,17 +1,14 @@
-use std::path::PathBuf;
-use std::sync::Arc;
-
 use anyhow::Context;
+use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JObjectArray, JString};
 use jni::sys::jlong;
-use jni::JNIEnv;
 use jni_fn::jni_fn;
-use polars::io::cloud::CloudOptions;
 use polars::io::RowIndex;
+use polars::io::cloud::CloudOptions;
 use polars::prelude::*;
 
 use crate::internal_jni::io::{get_file_path, parse_json_to_options};
-use crate::internal_jni::utils::{to_ptr, JavaArrayToVec};
+use crate::internal_jni::utils::{JavaArrayToVec, to_ptr};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.io.scan$")]
@@ -144,22 +141,23 @@ pub unsafe fn scanCSV(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: 
         .remove("scan_csv_comment_prefix")
         .map(PlSmallStr::from);
 
-    let paths_vec: Vec<PathBuf> = JavaArrayToVec::to_vec(&mut env, paths)
+    let paths_vec: Vec<PlRefPath> = JavaArrayToVec::to_vec(&mut env, paths)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
+        .map(|o| unsafe { JObject::from_raw(o) })
         .map(|o| get_file_path(&mut env, JString::from(o)))
-        .map(PathBuf::from)
+        .map(PlRefPath::new)
         .collect();
 
-    let first_path = paths_vec
-        .first()
-        .and_then(|p| p.to_str())
-        .context("Failed to get first path from provided list of paths")
-        .unwrap_or_throw(&mut env);
+    let sources = ScanSources::Paths(paths_vec.into());
+    let cloud_scheme = sources
+        .first_path()
+        .cloned()
+        .as_ref()
+        .and_then(|x| x.scheme());
 
-    let cloud_options = CloudOptions::from_untyped_config(first_path, &options).ok();
+    let cloud_options = CloudOptions::from_untyped_config(cloud_scheme, options).ok();
 
-    let ldf = LazyCsvReader::new_paths(Arc::from(paths_vec.into_boxed_slice()))
+    let ldf = LazyCsvReader::new_with_sources(sources)
         .with_glob(glob)
         .with_cache(cache)
         .with_include_file_paths(file_path_col)

@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
 use anyhow::Context;
+use jni::JNIEnv;
 use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::*;
 use jni::strings::JNIString;
 use jni::sys::*;
-use jni::JNIEnv;
 
 use crate::utils::error::ResultExt;
 
@@ -131,6 +131,15 @@ where
     .into()
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub fn j_object_to_string<T>(env: &mut JNIEnv, o: jobject, msg: Option<T>) -> String
+where
+    T: AsRef<str> + Send + Sync + Display + 'static,
+{
+    let jo = unsafe { JObject::from_raw(o) };
+    j_string_to_string(env, &JString::from(jo), msg)
+}
+
 pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
     if n_rows.is_positive() {
         Some(n_rows as usize)
@@ -141,6 +150,11 @@ pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
 
 pub fn to_ptr<T: Clone>(v: T) -> jlong {
     Box::into_raw(Box::new(v.clone())) as jlong
+}
+
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub fn from_ptr<T: Clone>(ptr: *mut T) -> T {
+    unsafe { (*ptr).clone() }
 }
 
 pub fn find_java_class<'a>(env: &mut JNIEnv<'a>, class: &str) -> JClass<'a> {

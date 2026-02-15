@@ -4,29 +4,25 @@ use std::iter::Iterator;
 
 use anyhow::{Context, Error};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use jni::JNIEnv;
 use jni::objects::*;
 use jni::sys::jlong;
-use jni::JNIEnv;
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{j_string_to_string, to_ptr, JavaArrayToVec};
+use crate::internal_jni::utils::{
+    JavaArrayToVec, from_ptr, j_object_to_string, j_string_to_string, to_ptr,
+};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn new_str_series(
-    mut env: JNIEnv,
-    _: JClass,
-    name: JString,
-    values: JObjectArray,
-) -> jlong {
+pub fn new_str_series(mut env: JNIEnv, _: JClass, name: JString, values: JObjectArray) -> jlong {
     let data: Vec<String> = JavaArrayToVec::to_vec(&mut env, values)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided value as a series element"),
             )
         })
@@ -118,19 +114,13 @@ pub fn new_boolean_series(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn new_date_series(
-    mut env: JNIEnv,
-    _: JClass,
-    name: JString,
-    values: JObjectArray,
-) -> jlong {
+pub fn new_date_series(mut env: JNIEnv, _: JClass, name: JString, values: JObjectArray) -> jlong {
     let data: Vec<NaiveDate> = JavaArrayToVec::to_vec(&mut env, values)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided value as a series element"),
             )
         })
@@ -154,19 +144,13 @@ pub unsafe fn new_date_series(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn new_time_series(
-    mut env: JNIEnv,
-    _: JClass,
-    name: JString,
-    values: JObjectArray,
-) -> jlong {
+pub fn new_time_series(mut env: JNIEnv, _: JClass, name: JString, values: JObjectArray) -> jlong {
     let data: Vec<NaiveTime> = JavaArrayToVec::to_vec(&mut env, values)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided value as a series element"),
             )
         })
@@ -190,7 +174,7 @@ pub unsafe fn new_time_series(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn new_datetime_series(
+pub fn new_datetime_series(
     mut env: JNIEnv,
     _: JClass,
     name: JString,
@@ -198,11 +182,10 @@ pub unsafe fn new_datetime_series(
 ) -> jlong {
     let data: Vec<NaiveDateTime> = JavaArrayToVec::to_vec(&mut env, values)
         .into_iter()
-        .map(|o| JObject::from_raw(o))
         .map(|o| {
-            j_string_to_string(
+            j_object_to_string(
                 &mut env,
-                &JString::from(o),
+                o,
                 Some("Failed to parse the provided value as a series element"),
             )
         })
@@ -226,15 +209,10 @@ pub unsafe fn new_datetime_series(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn new_list_series(
-    mut env: JNIEnv,
-    _: JClass,
-    name: JString,
-    values: JLongArray,
-) -> jlong {
+pub fn new_list_series(mut env: JNIEnv, _: JClass, name: JString, values: JLongArray) -> jlong {
     let data: Vec<Series> = JavaArrayToVec::to_vec(&mut env, values)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut Series)).to_owned())
+        .map(|ptr| from_ptr(ptr as *mut Series))
         .collect();
 
     let series_name = j_string_to_string(
@@ -248,15 +226,10 @@ pub unsafe fn new_list_series(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn new_struct_series(
-    mut env: JNIEnv,
-    _: JClass,
-    name: JString,
-    values: JLongArray,
-) -> jlong {
+pub fn new_struct_series(mut env: JNIEnv, _: JClass, name: JString, values: JLongArray) -> jlong {
     let data: Vec<Series> = JavaArrayToVec::to_vec(&mut env, values)
         .into_iter()
-        .map(|ptr| (*(ptr as *mut Series)).to_owned())
+        .map(|ptr| from_ptr(ptr as *mut Series))
         .collect();
 
     let series_name = j_string_to_string(
@@ -277,7 +250,7 @@ pub unsafe fn new_struct_series(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub unsafe fn show(_: JNIEnv, _: JClass, series_ptr: *mut Series) {
-    let series = &*series_ptr;
+pub fn show(_: JNIEnv, _: JClass, series_ptr: *mut Series) {
+    let series = &from_ptr(series_ptr);
     println!("{series:?}")
 }

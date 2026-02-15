@@ -35,7 +35,7 @@ object WritingToFileDatasets {
     printf("File written to location: %s%n%n", outputPath)
 
     /* Overwrite output if already exists */
-    df.write().option("write_mode", "full").parquet(outputPath)
+    df.write().option("write_mode", "overwrite").parquet(outputPath)
     printf("File overwritten at location: %s%n%n", outputPath)
 
     /* Write output file with compression */

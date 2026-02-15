@@ -175,7 +175,7 @@ class DataFrame private (private[polars] val ptr: Long) {
     * @return
     *   Iterator of [[Row]]
     */
-  def rows(nRows: Long): Iterator[Row] = RowIterator.withPtr(ptr).lazyIterator(nRows)
+  def rows(nRows: Long): Iterator[Row] = RowIterator.withPtr(ptr, this).lazyIterator(nRows)
 
   /** Provides an iterator to traverse a all rows from the DataFrame.
     * @return
