@@ -86,6 +86,8 @@ class Writeable private[polars] (ptr: Long) {
     *     Default: newest.
     *   - `write_compression`: Sets the compression codec used for pages. Supported values
     *     'uncompressed', 'lz4', 'zstd'. Default: zstd.
+    *   - `write_compression_level`: Sets a valid level for codecs like 'zstd'.
+    *     Defaults to compression default.
     *
     * @param filePath
     *   output file location
