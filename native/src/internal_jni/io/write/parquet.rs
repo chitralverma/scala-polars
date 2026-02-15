@@ -35,7 +35,7 @@ fn parse_parquet_compression(
             "lz4" => Some(ParquetCompression::Lz4Raw),
             e => {
                 polars_warn!(
-                    "Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}. Using defaults."
+                    "Compression must be one of {{'uncompressed', 'snappy', 'gzip', 'brotli', 'lz4', 'zstd'}}, got {e}. Using defaults."
                 );
                 None
             },
