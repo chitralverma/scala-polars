@@ -107,6 +107,8 @@ jobs:
           prefix-key: ${{ matrix.arch }}
 
       - name: Cross publish artifacts containing native library
+        env:
+          NATIVE_RELEASE: true
         run: |
           rustup target add ${{ matrix.arch }}
           sbt generateNativeLibrary

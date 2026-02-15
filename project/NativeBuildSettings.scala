@@ -11,7 +11,12 @@ import Utils.*
 object NativeBuildSettings {
 
   lazy val generateNativeLibrary = taskKey[Unit](
-    "Generates native library using Cargo which can be added as managed resource to classpath."
+    "Generates native library using Cargo which can be added as managed resource to classpath. " +
+      "The following environment variables are supported: " +
+      "SKIP_NATIVE_GENERATION: If set, skips cargo build. " +
+      "TARGET_TRIPLE: The target triple for cargo build. " +
+      "NATIVE_RELEASE: If set to 'true', cargo build will use the '--release' flag. " +
+      "NATIVE_LIB_LOCATION: If set, copies the built native library to this location."
   )
 
   lazy val managedNativeLibraries = taskKey[Seq[Path]](
@@ -47,11 +52,16 @@ object NativeBuildSettings {
               val nativeOutputDir = resourceManaged.value.toPath.resolve(s"native/$arch/")
               val cargoTomlPath = s"${baseDirectory.value.getParent}/native/Cargo.toml"
 
+              val releaseFlag = sys.env.get("NATIVE_RELEASE") match {
+                case Some("true") => "--release"
+                case _            => ""
+              }
+
               // Build the native project using cargo
               val cmd =
                 s"""cargo build
                    |-Z unstable-options
-                   |--release
+                   |$releaseFlag
                    |--lib
                    |--target $targetTriple
                    |--artifact-dir $nativeOutputDir""".stripMargin.replaceAll("\n", " ")

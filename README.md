@@ -176,6 +176,9 @@ sbt assembly
 
 # Rust native only
 sbt generateNativeLibrary
+
+# Rust native only (Release profile)
+NATIVE_RELEASE=true sbt generateNativeLibrary
 ```
 
 ---
