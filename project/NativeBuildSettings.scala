@@ -54,7 +54,7 @@ object NativeBuildSettings {
 
               val releaseFlag = sys.env.get("NATIVE_RELEASE") match {
                 case Some("true") => "--release"
-                case _            => ""
+                case _ => ""
               }
 
               // Build the native project using cargo
