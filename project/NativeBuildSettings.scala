@@ -5,8 +5,6 @@ import sbt.Keys.*
 
 import scala.collection.JavaConverters.*
 
-import Utils.*
-
 object NativeBuildSettings {
 
   lazy val managedNativeLibraries = taskKey[Seq[Path]](
@@ -18,7 +16,7 @@ object NativeBuildSettings {
       val logger: Logger = sLog.value
       val nativeLibsDir = target.value.toPath.resolve("native-libs")
 
-      if (Files.exists(nativeLibsDir)) {
+      val managedLibs = if (Files.exists(nativeLibsDir)) {
         Files
           .find(
             nativeLibsDir,
@@ -28,13 +26,40 @@ object NativeBuildSettings {
           .iterator()
           .asScala
           .toSeq
-          .map(_.toAbsolutePath)
       } else {
-        logger.warn(
-          s"Native libraries directory $nativeLibsDir does not exist. Run 'just build-native' first."
-        )
         Seq.empty[Path]
       }
+
+      val externalNativeLibs = sys.env.get("NATIVE_LIB_LOCATION") match {
+        case Some(path) =>
+          val externalPath = Paths.get(path)
+          if (Files.exists(externalPath)) {
+            Files
+              .find(
+                externalPath,
+                Int.MaxValue,
+                (filePath, _) => filePath.toFile.isFile
+              )
+              .iterator()
+              .asScala
+              .toSeq
+          } else {
+            Seq.empty[Path]
+          }
+
+        case None => Seq.empty[Path]
+      }
+
+      val allLibs = (managedLibs ++ externalNativeLibs).distinct.map(_.toAbsolutePath)
+
+      if (allLibs.isEmpty) {
+        logger.warn(
+          s"Native libraries directory $nativeLibsDir does not exist and NATIVE_LIB_LOCATION is not set. " +
+            "Run 'just build-native' first."
+        )
+      }
+
+      allLibs
     }.value,
     resourceGenerators += Def.task {
       managedNativeLibraries.value
@@ -45,7 +70,8 @@ object NativeBuildSettings {
           val libraryFile = path.toFile
           val resource = resourceManaged.value / "native" / arch / libraryFile.getName
 
-          IO.copyDirectory(libraryFile, resource)
+          if (libraryFile.isDirectory) IO.copyDirectory(libraryFile, resource)
+          else IO.copyFile(libraryFile, resource)
 
           sLog.value.success(
             s"Added resource from location '$pathStr' " +

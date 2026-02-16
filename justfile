@@ -4,7 +4,7 @@ set ignore-comments := true
 root := justfile_directory()
 native_root := root / 'native'
 native_manifest := root / 'native' / 'Cargo.toml'
-cargo_flags := env_var_or_default("CARGO_FLAGS", "--locked")
+cargo_flags := env("CARGO_FLAGS", "--locked")
 
 # Default recipe to 'help' to display this help screen
 [private]
@@ -59,7 +59,7 @@ clean-headers:
 # Build native library TARGET_TRIPLE, NATIVE_RELEASE, NATIVE_LIB_LOCATION env vars are supported
 [group('dev')]
 build-native:
-    #!/bin/sh
+    #!/usr/bin/env bash
     set -euo pipefail
     if [ '{{ env('SKIP_NATIVE_GENERATION', 'false') }}' == "false" ]; then
         TRIPLE={{ env('TARGET_TRIPLE', `rustc -vV | grep host | cut -d' ' -f2`) }}
@@ -74,8 +74,8 @@ build-native:
         mkdir -p "$NATIVE_OUTPUT_DIR"
         cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target $TRIPLE --artifact-dir $NATIVE_OUTPUT_DIR
 
-        if [ -n '{{ env('NATIVE_LIB_LOCATION', '') }}' ]; then
-            DEST={{ '$NATIVE_LIB_LOCATION' / '$ARCH' }}
+        if [ -n "${NATIVE_LIB_LOCATION:-}" ]; then
+            DEST="$NATIVE_LIB_LOCATION/$ARCH"
             echo "Environment variable NATIVE_LIB_LOCATION is set, copying built native library from location '$NATIVE_OUTPUT_DIR' to '$DEST'."
             mkdir -p "$DEST"
             cp -r $NATIVE_OUTPUT_DIR/* "$DEST/"
