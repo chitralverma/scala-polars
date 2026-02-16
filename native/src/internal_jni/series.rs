@@ -14,6 +14,30 @@ use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::utils::{from_ptr, j_object_to_string, j_string_to_string, to_ptr};
 use crate::utils::error::ResultExt;
 
+macro_rules! impl_new_series {
+    ($name:ident, $java_array:ty) => {
+        #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
+        pub fn $name(mut env: JNIEnv, _: JClass, name: JString, values: $java_array) -> jlong {
+            let data = JavaArrayToVec::to_vec(&mut env, values);
+
+            let series_name = j_string_to_string(
+                &mut env,
+                &name,
+                Some("Failed to parse the provided value as a series name"),
+            );
+            let series = Series::new(PlSmallStr::from_string(series_name), data);
+
+            to_ptr(series)
+        }
+    };
+}
+
+impl_new_series!(new_long_series, JLongArray);
+impl_new_series!(new_int_series, JIntArray);
+impl_new_series!(new_float_series, JFloatArray);
+impl_new_series!(new_double_series, JDoubleArray);
+impl_new_series!(new_boolean_series, JBooleanArray);
+
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
 pub fn new_str_series(mut env: JNIEnv, _: JClass, name: JString, values: JObjectArray) -> jlong {
     let data: Vec<String> = JavaArrayToVec::to_vec(&mut env, values)
@@ -26,81 +50,6 @@ pub fn new_str_series(mut env: JNIEnv, _: JClass, name: JString, values: JObject
             )
         })
         .collect();
-
-    let series_name = j_string_to_string(
-        &mut env,
-        &name,
-        Some("Failed to parse the provided value as a series name"),
-    );
-    let series = Series::new(PlSmallStr::from_string(series_name), data);
-
-    to_ptr(series)
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub fn new_long_series(mut env: JNIEnv, _: JClass, name: JString, values: JLongArray) -> jlong {
-    let data = JavaArrayToVec::to_vec(&mut env, values);
-
-    let series_name = j_string_to_string(
-        &mut env,
-        &name,
-        Some("Failed to parse the provided value as a series name"),
-    );
-    let series = Series::new(PlSmallStr::from_string(series_name), data);
-
-    to_ptr(series)
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub fn new_int_series(mut env: JNIEnv, _: JClass, name: JString, values: JIntArray) -> jlong {
-    let data = JavaArrayToVec::to_vec(&mut env, values);
-
-    let series_name = j_string_to_string(
-        &mut env,
-        &name,
-        Some("Failed to parse the provided value as a series name"),
-    );
-    let series = Series::new(PlSmallStr::from_string(series_name), data);
-
-    to_ptr(series)
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub fn new_float_series(mut env: JNIEnv, _: JClass, name: JString, values: JFloatArray) -> jlong {
-    let data = JavaArrayToVec::to_vec(&mut env, values);
-
-    let series_name = j_string_to_string(
-        &mut env,
-        &name,
-        Some("Failed to parse the provided value as a series name"),
-    );
-    let series = Series::new(PlSmallStr::from_string(series_name), data);
-
-    to_ptr(series)
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub fn new_double_series(mut env: JNIEnv, _: JClass, name: JString, values: JDoubleArray) -> jlong {
-    let data = JavaArrayToVec::to_vec(&mut env, values);
-
-    let series_name = j_string_to_string(
-        &mut env,
-        &name,
-        Some("Failed to parse the provided value as a series name"),
-    );
-    let series = Series::new(PlSmallStr::from_string(series_name), data);
-
-    to_ptr(series)
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
-pub fn new_boolean_series(
-    mut env: JNIEnv,
-    _: JClass,
-    name: JString,
-    values: JBooleanArray,
-) -> jlong {
-    let data = JavaArrayToVec::to_vec(&mut env, values);
 
     let series_name = j_string_to_string(
         &mut env,
