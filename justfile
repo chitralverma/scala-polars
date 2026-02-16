@@ -61,27 +61,27 @@ clean-headers:
 build-native:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ '{{ env('SKIP_NATIVE_GENERATION', 'false') }}' == "false" ]; then
-        TRIPLE={{ env('TARGET_TRIPLE', `rustc -vV | grep host | cut -d' ' -f2`) }}
-        ARCH=$(echo $TRIPLE | cut -d'-' -f1)
+    if [ "${SKIP_NATIVE_GENERATION:-false}" = "false" ]; then
+        TRIPLE="${TARGET_TRIPLE:-$(rustc -vV | grep host | cut -d' ' -f2)}"
+        ARCH=$(echo "$TRIPLE" | cut -d'-' -f1)
         RELEASE_FLAG=""
-        if [ '{{ env('NATIVE_RELEASE', 'false') }}' == "true" ]; then
+        if [ "${NATIVE_RELEASE:-false}" = "true" ]; then
             RELEASE_FLAG="--release"
         fi
 
         # Generate native library artifacts in a predictable output directory
-        NATIVE_OUTPUT_DIR={{ root / 'core' / 'target' / 'native-libs' / '$ARCH' }}
+        NATIVE_OUTPUT_DIR="{{ root }}/core/target/native-libs/$ARCH"
         mkdir -p "$NATIVE_OUTPUT_DIR"
-        cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target $TRIPLE --artifact-dir $NATIVE_OUTPUT_DIR
+        cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target "$TRIPLE" --artifact-dir "$NATIVE_OUTPUT_DIR"
 
         if [ -n "${NATIVE_LIB_LOCATION:-}" ]; then
             DEST="$NATIVE_LIB_LOCATION/$ARCH"
             echo "Environment variable NATIVE_LIB_LOCATION is set, copying built native library from location '$NATIVE_OUTPUT_DIR' to '$DEST'."
             mkdir -p "$DEST"
-            cp -r $NATIVE_OUTPUT_DIR/* "$DEST/"
+            cp -r "$NATIVE_OUTPUT_DIR"/* "$DEST/"
         fi
     else
-        just echo-command 'Environment variable SKIP_NATIVE_GENERATION is set, skipping cargo build.'
+        @just echo-command 'Environment variable SKIP_NATIVE_GENERATION is set, skipping cargo build.'
     fi
 
 # Build assembly jars
