@@ -4,8 +4,8 @@ use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::*;
 use jni::sys::*;
 use polars::prelude::*;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 
 use crate::internal_jni::utils::{find_java_class, string_to_j_string};
 use crate::utils::error::ResultExt;
@@ -225,7 +225,9 @@ impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
             AnyValue::Float64(v) => box_double(env, v),
             AnyValue::Date(days) => box_date(env, days as i64),
             AnyValue::Time(v) => box_time(env, v),
-            AnyValue::Datetime(nanos, tu, tz) => box_datetime(env, nanos, tu, tz.as_ref().map(|v| *v)),
+            AnyValue::Datetime(nanos, tu, tz) => {
+                box_datetime(env, nanos, tu, tz.as_ref().map(|v| *v))
+            },
             AnyValue::DatetimeOwned(nanos, tu, tz) => box_datetime(env, nanos, tu, tz.as_deref()),
             AnyValue::List(s) => s.into_java(env),
             AnyValue::Array(s, _) => s.into_java(env),

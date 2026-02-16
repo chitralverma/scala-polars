@@ -273,7 +273,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
-  def getZonedDateTime(i: Int): java.time.ZonedDateTime = {
+  def getZonedDateTime(i: Int): java.time.ZonedDateTime =
     get(i) match {
       case zdt: java.time.ZonedDateTime => zdt
       case instant: java.time.Instant =>
@@ -289,7 +289,6 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
           s"Expected Instant or ZonedDateTime at index $i, found ${x.getClass.getName}"
         )
     }
-  }
 
   /** Returns the value by column `name` as [[java.time.ZonedDateTime]]
     *
