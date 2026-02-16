@@ -4,6 +4,7 @@ set ignore-comments := true
 root := justfile_directory()
 native_root := root / 'native'
 native_manifest := root / 'native' / 'Cargo.toml'
+cargo_flags := env_var_or_default("CARGO_FLAGS", "--locked")
 
 # Default recipe to 'help' to display this help screen
 [private]
@@ -24,7 +25,7 @@ fmt:
     @just echo-command 'Formatting Scala, Java & Sbt'
     @sbt -error --batch scalafmtAll scalafmtSbt javafmtAll
     @just echo-command 'Formatting Rust'
-    @cargo clippy -q --frozen --no-deps --fix --allow-dirty --allow-staged --manifest-path {{ native_manifest }}
+    @cargo clippy -q {{ cargo_flags }} --no-deps --fix --allow-dirty --allow-staged --manifest-path {{ native_manifest }}
     @cargo sort {{ native_root }}
     @cargo fmt --quiet --manifest-path {{ native_manifest }}
     @just --fmt --unstable
@@ -35,7 +36,7 @@ lint:
     @just echo-command 'Checking Scala, Java & Sbt'
     @sbt -error --batch scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
     @just echo-command 'Checking Rust'
-    @cargo clippy -q --frozen --no-deps --manifest-path {{ native_manifest }} -- -D warnings
+    @cargo clippy -q {{ cargo_flags }} --no-deps --manifest-path {{ native_manifest }} -- -D warnings
     @cargo sort {{ native_root }} --check
     @cargo fmt --check --manifest-path {{ native_manifest }}
     @just --fmt --unstable --check
@@ -43,6 +44,17 @@ lint:
 # Run all code formatting and quality checks
 [group('lint')]
 pre-commit: fmt lint
+
+# Generate JNI headers
+[group('dev')]
+gen-headers: clean-headers
+    @sbt -error --batch genHeaders
+
+# Remove generated JNI headers
+[group('dev')]
+clean-headers:
+    @rm -rf {{root / 'core' / 'target' / 'native'}}
+    @just echo-command 'Removed JNI headers directory'
 
 # Build native library TARGET_TRIPLE, NATIVE_RELEASE, NATIVE_LIB_LOCATION env vars are supported
 [group('dev')]
@@ -60,7 +72,7 @@ build-native:
         # Generate native library artifacts in a predictable output directory
         NATIVE_OUTPUT_DIR={{ root / 'core' / 'target' / 'native-libs' / '$ARCH' }}
         mkdir -p "$NATIVE_OUTPUT_DIR"
-        cargo build --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target $TRIPLE --artifact-dir $NATIVE_OUTPUT_DIR
+        cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target $TRIPLE --artifact-dir $NATIVE_OUTPUT_DIR
 
         if [ -n '{{ env('NATIVE_LIB_LOCATION', '') }}' ]; then
             DEST={{ '$NATIVE_LIB_LOCATION' / '$ARCH' }}
@@ -77,14 +89,14 @@ build-native:
 assembly: build-native
     sbt +assembly
 
-# Complie
+# Compile
 [group('dev')]
 compile: build-native
     sbt compile
 
 # Clean build artifacts
 [group('dev')]
-clean:
+clean: clean-headers
     @sbt clean cleanFiles
     @cargo clean --manifest-path {{ native_manifest }}
 
