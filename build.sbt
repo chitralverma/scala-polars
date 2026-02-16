@@ -28,10 +28,8 @@ lazy val core = project
     publishMavenStyle := true
   )
   .settings(
-    nativeRoot := baseDirectory.value.toPath.resolveSibling("native").toFile,
     inConfig(Compile)(NativeBuildSettings.settings)
   )
-  .settings(ExtraCommands.commands)
   .settings(ExtraCommands.commandAliases)
 //  .configureUnidoc("scala-polars API Reference")
 
