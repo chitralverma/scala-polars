@@ -39,6 +39,8 @@ jobs:
         with:
           components: "clippy, rustfmt"
 
+      - uses: taiki-e/install-action@just
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: native
@@ -47,10 +49,10 @@ jobs:
       - name: Check all formatting
         run: |
           cargo install cargo-sort
-          sbt fmtCheckAll
+          just lint
 
       - name: Check doc issues
-        run: sbt makeSite
+        run: just site
 
   build-natives:
     name: ${{ matrix.arch }} build
@@ -103,6 +105,8 @@ jobs:
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
 
+      - uses: taiki-e/install-action@just
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: native
@@ -111,7 +115,7 @@ jobs:
       - name: Cross publish artifacts containing native library
         run: |
           rustup target add ${{ matrix.arch }}
-          sbt generateNativeLibrary
+          just build-native
 
       - name: Temporarily save native library for ${{ matrix.arch }}
         uses: actions/upload-artifact@v6
@@ -145,6 +149,8 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
+      - uses: taiki-e/install-action@just
+
       - name: Download artifacts
         uses: actions/download-artifact@v7
         with:
@@ -154,7 +160,7 @@ jobs:
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
         run: |
-          sbt +assembly
+          just assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-3.3.4/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
@@ -183,6 +189,8 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
+      - uses: taiki-e/install-action@just
+
       - name: Download artifacts
         uses: actions/download-artifact@v7
         with:
@@ -200,10 +208,10 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt ci-release
+        run: just release
 
       - name: Publish API Docs
         run: |
           git config --global user.email "git@github.com"
           git config --global user.name  "git"
-          sbt ghpagesPushSite
+          just publish-site

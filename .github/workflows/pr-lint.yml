@@ -31,6 +31,8 @@ jobs:
         with:
           components: "clippy, rustfmt"
 
+      - uses: taiki-e/install-action@just
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: native
@@ -39,7 +41,7 @@ jobs:
       - name: Check all formatting
         run: |
           cargo install cargo-sort
-          sbt fmtCheckAll
+          just lint
 
       - name: Check doc issues
-        run: sbt makeSite
+        run: just site
