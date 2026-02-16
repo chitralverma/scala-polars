@@ -78,3 +78,8 @@ pub fn fromSeries(mut env: JNIEnv, _: JClass, ptrs: JLongArray) -> jlong {
 
     to_ptr(df)
 }
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.data_frame$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<DataFrame>(ptr);
+}

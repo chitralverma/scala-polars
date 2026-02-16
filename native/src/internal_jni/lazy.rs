@@ -197,6 +197,11 @@ pub fn optimization_toggle(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<LazyFrame>(ptr);
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub fn cache(_: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jlong {
     let ldf = from_ptr(ldf_ptr).cache();
     to_ptr(ldf)

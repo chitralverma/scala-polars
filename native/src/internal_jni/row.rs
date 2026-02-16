@@ -6,11 +6,11 @@ use jni_fn::jni_fn;
 use polars::prelude::*;
 
 use crate::internal_jni::conversion::{AnyValueWrapper, IntoJava};
-use crate::internal_jni::utils::{get_n_rows, string_to_j_string};
+use crate::internal_jni::utils::{free_ptr, get_n_rows, string_to_j_string};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
+pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
     let df = unsafe { &mut *df_ptr };
 
     let n_rows = get_n_rows(nRows);
@@ -19,7 +19,11 @@ pub fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jobjectArray {
+pub unsafe fn advanceIterator(
+    mut env: JNIEnv,
+    _: JClass,
+    ri_ptr: *mut RowIterator,
+) -> jobjectArray {
     let ri = unsafe { &mut *ri_ptr };
     let adv = ri.advance();
 
@@ -44,13 +48,18 @@ pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> 
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
+pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
     let ri = unsafe { &*ri_ptr };
 
     serde_json::to_string(&ri.schema.to_arrow(CompatLevel::oldest()))
         .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
         .context("Failed to serialize schema")
         .unwrap_or_throw(&mut env)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<RowIterator>(ptr);
 }
 
 pub struct RowIterator {

@@ -11,10 +11,29 @@ import com.github.chitralverma.polars.config.UniqueKeepStrategies
 import com.github.chitralverma.polars.internal.jni.expressions.column_expr
 import com.github.chitralverma.polars.internal.jni.lazy_frame
 
-class LazyFrame private (private[polars] val ptr: Long) {
+class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
+
+  private var isClosed = false
+
+  private[polars] def ptr: Long = {
+    checkClosed()
+    _ptr
+  }
+
+  override def close(): Unit = synchronized {
+    if (!isClosed && _ptr != 0) {
+      lazy_frame.free(_ptr)
+      isClosed = true
+    }
+  }
+
+  override def finalize(): Unit = close()
+
+  private def checkClosed(): Unit =
+    if (isClosed) throw new IllegalStateException("LazyFrame is already closed.")
 
   val schema: Schema = {
-    val schemaString = lazy_frame.schemaString(ptr)
+    val schemaString = lazy_frame.schemaString(_ptr)
     Schema.fromString(schemaString)
   }
 
@@ -145,13 +164,15 @@ class LazyFrame private (private[polars] val ptr: Long) {
   ): LazyFrame =
     top_k(k, Array(col), Array(descending), Array(nullLast), maintainOrder = maintainOrder)
 
-  def limit(n: Long): LazyFrame = LazyFrame.withPtr(lazy_frame.limit(ptr, n))
+  def limit(n: Long): LazyFrame =
+    LazyFrame.withPtr(lazy_frame.limit(ptr, n))
 
   def head(n: Long): LazyFrame = limit(n)
 
   def first(): LazyFrame = limit(1)
 
-  def tail(n: Long): LazyFrame = LazyFrame.withPtr(lazy_frame.tail(ptr, n))
+  def tail(n: Long): LazyFrame =
+    LazyFrame.withPtr(lazy_frame.tail(ptr, n))
 
   def last(): LazyFrame = tail(1)
 
@@ -277,5 +298,6 @@ class LazyFrame private (private[polars] val ptr: Long) {
 
 object LazyFrame {
 
-  def withPtr(ptr: Long) = new LazyFrame(ptr)
+  private[polars] def withPtr(ptr: Long) = new LazyFrame(ptr)
+
 }

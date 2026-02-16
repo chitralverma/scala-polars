@@ -9,7 +9,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{from_ptr, j_string_to_string, to_ptr};
+use crate::internal_jni::utils::{free_ptr, from_ptr, j_string_to_string, to_ptr};
 use crate::utils::error::ResultExt;
 
 #[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
@@ -127,4 +127,9 @@ pub fn applyBinary(
         .unwrap_or_throw(&mut env);
 
     to_ptr(expr)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<Expr>(ptr);
 }

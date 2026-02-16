@@ -11,10 +11,29 @@ import com.github.chitralverma.polars.api.types.Schema
 import com.github.chitralverma.polars.config.UniqueKeepStrategies
 import com.github.chitralverma.polars.internal.jni.data_frame
 
-class DataFrame private (private[polars] val ptr: Long) {
+class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
+
+  private var isClosed = false
+
+  private[polars] def ptr: Long = {
+    checkClosed()
+    _ptr
+  }
+
+  override def close(): Unit = synchronized {
+    if (!isClosed && _ptr != 0) {
+      data_frame.free(_ptr)
+      isClosed = true
+    }
+  }
+
+  override def finalize(): Unit = close()
+
+  private[polars] def checkClosed(): Unit =
+    if (isClosed) throw new IllegalStateException("DataFrame is already closed.")
 
   val schema: Schema = {
-    val schemaString = data_frame.schemaString(ptr)
+    val schemaString = data_frame.schemaString(_ptr)
     Schema.fromString(schemaString)
   }
 
@@ -119,13 +138,15 @@ class DataFrame private (private[polars] val ptr: Long) {
       .top_k(k, Array(expr), Array(null_last), maintainOrder = maintain_order)
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
-  def limit(n: Long): DataFrame = DataFrame.withPtr(data_frame.limit(ptr, n))
+  def limit(n: Long): DataFrame =
+    DataFrame.withPtr(data_frame.limit(ptr, n))
 
   def head(n: Long): DataFrame = limit(n)
 
   def first(): DataFrame = limit(1)
 
-  def tail(n: Long): DataFrame = DataFrame.withPtr(data_frame.tail(ptr, n))
+  def tail(n: Long): DataFrame =
+    DataFrame.withPtr(data_frame.tail(ptr, n))
 
   def last(): DataFrame = tail(1)
 
@@ -161,11 +182,14 @@ class DataFrame private (private[polars] val ptr: Long) {
   ): DataFrame =
     toLazy.unique(subset, keep, maintainOrder).collect(noOptimization = true)
 
-  def toLazy: LazyFrame = LazyFrame.withPtr(data_frame.toLazy(ptr))
+  def toLazy: LazyFrame =
+    LazyFrame.withPtr(data_frame.toLazy(ptr))
 
-  def show(): Unit = data_frame.show(ptr)
+  def show(): Unit =
+    data_frame.show(ptr)
 
-  def count(): Long = data_frame.count(ptr)
+  def count(): Long =
+    data_frame.count(ptr)
 
   /** Provides an iterator to traverse a specified number of rows from the DataFrame.
     * @param nRows
@@ -175,7 +199,8 @@ class DataFrame private (private[polars] val ptr: Long) {
     * @return
     *   Iterator of [[Row]]
     */
-  def rows(nRows: Long): Iterator[Row] = RowIterator.withPtr(ptr, this).lazyIterator(nRows)
+  def rows(nRows: Long): Iterator[Row] =
+    RowIterator.withPtr(ptr, this).lazyIterator(nRows)
 
   /** Provides an iterator to traverse a all rows from the DataFrame.
     * @return
@@ -183,7 +208,8 @@ class DataFrame private (private[polars] val ptr: Long) {
     */
   def rows(): Iterator[Row] = rows(-1L)
 
-  def write(): Writeable = new Writeable(ptr)
+  def write(): Writeable =
+    new Writeable(this)
 
 }
 

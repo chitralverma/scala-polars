@@ -18,4 +18,6 @@ private[polars] object data_frame extends Natively {
 
   @native def fromSeries(ptrs: Array[Long]): Long
 
+  @native def free(ptr: Long): Unit
+
 }

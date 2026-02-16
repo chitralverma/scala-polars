@@ -62,6 +62,15 @@ pub fn from_ptr<T: Clone>(ptr: *mut T) -> T {
     unsafe { (*ptr).clone() }
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub fn free_ptr<T>(ptr: jlong) {
+    if ptr != 0 {
+        unsafe {
+            let _ = Box::from_raw(ptr as *mut T);
+        }
+    }
+}
+
 pub fn find_java_class<'a>(env: &mut JNIEnv<'a>, class: &str) -> JClass<'a> {
     env.find_class(class)
         .context(format!(

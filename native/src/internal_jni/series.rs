@@ -11,7 +11,9 @@ use jni_fn::jni_fn;
 use polars::prelude::*;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
-use crate::internal_jni::utils::{from_ptr, j_object_to_string, j_string_to_string, to_ptr};
+use crate::internal_jni::utils::{
+    free_ptr, from_ptr, j_object_to_string, j_string_to_string, to_ptr,
+};
 use crate::utils::error::ResultExt;
 
 macro_rules! impl_new_series {
@@ -201,4 +203,9 @@ pub fn new_struct_series(mut env: JNIEnv, _: JClass, name: JString, values: JLon
 pub fn show(_: JNIEnv, _: JClass, series_ptr: *mut Series) {
     let series = &from_ptr(series_ptr);
     println!("{series:?}")
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<Series>(ptr);
 }
