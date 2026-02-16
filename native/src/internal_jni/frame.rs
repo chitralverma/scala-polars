@@ -9,6 +9,7 @@ use polars::prelude::*;
 use polars_core::utils::concat_df;
 
 use crate::internal_jni::utils::*;
+use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.data_frame$")]
