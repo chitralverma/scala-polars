@@ -53,7 +53,7 @@ gen-headers: clean-headers
 # Remove generated JNI headers
 [group('dev')]
 clean-headers:
-    @rm -rf {{root / 'core' / 'target' / 'native'}}
+    @rm -rf {{ root / 'core' / 'target' / 'native' }}
     @just echo-command 'Removed JNI headers directory'
 
 # Build native library TARGET_TRIPLE, NATIVE_RELEASE, NATIVE_LIB_LOCATION env vars are supported
