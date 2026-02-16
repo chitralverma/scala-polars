@@ -25,8 +25,7 @@ object Utils {
       Process(cmd, cwd, extraEnv: _*).run(getProcessLogger(logger, infoOnly)).exitValue()
 
     if (exitCode != 0) {
-      logger.error(s"Failed to executed command `$cmd` with exit code $exitCode.")
-      System.exit(exitCode)
+      sys.error(s"Failed to executed command `$cmd` with exit code $exitCode.")
     } else {
       logger.success(s"Successfully executed command `$cmd`.")
     }
