@@ -2,8 +2,8 @@ set shell := ["bash", "-c"]
 set ignore-comments := true
 
 root := justfile_directory()
-native_root := root / 'native'
-native_manifest := root / 'native' / 'Cargo.toml'
+native_root := "native"
+native_manifest := "native/Cargo.toml"
 cargo_flags := env("CARGO_FLAGS", "--locked")
 
 # Default recipe to 'help' to display this help screen
@@ -53,7 +53,7 @@ gen-headers: clean-headers
 # Remove generated JNI headers
 [group('dev')]
 clean-headers:
-    @rm -rf {{ root / 'core' / 'target' / 'native' }}
+    @rm -rf core/target/native
     @just echo-command 'Removed JNI headers directory'
 
 # Build native library TARGET_TRIPLE, NATIVE_RELEASE, NATIVE_LIB_LOCATION env vars are supported
@@ -70,7 +70,7 @@ build-native:
         fi
 
         # Generate native library artifacts in a predictable output directory
-        NATIVE_OUTPUT_DIR="{{ root }}/core/target/native-libs/$ARCH"
+        NATIVE_OUTPUT_DIR="core/target/native-libs/$ARCH"
         mkdir -p "$NATIVE_OUTPUT_DIR"
         cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target "$TRIPLE" --artifact-dir "$NATIVE_OUTPUT_DIR"
 
