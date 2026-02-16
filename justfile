@@ -75,10 +75,12 @@ build-native:
         cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target "$TRIPLE" --artifact-dir "$NATIVE_OUTPUT_DIR"
 
         if [ -n "${NATIVE_LIB_LOCATION:-}" ]; then
-            DEST="$NATIVE_LIB_LOCATION/$ARCH"
+            # Remove trailing slash if present
+            CLEAN_NATIVE_LIB_LOCATION="${NATIVE_LIB_LOCATION%/}"
+            DEST="$CLEAN_NATIVE_LIB_LOCATION/$ARCH"
             echo "Environment variable NATIVE_LIB_LOCATION is set, copying built native library from location '$NATIVE_OUTPUT_DIR' to '$DEST'."
             mkdir -p "$DEST"
-            cp -r "$NATIVE_OUTPUT_DIR"/* "$DEST/"
+            cp -rf "$NATIVE_OUTPUT_DIR"/* "$DEST/"
         fi
     else
         @just echo-command 'Environment variable SKIP_NATIVE_GENERATION is set, skipping cargo build.'
