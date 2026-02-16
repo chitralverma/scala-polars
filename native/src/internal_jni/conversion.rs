@@ -4,8 +4,8 @@ use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::*;
 use jni::sys::*;
 use polars::prelude::*;
-use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::Decimal;
 
 use crate::internal_jni::utils::{find_java_class, string_to_j_string};
 use crate::utils::error::ResultExt;
@@ -225,8 +225,8 @@ impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
             AnyValue::Float64(v) => box_double(env, v),
             AnyValue::Date(days) => box_date(env, days as i64),
             AnyValue::Time(v) => box_time(env, v),
-            AnyValue::Datetime(nanos, tu, _) => box_datetime(env, nanos, tu),
-            AnyValue::DatetimeOwned(nanos, tu, _) => box_datetime(env, nanos, tu),
+            AnyValue::Datetime(nanos, tu, tz) => box_datetime(env, nanos, tu, tz.as_ref().map(|v| *v)),
+            AnyValue::DatetimeOwned(nanos, tu, tz) => box_datetime(env, nanos, tu, tz.as_deref()),
             AnyValue::List(s) => s.into_java(env),
             AnyValue::Array(s, _) => s.into_java(env),
             AnyValue::Binary(slice) => slice.into_java(env),
@@ -321,22 +321,59 @@ pub fn box_time<'a, T: Into<JValue<'a, 'a>>>(env: &mut JNIEnv<'a>, value: T) -> 
     )
 }
 
-pub fn box_datetime<'a>(env: &mut JNIEnv<'a>, timestamp: i64, time_unit: TimeUnit) -> JObject<'a> {
+pub fn box_datetime<'a>(
+    env: &mut JNIEnv<'a>,
+    timestamp: i64,
+    time_unit: TimeUnit,
+    time_zone: Option<&TimeZone>,
+) -> JObject<'a> {
     let nanos = match time_unit {
         TimeUnit::Nanoseconds => timestamp,
         TimeUnit::Microseconds => timestamp * 1_000,
         TimeUnit::Milliseconds => timestamp * 1_000_000,
     };
-    env.call_static_method(
-        "java/time/Instant",
-        "ofEpochSecond",
-        "(JJ)Ljava/time/Instant;",
-        &[
-            JValue::Long(nanos / 1_000_000_000),
-            JValue::Long((nanos % 1_000_000_000) as jlong),
-        ],
-    )
-    .and_then(|v| v.l())
-    .context(format!("Failed to parse value `{timestamp}` into Instant"))
-    .unwrap_or_throw(env)
+    let j_instant = env
+        .call_static_method(
+            "java/time/Instant",
+            "ofEpochSecond",
+            "(JJ)Ljava/time/Instant;",
+            &[
+                JValue::Long(nanos / 1_000_000_000),
+                JValue::Long((nanos % 1_000_000_000) as jlong),
+            ],
+        )
+        .and_then(|v| v.l())
+        .context(format!("Failed to parse value `{timestamp}` into Instant"))
+        .unwrap_or_throw(env);
+
+    if let Some(zone) = time_zone {
+        let zone_str_obj = unsafe {
+            JObject::from_raw(string_to_j_string(
+                env,
+                zone.as_str(),
+                Some(format!("Failed to parse value `{zone}` as a string")),
+            ))
+        };
+        let zone_id = env
+            .call_static_method(
+                "java/time/ZoneId",
+                "of",
+                "(Ljava/lang/String;)Ljava/time/ZoneId;",
+                &[JValue::Object(&zone_str_obj)],
+            )
+            .and_then(|v| v.l())
+            .context(format!("Failed to parse value `{zone}` into ZoneId"))
+            .unwrap_or_throw(env);
+
+        let cls = find_java_class(env, "java/time/ZonedDateTime");
+        call_java_static_method(
+            env,
+            cls,
+            "ofInstant",
+            "(Ljava/time/Instant;Ljava/time/ZoneId;)Ljava/time/ZonedDateTime;",
+            &[JValue::Object(&j_instant), JValue::Object(&zone_id)],
+        )
+    } else {
+        j_instant
+    }
 }
