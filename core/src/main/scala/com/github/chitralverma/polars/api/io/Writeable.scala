@@ -23,8 +23,13 @@ import com.github.chitralverma.polars.internal.jni.io.write._
   *     - overwrite: Overwrites the existing data at the provided location.
   *     - error: Throw an exception if data already exists at the provided location.
   */
-class Writeable private[polars] (ptr: Long) {
+class Writeable private[polars] (df: DataFrame) {
   import com.github.chitralverma.polars.jsonMapper
+
+  private def ptr: Long = {
+    df.checkClosed()
+    df.ptr
+  }
 
   private val _options: MutableMap[String, String] = MutableMap("write_mode" -> "error")
 

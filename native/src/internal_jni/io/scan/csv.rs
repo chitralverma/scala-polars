@@ -7,8 +7,9 @@ use polars::io::RowIndex;
 use polars::io::cloud::CloudOptions;
 use polars::prelude::*;
 
+use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::io::{get_file_path, parse_json_to_options};
-use crate::internal_jni::utils::{JavaArrayToVec, to_ptr};
+use crate::internal_jni::utils::to_ptr;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.io.scan$")]

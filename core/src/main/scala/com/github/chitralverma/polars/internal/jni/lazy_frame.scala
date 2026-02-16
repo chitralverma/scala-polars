@@ -61,4 +61,6 @@ private[polars] object lazy_frame extends Natively {
       streaming: Boolean
   ): Long
 
+  @native def free(ptr: Long): Unit
+
 }

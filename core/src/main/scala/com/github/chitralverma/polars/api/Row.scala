@@ -11,33 +11,49 @@ import com.github.chitralverma.polars.jsonMapper
 
 class RowIterator private (private[polars] val ptr: Long, private val parent: DataFrame) {
 
-  private[polars] def lazyIterator(nRows: Long): Iterator[Row] = new Iterator[Row] {
+  private[polars] def lazyIterator(nRows: Long): Iterator[Row] with AutoCloseable =
+    new Iterator[Row] with AutoCloseable {
 
-    // Hold a reference to the parent DataFrame to prevent it from being GC'd.
-    // The native iterator borrows memory from the parent DataFrame.
-    private val _parent = parent
+      // Hold a reference to the parent DataFrame to prevent it from being GC'd.
+      // The native iterator borrows memory from the parent DataFrame.
+      private val _parent = parent
 
-    private val iteratorPtr = row.createIterator(ptr, nRows)
-    private val schema = {
-      val schemaString = row.schemaString(iteratorPtr)
-      Schema.fromString(schemaString)
+      private var isClosed = false
+      private val iteratorPtr = row.createIterator(ptr, nRows)
+      private val schema = {
+        val schemaString = row.schemaString(iteratorPtr)
+        Schema.fromString(schemaString)
+      }
+
+      private var nextValue: Option[Array[Object]] = fetchNext()
+
+      private def fetchNext(): Option[Array[Object]] = {
+        if (isClosed) return None
+
+        val value = row.advanceIterator(iteratorPtr)
+        val res = Option(value)
+        if (res.isEmpty) close()
+        res
+      }
+
+      override def hasNext: Boolean = nextValue.isDefined
+
+      override def next(): Row = {
+        if (isClosed) throw new NoSuchElementException("Iterator is already closed.")
+        val arr = nextValue.getOrElse(throw new NoSuchElementException("End of iterator"))
+        nextValue = fetchNext()
+        Row.fromObjects(arr, schema)
+      }
+
+      override def close(): Unit = synchronized {
+        if (!isClosed) {
+          row.free(iteratorPtr)
+          isClosed = true
+        }
+      }
+
+      override def finalize(): Unit = close()
     }
-
-    private var nextValue: Option[Array[Object]] = fetchNext()
-
-    private def fetchNext(): Option[Array[Object]] = {
-      val value = row.advanceIterator(iteratorPtr)
-      Option(value)
-    }
-
-    override def hasNext: Boolean = nextValue.isDefined
-
-    override def next(): Row = {
-      val arr = nextValue.getOrElse(throw new NoSuchElementException("End of iterator"))
-      nextValue = fetchNext()
-      Row.fromObjects(arr, schema)
-    }
-  }
 }
 
 object RowIterator {
@@ -257,18 +273,22 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     * @throws java.lang.ClassCastException
     *   when data type does not match.
     */
-  def getZonedDateTime(i: Int): java.time.ZonedDateTime = {
-    val zoneId = getSchema.getFields(i).dataType match {
-      case DateTimeType(_, tz) =>
-        Try(java.time.ZoneId.of(tz)).getOrElse(java.time.ZoneId.systemDefault())
+  def getZonedDateTime(i: Int): java.time.ZonedDateTime =
+    get(i) match {
+      case zdt: java.time.ZonedDateTime => zdt
+      case instant: java.time.Instant =>
+        val zoneId = getSchema.getFields(i).dataType match {
+          case DateTimeType(_, tz) =>
+            Try(java.time.ZoneId.of(tz)).getOrElse(java.time.ZoneId.systemDefault())
+          case _ =>
+            java.time.ZoneId.systemDefault()
+        }
+        java.time.ZonedDateTime.ofInstant(instant, zoneId)
       case x =>
-        assertDataType(x, DateTimeType)
-        java.time.ZoneId.systemDefault()
+        throw new ClassCastException(
+          s"Expected Instant or ZonedDateTime at index $i, found ${x.getClass.getName}"
+        )
     }
-
-    val instant = getAs[java.time.Instant](i)
-    java.time.ZonedDateTime.ofInstant(instant, zoneId)
-  }
 
   /** Returns the value by column `name` as [[java.time.ZonedDateTime]]
     *

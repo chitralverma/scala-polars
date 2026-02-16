@@ -8,6 +8,7 @@ use jni_fn::jni_fn;
 use polars::prelude::*;
 use polars_core::series::IsSorted;
 
+use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::utils::*;
 use crate::utils::error::ResultExt;
 
@@ -193,6 +194,11 @@ pub fn optimization_toggle(
         .with_new_streaming(streaming == JNI_TRUE);
 
     to_ptr(ldf)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<LazyFrame>(ptr);
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]

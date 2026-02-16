@@ -1,3 +1,4 @@
+pub mod conversion;
 pub mod expr;
 pub mod frame;
 pub mod io;

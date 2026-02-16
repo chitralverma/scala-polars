@@ -4,9 +4,29 @@ import scala.jdk.CollectionConverters._
 
 import com.github.chitralverma.polars.internal.jni.series
 
-class Series private (private[polars] val ptr: Long) {
+class Series private (private[polars] val _ptr: Long) extends AutoCloseable {
 
-  def show(): Unit = series.show(ptr)
+  private var isClosed = false
+
+  private[polars] def ptr: Long = {
+    checkClosed()
+    _ptr
+  }
+
+  override def close(): Unit = synchronized {
+    if (!isClosed && _ptr != 0) {
+      series.free(_ptr)
+      isClosed = true
+    }
+  }
+
+  override def finalize(): Unit = close()
+
+  private[polars] def checkClosed(): Unit =
+    if (isClosed) throw new IllegalStateException("Series is already closed.")
+
+  def show(): Unit =
+    series.show(ptr)
 }
 
 object Series {

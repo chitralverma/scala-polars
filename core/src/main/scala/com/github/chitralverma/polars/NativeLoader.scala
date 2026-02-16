@@ -41,23 +41,22 @@ object NativeLoader {
       System.loadLibrary(nativeLibrary)
     catch {
       case e: Throwable =>
+        val arch = System.getProperty("os.arch").toLowerCase(java.util.Locale.ROOT) match {
+          case "aarch64" | "arm64" => "aarch64"
+          case "amd64" | "x86_64" => "x86_64"
+          case a => a
+        }
+
         try
-          loadPackaged("aarch64")
+          loadPackaged(arch)
         catch {
           case t: Throwable =>
             t.addSuppressed(e)
-            try
-              loadPackaged("x86_64")
-            catch {
-              case ex: Throwable =>
-                ex.addSuppressed(t)
-                throw new IllegalStateException(
-                  s"Unable to load the provided native library '$nativeLibrary'.",
-                  ex
-                )
-            }
+            throw new IllegalStateException(
+              s"Unable to load the provided native library '$nativeLibrary' for architecture '$arch'.",
+              t
+            )
         }
-
     }
 
     load()

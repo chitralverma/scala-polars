@@ -4,9 +4,13 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.Try
 import scala.util.matching.Regex
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.JsonNodeType
 
 trait DataType {
   def simpleName: String =
@@ -149,6 +153,56 @@ object DataType {
     case DateRegex() => DateType
     case typeStr =>
       throw new IllegalArgumentException(s"Unknown basic type `$typeStr` is not supported.")
+  }
+
+  def fromJson(node: JsonNode): DataType = {
+    val nodeType = node.getNodeType
+    nodeType match {
+      // For Basic Types
+      case JsonNodeType.STRING =>
+        fromBasicType(node.textValue())
+
+      // For Time Type
+      case JsonNodeType.OBJECT
+          if node.hasNonNull("Time") || node.hasNonNull("Time32") || node.hasNonNull("Time64") =>
+        Seq(node.get("Time"), node.get("Time32"), node.get("Time64"))
+          .map(Option(_))
+          .collectFirst { case Some(v) => v } match {
+          case Some(timeUnit) => TimeType(timeUnit.textValue())
+          case None => throw new IllegalArgumentException("Invalid time cannot be parsed.")
+        }
+
+      // For Duration Type
+      case JsonNodeType.OBJECT if node.hasNonNull("Duration") =>
+        Duration(node.get("Duration").textValue())
+
+      // For DateTime Type
+      case JsonNodeType.OBJECT if node.hasNonNull("Timestamp") =>
+        node.get("Timestamp").elements().asScala.map(_.asText(null)).toSeq match {
+          case Seq(tu, tz) => DateTimeType(tu, tz)
+          case _ => DateTimeType(null, null)
+        }
+
+      // For (Nested) List Type
+      case JsonNodeType.OBJECT if node.hasNonNull("List") || node.hasNonNull("LargeList") =>
+        val listNode = Option(node.get("List")).getOrElse(node.get("LargeList"))
+        ListType(fromJson(listNode.get("dtype")))
+
+      // For (Nested) Struct Type
+      case JsonNodeType.OBJECT if node.has("Struct") =>
+        val sf = node
+          .get("Struct")
+          .iterator()
+          .asScala
+          .map { fieldNode =>
+            Field(fieldNode.get("name").textValue(), fromJson(fieldNode.get("dtype")))
+          }
+          .toArray
+        StructType(sf)
+
+      case _ =>
+        throw new IllegalArgumentException(s"Invalid field type `$nodeType` cannot be parsed.")
+    }
   }
 
   def typeToDataType[T: ClassTag](): DataType = {

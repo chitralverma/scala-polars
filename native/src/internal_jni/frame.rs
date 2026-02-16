@@ -8,6 +8,7 @@ use jni_fn::jni_fn;
 use polars::prelude::*;
 use polars_core::utils::concat_df;
 
+use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::utils::*;
 use crate::utils::error::ResultExt;
 
@@ -76,4 +77,9 @@ pub fn fromSeries(mut env: JNIEnv, _: JClass, ptrs: JLongArray) -> jlong {
         .unwrap_or_throw(&mut env);
 
     to_ptr(df)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.data_frame$")]
+pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
+    free_ptr::<DataFrame>(ptr);
 }

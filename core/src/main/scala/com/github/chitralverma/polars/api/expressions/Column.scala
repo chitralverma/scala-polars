@@ -16,143 +16,153 @@ object BinaryOperators extends Enumeration {
       OR, AND, PLUS, MINUS, MULTIPLY, DIVIDE, MODULUS = Value
 }
 
-class Column private (override protected[polars] val ptr: Long) extends Expression(ptr) {
+class Column private (p: Long) extends Expression(p) {
   import BinaryOperators._
   import UnaryOperators._
 
   /** Not. */
-  def unary_! : Column = Column.withPtr(column_expr.applyUnary(ptr, NOT.id))
+  def unary_! : Column = {
+    checkClosed()
+    Column.withPtr(column_expr.applyUnary(ptr, NOT.id))
+  }
 
   /** Is Null. */
-  def isNull: Column = Column.withPtr(column_expr.applyUnary(ptr, IS_NULL.id))
+  def isNull: Column = {
+    checkClosed()
+    Column.withPtr(column_expr.applyUnary(ptr, IS_NULL.id))
+  }
 
   /** Is Not Null. */
-  def isNotNull: Column = Column.withPtr(column_expr.applyUnary(ptr, IS_NOT_NULL.id))
+  def isNotNull: Column = {
+    checkClosed()
+    Column.withPtr(column_expr.applyUnary(ptr, IS_NOT_NULL.id))
+  }
 
   /** Is NaN. */
-  def isNaN: Column = Column.withPtr(column_expr.applyUnary(ptr, IS_NAN.id))
+  def isNaN: Column = {
+    checkClosed()
+    Column.withPtr(column_expr.applyUnary(ptr, IS_NAN.id))
+  }
 
   /** Is Not NaN. */
-  def isNotNaN: Column = Column.withPtr(column_expr.applyUnary(ptr, IS_NOT_NAN.id))
+  def isNotNaN: Column = {
+    checkClosed()
+    Column.withPtr(column_expr.applyUnary(ptr, IS_NOT_NAN.id))
+  }
 
   /** Plus. */
-  def +(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, PLUS.id))
-  }
-
-  def plus(other: Any): Column = this && other
+  def +(value: Any): Column = applyBinaryOp(value, PLUS.id)
 
   /** Minus. */
-  def -(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, MINUS.id))
-  }
-
-  def minus(other: Any): Column = this && other
+  def -(value: Any): Column = applyBinaryOp(value, MINUS.id)
 
   /** Divide. */
-  def *(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, MULTIPLY.id))
-  }
-
-  def multiply(other: Any): Column = this && other
+  def *(value: Any): Column = applyBinaryOp(value, MULTIPLY.id)
 
   /** Divide. */
-  def /(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, DIVIDE.id))
-  }
-
-  def divide(other: Any): Column = this && other
+  def /(value: Any): Column = applyBinaryOp(value, DIVIDE.id)
 
   /** Modulus. */
-  def %(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, MODULUS.id))
-  }
-
-  def mod(other: Any): Column = this && other
+  def %(value: Any): Column = applyBinaryOp(value, MODULUS.id)
 
   /** And. */
-  def &&(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, AND.id))
-  }
-
-  def and(other: Any): Column = this && other
+  def &&(value: Any): Column = applyBinaryOp(value, AND.id)
 
   /** And. */
-  def ||(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, OR.id))
-  }
-
-  def or(other: Any): Column = this || other
+  def ||(value: Any): Column = applyBinaryOp(value, OR.id)
 
   /** EqualTo. */
-  def ===(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, EQUAL_TO.id))
-  }
-
-  def equalTo(other: Any): Column = this === other
+  def ===(value: Any): Column = applyBinaryOp(value, EQUAL_TO.id)
 
   /** NotEqualTo. */
-  def <>(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, NOT_EQUAL_TO.id))
-  }
-
-  def notEqualTo(other: Any): Column = this <> other
+  def <>(value: Any): Column = applyBinaryOp(value, NOT_EQUAL_TO.id)
 
   /** LessThan. */
-  def <(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, LESS_THAN.id))
-  }
-
-  def lessThan(other: Any): Column = this < other
+  def <(value: Any): Column = applyBinaryOp(value, LESS_THAN.id)
 
   /** LessThanEqualTo. */
-  def <=(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, LESS_THAN_EQUAL_TO.id))
-
-  }
-
-  def lessThanEqualTo(other: Any): Column = this <= other
+  def <=(value: Any): Column = applyBinaryOp(value, LESS_THAN_EQUAL_TO.id)
 
   /** GreaterThan. */
-  def >(value: Any): Column = {
-    val rightPtr = lit(value).ptr
-
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, GREATER_THAN.id))
-
-  }
-
-  def greaterThan(other: Any): Column = this > other
+  def >(value: Any): Column = applyBinaryOp(value, GREATER_THAN.id)
 
   /** GreaterThanEqualTo. */
-  def >=(value: Any): Column = {
-    val rightPtr = lit(value).ptr
+  def >=(value: Any): Column = applyBinaryOp(value, GREATER_THAN_EQUAL_TO.id)
 
-    Column.withPtr(column_expr.applyBinary(ptr, rightPtr, GREATER_THAN_EQUAL_TO.id))
+  def plus(other: Any): Column = {
+    checkClosed()
+    this + other
   }
 
-  def greaterThanEqualTo(other: Any): Column = this >= other
+  def minus(other: Any): Column = {
+    checkClosed()
+    this - other
+  }
+
+  def multiply(other: Any): Column = {
+    checkClosed()
+    this * other
+  }
+
+  def divide(other: Any): Column = {
+    checkClosed()
+    this / other
+  }
+
+  def mod(other: Any): Column = {
+    checkClosed()
+    this % other
+  }
+
+  def and(other: Any): Column = {
+    checkClosed()
+    this && other
+  }
+
+  def or(other: Any): Column = {
+    checkClosed()
+    this || other
+  }
+
+  def equalTo(other: Any): Column = {
+    checkClosed()
+    this === other
+  }
+
+  def notEqualTo(other: Any): Column = {
+    checkClosed()
+    this <> other
+  }
+
+  def lessThan(other: Any): Column = {
+    checkClosed()
+    this < other
+  }
+
+  def lessThanEqualTo(other: Any): Column = {
+    checkClosed()
+    this <= other
+  }
+
+  def greaterThan(other: Any): Column = {
+    checkClosed()
+    this > other
+  }
+
+  def greaterThanEqualTo(other: Any): Column = {
+    checkClosed()
+    this >= other
+  }
+
+  private def applyBinaryOp(value: Any, opId: Int): Column = {
+    checkClosed()
+    val right = lit(value)
+    try
+      Column.withPtr(column_expr.applyBinary(ptr, right.ptr, opId))
+    finally
+      // If 'right' is a newly created literal expression (not one provided by the user), close it.
+      if (right ne value.asInstanceOf[AnyRef]) right.close()
+  }
 
 }
 

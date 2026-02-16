@@ -10,31 +10,30 @@ object functions {
 
   def col(name: String): Column = Column.from(name)
 
-  def lit(value: Any): Expression = {
-    val ptr = value match {
-      case null => literal_expr.nullLit()
-      case v: Expression => v.ptr
-      case v: Boolean => literal_expr.fromBool(v)
-      case v: Int => literal_expr.fromInt(v)
-      case v: Long => literal_expr.fromLong(v)
-      case v: Float => literal_expr.fromFloat(v)
-      case v: Double => literal_expr.fromDouble(v)
-      case v: LocalDate =>
-        literal_expr.fromDate(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE.format(v))
-      case v: LocalTime =>
-        literal_expr.fromTime(java.time.format.DateTimeFormatter.ISO_LOCAL_TIME.format(v))
-      case v: ZonedDateTime =>
-        literal_expr.fromDateTime(
-          java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(v)
-        )
-      case v: String => literal_expr.fromString(v)
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Unsupported value `$value` of type `${value.getClass.getSimpleName}` was provided."
-        )
-    }
+  def lit(value: Any): Expression = value match {
+    case v: Expression => v
+    case _ =>
+      val ptr = value match {
+        case null => literal_expr.nullLit()
+        case v: Boolean => literal_expr.fromBool(v)
+        case v: Int => literal_expr.fromInt(v)
+        case v: Long => literal_expr.fromLong(v)
+        case v: Float => literal_expr.fromFloat(v)
+        case v: Double => literal_expr.fromDouble(v)
+        case v: LocalDate =>
+          literal_expr.fromDate(DateTimeFormatter.ISO_LOCAL_DATE.format(v))
+        case v: LocalTime =>
+          literal_expr.fromTime(DateTimeFormatter.ISO_LOCAL_TIME.format(v))
+        case v: ZonedDateTime =>
+          literal_expr.fromDateTime(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(v))
+        case v: String => literal_expr.fromString(v)
+        case _ =>
+          throw new IllegalArgumentException(
+            s"Unsupported value `$value` of type `${value.getClass.getSimpleName}` was provided."
+          )
+      }
 
-    Expression.withPtr(ptr)
+      Expression.withPtr(ptr)
   }
 
   def desc(col_name: String): Expression = {

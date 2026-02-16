@@ -8,4 +8,6 @@ private[polars] object row extends Natively {
 
   @native def schemaString(ptr: Long): String
 
+  @native def free(ptr: Long): Unit
+
 }
