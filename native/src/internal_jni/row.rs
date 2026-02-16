@@ -87,7 +87,10 @@ impl RowIterator {
         if self.start < self.end {
             let mut row = Vec::with_capacity(self.columns.len());
             for col in &self.columns {
-                row.push(col.get(self.start).unwrap());
+                row.push(
+                    col.get(self.start)
+                        .expect("RowIterator invariant violated: column index out of bounds"),
+                );
             }
 
             self.start += 1;
