@@ -31,7 +31,9 @@ jobs:
         with:
           components: "clippy, rustfmt"
 
-      - uses: taiki-e/install-action@just
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-sort
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -39,9 +41,7 @@ jobs:
           prefix-key: lint
 
       - name: Check all formatting
-        run: |
-          cargo install cargo-sort
-          just lint
+        run: just lint
 
       - name: Check doc issues
         run: just site
