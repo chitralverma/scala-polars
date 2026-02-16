@@ -54,32 +54,21 @@ pub fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jst
         .unwrap_or_throw(&mut env)
 }
 
-#[derive(Clone)]
-pub struct RowIterator<'a> {
-    vals: Vec<AnyValue<'a>>,
-    width: usize,
+pub struct RowIterator {
+    columns: Vec<Column>,
     start: usize,
     pub end: usize,
     pub schema: SchemaRef,
 }
 
-impl<'a> RowIterator<'a> {
-    pub fn new(data_frame: &'a mut DataFrame, end: Option<usize>) -> Self {
+impl RowIterator {
+    pub fn new(data_frame: &mut DataFrame, end: Option<usize>) -> Self {
         data_frame.align_chunks_par();
-        let width = data_frame.width();
-        let size = width * data_frame.height();
-        let mut buf = vec![AnyValue::Null; size];
+        let columns = data_frame.columns().to_vec();
         let schema = data_frame.schema();
 
-        for (col_i, s) in data_frame.materialized_column_iter().enumerate() {
-            for (row_i, av) in s.iter().enumerate() {
-                buf[row_i * width + col_i] = av
-            }
-        }
-
         Self {
-            vals: buf,
-            width,
+            columns,
             start: 0,
             schema: schema.clone(),
             end: std::cmp::min(end.unwrap_or(data_frame.height()), data_frame.height()),
@@ -88,13 +77,14 @@ impl<'a> RowIterator<'a> {
 
     pub fn advance(&mut self) -> Option<Vec<AnyValue<'_>>> {
         if self.start < self.end {
-            let start_index = self.start * self.width;
-            let end_index = (self.start + 1) * self.width;
-            let values = Vec::from(&self.vals[start_index..end_index]);
+            let mut row = Vec::with_capacity(self.columns.len());
+            for col in &self.columns {
+                row.push(col.get(self.start).unwrap());
+            }
 
             self.start += 1;
 
-            Some(values)
+            Some(row)
         } else {
             None
         }
