@@ -11,7 +11,7 @@ use crate::internal_jni::utils::{find_java_class, get_n_rows, string_to_j_string
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
+pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
     let df = unsafe { &mut *df_ptr };
 
     let n_rows = get_n_rows(nRows);
@@ -20,7 +20,11 @@ pub fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jobjectArray {
+pub unsafe fn advanceIterator(
+    mut env: JNIEnv,
+    _: JClass,
+    ri_ptr: *mut RowIterator,
+) -> jobjectArray {
     let ri = unsafe { &mut *ri_ptr };
     let adv = ri.advance();
 
@@ -45,7 +49,7 @@ pub fn advanceIterator(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> 
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
+pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
     let ri = unsafe { &*ri_ptr };
 
     serde_json::to_string(&ri.schema.to_arrow(CompatLevel::oldest()))
