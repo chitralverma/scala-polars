@@ -157,12 +157,11 @@ class Column private (p: Long) extends Expression(p) {
   private def applyBinaryOp(value: Any, opId: Int): Column = {
     checkClosed()
     val right = lit(value)
-    try {
+    try
       Column.withPtr(column_expr.applyBinary(ptr, right.ptr, opId))
-    } finally {
+    finally
       // If 'right' is a newly created literal expression (not one provided by the user), close it.
       if (right ne value.asInstanceOf[AnyRef]) right.close()
-    }
   }
 
 }

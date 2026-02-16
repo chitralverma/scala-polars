@@ -32,16 +32,16 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
   private[polars] def checkClosed(): Unit =
     if (isClosed) throw new IllegalStateException("DataFrame is already closed.")
 
-  val schema: Schema = {
-    val schemaString = data_frame.schemaString(_ptr)
+  lazy val schema: Schema = {
+    val schemaString = data_frame.schemaString(ptr)
     Schema.fromString(schemaString)
   }
 
-  val width: Int = schema.getFields.length
+  lazy val width: Int = schema.getFields.length
 
-  val height: Long = count()
+  lazy val height: Long = count()
 
-  val shape: (Long, Int) = (height, width)
+  lazy val shape: (Long, Int) = (height, width)
 
   @varargs
   def select(colName: String, colNames: String*): DataFrame =

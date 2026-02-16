@@ -32,12 +32,12 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
   private def checkClosed(): Unit =
     if (isClosed) throw new IllegalStateException("LazyFrame is already closed.")
 
-  val schema: Schema = {
-    val schemaString = lazy_frame.schemaString(_ptr)
+  lazy val schema: Schema = {
+    val schemaString = lazy_frame.schemaString(ptr)
     Schema.fromString(schemaString)
   }
 
-  val width: Int = schema.getFields.length
+  lazy val width: Int = schema.getFields.length
 
   @varargs
   def select(colName: String, colNames: String*): LazyFrame = {
