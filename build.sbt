@@ -28,7 +28,6 @@ lazy val core = project
     publishMavenStyle := true
   )
   .settings(
-    nativeRoot := baseDirectory.value.toPath.resolveSibling("native").toFile,
     inConfig(Compile)(NativeBuildSettings.settings)
   )
   .settings(ExtraCommands.commandAliases)
