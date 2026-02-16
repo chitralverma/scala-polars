@@ -4,13 +4,13 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.Try
 import scala.util.matching.Regex
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeType
-import scala.jdk.CollectionConverters._
 
 trait DataType {
   def simpleName: String =
@@ -190,9 +190,14 @@ object DataType {
 
       // For (Nested) Struct Type
       case JsonNodeType.OBJECT if node.has("Struct") =>
-        val sf = node.get("Struct").iterator().asScala.map { fieldNode =>
-          Field(fieldNode.get("name").textValue(), fromJson(fieldNode.get("dtype")))
-        }.toArray
+        val sf = node
+          .get("Struct")
+          .iterator()
+          .asScala
+          .map { fieldNode =>
+            Field(fieldNode.get("name").textValue(), fromJson(fieldNode.get("dtype")))
+          }
+          .toArray
         StructType(sf)
 
       case _ =>

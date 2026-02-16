@@ -58,9 +58,7 @@ class Schema {
       case Some(node: JsonNode) if node.hasNonNull("fields") =>
         val fields = node.get("fields").elements().asScala.toList
         _fields = fields
-          .map(f =>
-            Field(f.get("name").textValue(), DataType.fromJson(f.get("dtype")))
-          )
+          .map(f => Field(f.get("name").textValue(), DataType.fromJson(f.get("dtype"))))
           .toArray
 
       case _ =>

@@ -5,8 +5,8 @@ use jni::sys::*;
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
+use crate::internal_jni::conversion::{AnyValueWrapper, IntoJava};
 use crate::internal_jni::utils::{get_n_rows, string_to_j_string};
-use crate::internal_jni::conversion::{IntoJava, AnyValueWrapper};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]

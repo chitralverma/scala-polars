@@ -4,8 +4,8 @@ use jni::objects::ReleaseMode::NoCopyBack;
 use jni::objects::*;
 use jni::sys::*;
 use polars::prelude::*;
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 
 use crate::internal_jni::utils::{find_java_class, string_to_j_string};
 use crate::utils::error::ResultExt;
@@ -321,26 +321,22 @@ pub fn box_time<'a, T: Into<JValue<'a, 'a>>>(env: &mut JNIEnv<'a>, value: T) -> 
     )
 }
 
-pub fn box_datetime<'a>(
-    env: &mut JNIEnv<'a>,
-    timestamp: i64,
-    time_unit: TimeUnit,
-) -> JObject<'a> {
+pub fn box_datetime<'a>(env: &mut JNIEnv<'a>, timestamp: i64, time_unit: TimeUnit) -> JObject<'a> {
     let nanos = match time_unit {
         TimeUnit::Nanoseconds => timestamp,
         TimeUnit::Microseconds => timestamp * 1_000,
         TimeUnit::Milliseconds => timestamp * 1_000_000,
     };
     env.call_static_method(
-            "java/time/Instant",
-            "ofEpochSecond",
-            "(JJ)Ljava/time/Instant;",
-            &[
-                JValue::Long(nanos / 1_000_000_000),
-                JValue::Long((nanos % 1_000_000_000) as jlong),
-            ],
-        )
-        .and_then(|v| v.l())
-        .context(format!("Failed to parse value `{timestamp}` into Instant"))
-        .unwrap_or_throw(env)
+        "java/time/Instant",
+        "ofEpochSecond",
+        "(JJ)Ljava/time/Instant;",
+        &[
+            JValue::Long(nanos / 1_000_000_000),
+            JValue::Long((nanos % 1_000_000_000) as jlong),
+        ],
+    )
+    .and_then(|v| v.l())
+    .context(format!("Failed to parse value `{timestamp}` into Instant"))
+    .unwrap_or_throw(env)
 }

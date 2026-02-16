@@ -10,10 +10,8 @@ use jni::sys::jlong;
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{
-    from_ptr, j_object_to_string, j_string_to_string, to_ptr
-};
 use crate::internal_jni::conversion::JavaArrayToVec;
+use crate::internal_jni::utils::{from_ptr, j_object_to_string, j_string_to_string, to_ptr};
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.series$")]

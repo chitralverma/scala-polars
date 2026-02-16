@@ -8,8 +8,8 @@ use jni_fn::jni_fn;
 use polars::prelude::*;
 use polars_core::series::IsSorted;
 
-use crate::internal_jni::utils::*;
 use crate::internal_jni::conversion::JavaArrayToVec;
+use crate::internal_jni::utils::*;
 use crate::utils::error::ResultExt;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
