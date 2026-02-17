@@ -21,6 +21,7 @@ Ensure the following are installed:
 - Java 8+ (JDK)
 - [Rust](https://www.rust-lang.org/tools/install)
 - [sbt](https://www.scala-sbt.org/)
+- [just](https://github.com/casey/just)
 
 ---
 
@@ -53,31 +54,31 @@ compiler are installed, then follow the commands below as per the need.
 ### Full project (Rust + Scala/Java)
 
 ```bash
-sbt compile
+just compile
 ```
 
 ### Native Rust library only
 
 ```bash
-sbt generateNativeLibrary
+just build-native
 ```
 
 ### Native Rust library only (Release profile)
 
 ```bash
-NATIVE_RELEASE=true sbt generateNativeLibrary
+NATIVE_RELEASE=true just build-native
 ```
 
 ### Locally publish
 
 ```bash
-sbt publishLocal
+just release-local
 ```
 
 ### Fat JAR
 
 ```bash
-sbt assembly
+just assembly
 ```
 
 ---
@@ -87,7 +88,7 @@ sbt assembly
 Run unit tests via:
 
 ```bash
-sbt test
+just test
 ```
 
 ---
@@ -107,7 +108,7 @@ If you're a maintainer:
 
 ```bash
 # Publish to Sonatype snapshots
-sbt +publish
+just release
 ```
 
 ---
@@ -118,4 +119,3 @@ sbt +publish
 - Join the [Polars Discord](https://discord.gg/4UfP5cfBE7)
 
 We appreciate every contribution ❤️
-

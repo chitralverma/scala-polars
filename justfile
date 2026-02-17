@@ -22,9 +22,9 @@ echo-command args:
 # Format all code (Scala, Java, Rust, sbt)
 [group('lint')]
 fmt:
-    @just echo-command 'Formatting Scala, Java & Sbt'
+    @just echo-command 'Formatting core module'
     @sbt -error scalafmtAll scalafmtSbt javafmtAll reload
-    @just echo-command 'Formatting Rust'
+    @just echo-command 'Formatting native module'
     @cargo clippy -q {{ cargo_flags }} --no-deps --fix --allow-dirty --allow-staged --manifest-path {{ native_manifest }}
     @cargo sort {{ native_root }}
     @cargo fmt --quiet --manifest-path {{ native_manifest }}
@@ -33,9 +33,9 @@ fmt:
 # Check formatting and linting
 [group('lint')]
 lint:
-    @just echo-command 'Checking Scala, Java & Sbt'
+    @just echo-command 'Checking core module'
     @sbt -error scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
-    @just echo-command 'Checking Rust'
+    @just echo-command 'Checking native module'
     @cargo clippy -q {{ cargo_flags }} --no-deps --manifest-path {{ native_manifest }} -- -D warnings
     @cargo sort {{ native_root }} --check
     @cargo fmt --check --manifest-path {{ native_manifest }}
@@ -96,3 +96,8 @@ publish-site:
 [group('release')]
 release:
     @sbt ci-release
+
+# Release/ publish artifacts locally
+[group('release')]
+release-local:
+    @sbt publishLocal
