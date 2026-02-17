@@ -31,7 +31,7 @@ object NativeBuildSettings {
 
           sys.env.get("SKIP_NATIVE_GENERATION") match {
             case None =>
-              val processLogger = getProcessLogger(sLog.value, infoOnly = true)
+
 
               val targetTriple = sys.env.getOrElse(
                 "TARGET_TRIPLE", {
@@ -50,7 +50,7 @@ object NativeBuildSettings {
               val arch = targetTriple.toLowerCase(java.util.Locale.ROOT).split("-").head
 
               val nativeOutputDir = resourceManaged.value.toPath.resolve(s"native/$arch/")
-              val cargoTomlPath = s"${baseDirectory.value.getParent}/native/Cargo.toml"
+
 
               val releaseFlag = sys.env.get("NATIVE_RELEASE") match {
                 case Some("true") => "--release"
@@ -101,36 +101,57 @@ object NativeBuildSettings {
         Def.task {
           val managedLibs = sys.env.get("SKIP_NATIVE_GENERATION") match {
             case None =>
-              Files
-                .find(
-                  resourceManaged.value.toPath.resolve("native/"),
-                  Int.MaxValue,
-                  (filePath, _) => filePath.toFile.isFile
-                )
-                .iterator()
-                .asScala
-                .toSeq
+              val nativeDir = resourceManaged.value.toPath.resolve("native/")
+              if (Files.exists(nativeDir)) {
+                Files
+                  .find(
+                    nativeDir,
+                    Int.MaxValue,
+                    (filePath, _) => filePath.toFile.isFile
+                  )
+                  .iterator()
+                  .asScala
+                  .toSeq
+              } else {
+                Seq.empty[Path]
+              }
 
             case Some(_) => Seq.empty[Path]
           }
 
           val externalNativeLibs = sys.env.get("NATIVE_LIB_LOCATION") match {
             case Some(path) =>
-              Files
-                .find(
-                  Paths.get(path),
-                  Int.MaxValue,
-                  (filePath, _) => filePath.toFile.isFile
-                )
-                .iterator()
-                .asScala
-                .toSeq
+              val externalPath = Paths.get(path)
+              if (Files.exists(externalPath)) {
+                Files
+                  .find(
+                    externalPath,
+                    Int.MaxValue,
+                    (filePath, _) => filePath.toFile.isFile
+                  )
+                  .iterator()
+                  .asScala
+                  .toSeq
+              } else {
+                sLog.value.warn(s"NATIVE_LIB_LOCATION '$path' does not exist; skipping.")
+                Seq.empty[Path]
+              }
 
             case None => Seq.empty[Path]
           }
 
           // Collect paths of built resources to later include in classpath
-          (managedLibs ++ externalNativeLibs).distinct.map(_.toAbsolutePath)
+          val allLibs = (managedLibs ++ externalNativeLibs).distinct.map(_.toAbsolutePath)
+
+          if (allLibs.isEmpty) {
+            sLog.value.warn(
+              "No native libraries were found. " +
+                "If you have not built them yet, run 'just build-native' first, " +
+                "or set the NATIVE_LIB_LOCATION environment variable to point to existing native libraries."
+            )
+          }
+
+          allLibs
         }
       }
       .dependsOn(generateNativeLibrary)
@@ -149,7 +170,10 @@ object NativeBuildSettings {
 
           // copy native library to a managed resource, so that it is always available
           // on the classpath, even when not packaged as a jar
-          IO.copyDirectory(libraryFile, resource)
+          if (libraryFile.isDirectory)
+            IO.copyDirectory(libraryFile, resource)
+          else
+            IO.copyFile(libraryFile, resource)
 
           sLog.value.success(
             s"Added resource from location '$pathStr' " +

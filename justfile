@@ -97,7 +97,7 @@ publish-site:
 release:
     @sbt ci-release
 
-# Release/ publish artifacts locally
+# Release/publish artifacts locally
 [group('release')]
 release-local:
     @sbt publishLocal
