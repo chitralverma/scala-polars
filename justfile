@@ -73,11 +73,7 @@ build-native:
         NATIVE_OUTPUT_DIR="core/target/native-libs/$ARCH"
         mkdir -p "$NATIVE_OUTPUT_DIR"
         
-        echo "Building native library for $TRIPLE..."
         cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target "$TRIPLE" --artifact-dir "$NATIVE_OUTPUT_DIR"
-        
-        echo "Built artifacts in $NATIVE_OUTPUT_DIR:"
-        ls -lh "$NATIVE_OUTPUT_DIR"
     else
         @just echo-command 'Environment variable SKIP_NATIVE_GENERATION is set, skipping cargo build.'
     fi
