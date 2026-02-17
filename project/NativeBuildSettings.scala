@@ -32,7 +32,6 @@ object NativeBuildSettings {
           sys.env.get("SKIP_NATIVE_GENERATION") match {
             case None =>
 
-
               val targetTriple = sys.env.getOrElse(
                 "TARGET_TRIPLE", {
                   logger.warn(
@@ -51,10 +50,9 @@ object NativeBuildSettings {
 
               val nativeOutputDir = resourceManaged.value.toPath.resolve(s"native/$arch/")
 
-
               val releaseFlag = sys.env.get("NATIVE_RELEASE") match {
-                case Some("true") => "--release"
-                case _ => ""
+                case Some("true") => Seq("--release")
+                case _ => Seq.empty
               }
 
               val cargoFlags = sys.env.get("CARGO_FLAGS") match {
@@ -62,15 +60,25 @@ object NativeBuildSettings {
                 case _ => "--locked"
               }
 
+              val extraFlags =
+                if (cargoFlags.nonEmpty)
+                  cargoFlags.split("\\s+").filterNot(_ == "--release").toSeq
+                else Seq.empty
+
+              val baseCmd = Seq(
+                "cargo",
+                "build",
+                "-Z",
+                "unstable-options",
+                "--lib",
+                "--target",
+                targetTriple,
+                "--artifact-dir",
+                nativeOutputDir
+              )
+
               // Build the native project using cargo
-              val cmd =
-                s"""cargo build
-                   |-Z unstable-options
-                   |$releaseFlag
-                   |$cargoFlags
-                   |--lib
-                   |--target $targetTriple
-                   |--artifact-dir $nativeOutputDir""".stripMargin.replaceAll("\n", " ")
+              val cmd = (baseCmd ++ releaseFlag ++ extraFlags).mkString(" ")
 
               executeProcess(cmd = cmd, cwd = Some(nativeRoot.value), sLog.value, infoOnly = true)
               logger.success(s"Successfully built native library at location '$nativeOutputDir'")
@@ -170,10 +178,7 @@ object NativeBuildSettings {
 
           // copy native library to a managed resource, so that it is always available
           // on the classpath, even when not packaged as a jar
-          if (libraryFile.isDirectory)
-            IO.copyDirectory(libraryFile, resource)
-          else
-            IO.copyFile(libraryFile, resource)
+          IO.copyDirectory(libraryFile, resource)
 
           sLog.value.success(
             s"Added resource from location '$pathStr' " +
