@@ -121,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: native_libs-${{ matrix.arch }}
-          path: ${{env.NATIVE_LIB_LOCATION}}
+          path: ${{ github.workspace }}/core/target/native-libs
           retention-days: 1
           if-no-files-found: error
 
@@ -155,7 +155,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: native_libs-*
-          path: ${{env.NATIVE_LIB_LOCATION}}
+          path: ${{ github.workspace }}/target/native-external
           merge-multiple: true
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
@@ -195,7 +195,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: native_libs-*
-          path: ${{env.NATIVE_LIB_LOCATION}}
+          path: ${{ github.workspace }}/target/native-external
           merge-multiple: true
 
       - name: List the built artifacts

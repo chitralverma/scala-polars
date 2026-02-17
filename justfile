@@ -72,23 +72,12 @@ build-native:
         # Generate native library artifacts in a predictable output directory
         NATIVE_OUTPUT_DIR="core/target/native-libs/$ARCH"
         mkdir -p "$NATIVE_OUTPUT_DIR"
+        
+        echo "Building native library for $TRIPLE..."
         cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target "$TRIPLE" --artifact-dir "$NATIVE_OUTPUT_DIR"
-
-        if [ -n "${NATIVE_LIB_LOCATION:-}" ]; then
-            # Remove trailing slash and normalize path
-            CLEAN_PATH="${NATIVE_LIB_LOCATION%/}"
-            DEST="$CLEAN_PATH/$ARCH"
-            
-            echo "Copying built native library from '$NATIVE_OUTPUT_DIR' to '$DEST'..."
-            mkdir -p "$DEST"
-            cp -rf "$NATIVE_OUTPUT_DIR"/* "$DEST/"
-            
-            # Verify the copy succeeded
-            if [ -z "$(ls -A "$DEST")" ]; then
-                echo "Error: Failed to copy native libraries to $DEST"
-                exit 1
-            fi
-        fi
+        
+        echo "Built artifacts in $NATIVE_OUTPUT_DIR:"
+        ls -lh "$NATIVE_OUTPUT_DIR"
     else
         @just echo-command 'Environment variable SKIP_NATIVE_GENERATION is set, skipping cargo build.'
     fi
