@@ -83,7 +83,9 @@ repositories {
 }
 implementation("com.github.chitralverma:scala-polars_2.12:SOME-VERSION-SNAPSHOT")
 ```
+
 > Note: Use `scala-polars_2.13` for Scala 2.13.x projects or `scala-polars_3` for Scala 3.x projects as the artifact ID
+
 ---
 
 ## 🧱 Modules
@@ -95,7 +97,7 @@ implementation("com.github.chitralverma:scala-polars_2.12:SOME-VERSION-SNAPSHOT"
 
 ## 🧪 Getting Started
 
-### Scala 
+### Scala
 
 ```scala
 import com.github.chitralverma.polars.api.{DataFrame, Series}
@@ -116,6 +118,7 @@ result.show()
 ```
 
 ### Java
+
 ```java
 import com.github.chitralverma.polars.api.DataFrame;
 import com.github.chitralverma.polars.api.Series;
@@ -161,24 +164,25 @@ df.show();
 - JDK 8+
 - [Rust](https://www.rust-lang.org/tools/install)
 - [sbt](https://www.scala-sbt.org/)
+- [just](https://github.com/casey/just)
 
 ### Commands
 
 ```bash
 # Compile Rust + Scala + Java
-sbt compile
+just compile
 
 # Publish locally
-sbt publishLocal
+just release-local
 
 # Fat JAR (default Scala version)
-sbt assembly
+just assembly
 
 # Rust native only
-sbt generateNativeLibrary
+just build-native
 
 # Rust native only (Release profile)
-NATIVE_RELEASE=true sbt generateNativeLibrary
+NATIVE_RELEASE=true just build-native
 ```
 
 ---
