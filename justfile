@@ -2,8 +2,8 @@ set shell := ["bash", "-c"]
 set ignore-comments := true
 
 root := justfile_directory()
-native_root := "native"
-native_manifest := "native/Cargo.toml"
+native_root := root / 'native'
+native_manifest := native_root / 'Cargo.toml'
 cargo_flags := env("CARGO_FLAGS", "--locked")
 
 # Default recipe to 'help' to display this help screen
@@ -23,7 +23,7 @@ echo-command args:
 [group('lint')]
 fmt:
     @just echo-command 'Formatting Scala, Java & Sbt'
-    @sbt -error --batch scalafmtAll scalafmtSbt javafmtAll
+    @sbt -error scalafmtAll scalafmtSbt javafmtAll reload
     @just echo-command 'Formatting Rust'
     @cargo clippy -q {{ cargo_flags }} --no-deps --fix --allow-dirty --allow-staged --manifest-path {{ native_manifest }}
     @cargo sort {{ native_root }}
@@ -34,7 +34,7 @@ fmt:
 [group('lint')]
 lint:
     @just echo-command 'Checking Scala, Java & Sbt'
-    @sbt -error --batch scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
+    @sbt -error scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
     @just echo-command 'Checking Rust'
     @cargo clippy -q {{ cargo_flags }} --no-deps --manifest-path {{ native_manifest }} -- -D warnings
     @cargo sort {{ native_root }} --check
@@ -47,60 +47,35 @@ pre-commit: fmt lint
 
 # Generate JNI headers
 [group('dev')]
-gen-headers: clean-headers
-    @sbt -error --batch genHeaders
-
-# Remove generated JNI headers
-[group('dev')]
-clean-headers:
-    @rm -rf core/target/native
-    @just echo-command 'Removed JNI headers directory'
+gen-headers:
+    @just echo-command 'Generating JNI headers'
+    @sbt genHeaders
 
 # Build native library TARGET_TRIPLE, NATIVE_RELEASE, NATIVE_LIB_LOCATION env vars are supported
 [group('dev')]
 build-native:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ "${SKIP_NATIVE_GENERATION:-false}" = "false" ]; then
-        TRIPLE="${TARGET_TRIPLE:-$(rustc -vV | grep host | cut -d' ' -f2)}"
-        ARCH=$(echo "$TRIPLE" | cut -d'-' -f1)
-        RELEASE_FLAG=""
-        if [ "${NATIVE_RELEASE:-false}" = "true" ]; then
-            RELEASE_FLAG="--release"
-        fi
-
-        # Generate native library artifacts in a predictable output directory
-        NATIVE_OUTPUT_DIR="core/target/native-libs/$ARCH"
-        mkdir -p "$NATIVE_OUTPUT_DIR"
-        cargo build {{ cargo_flags }} --manifest-path {{ native_manifest }} -Z unstable-options $RELEASE_FLAG --lib --target "$TRIPLE" --artifact-dir "$NATIVE_OUTPUT_DIR"
-
-        if [ -n "${NATIVE_LIB_LOCATION:-}" ]; then
-            # Remove trailing slash if present
-            CLEAN_NATIVE_LIB_LOCATION="${NATIVE_LIB_LOCATION%/}"
-            DEST="$CLEAN_NATIVE_LIB_LOCATION/$ARCH"
-            echo "Environment variable NATIVE_LIB_LOCATION is set, copying built native library from location '$NATIVE_OUTPUT_DIR' to '$DEST'."
-            mkdir -p "$DEST"
-            cp -rf "$NATIVE_OUTPUT_DIR"/* "$DEST/"
-        fi
-    else
-        @just echo-command 'Environment variable SKIP_NATIVE_GENERATION is set, skipping cargo build.'
-    fi
+    @just echo-command 'Building native library'
+    @sbt generateNativeLibrary
 
 # Build assembly jars
 [group('dev')]
-assembly: build-native
-    sbt +assembly
+assembly:
+    @sbt +assembly
 
 # Compile
 [group('dev')]
-compile: build-native
-    sbt compile
+compile:
+    @sbt compile
 
 # Clean build artifacts
 [group('dev')]
-clean: clean-headers
-    @sbt clean cleanFiles
-    @cargo clean --manifest-path {{ native_manifest }}
+clean:
+    @just echo-command 'Cleaning native artifacts'
+    @cargo clean --manifest-path {{ native_manifest }} --quiet
+    @just echo-command 'Cleaning JNI headers'
+    @sbt -error cleanHeaders
+    @just echo-command 'Cleaning core artifacts'
+    @sbt -error clean cleanFiles reload
 
 # Run tests
 [group('dev')]
