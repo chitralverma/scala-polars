@@ -1,4 +1,3 @@
-set shell := ["bash", "-c"]
 set ignore-comments := true
 
 root := justfile_directory()
