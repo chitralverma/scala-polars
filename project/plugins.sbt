@@ -16,4 +16,4 @@ addSbtPlugin("com.github.sbt" % "sbt-ghpages" % "0.9.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.6.1")
 
-addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.3")
