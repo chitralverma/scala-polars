@@ -96,8 +96,10 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: "8"
-          distribution: "zulu"
+          # JDK only runs sbt's cargo orchestration here; bytecode floor stays JDK 8 via -release 8.
+          # JDK 8 is unavailable on the ARM/newer runners, so use a JDK present on all of them.
+          java-version: "21"
+          distribution: "temurin"
           cache: "sbt"
 
       - uses: sbt/setup-sbt@v1
@@ -142,7 +144,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
-          distribution: "zulu"
+          distribution: "temurin"
           cache: "sbt"
 
       - uses: sbt/setup-sbt@v1
