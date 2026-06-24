@@ -14,13 +14,16 @@ lazy val core = project
   .in(file("core"))
   .withId("scala-polars")
   .settings(name := "scala-polars")
-  .enablePlugins(GhpagesPlugin, SiteScaladocPlugin)
+  .enablePlugins(GhpagesPlugin, SiteScaladocPlugin, JacocoPlugin)
   .settings(
 //    unidocSourceFilePatterns := Nil,
     git.remoteRepo := "git@github.com:chitralverma/scala-polars.git",
     SiteScaladoc / siteSubdirName := "api/latest"
   )
   .settings(ProjectDependencies.dependencies)
+  .settings(ProjectDependencies.testDependencies)
+  .settings(ProjectDependencies.coverageSettings)
+  .settings(ProjectDependencies.jacocoSettings)
   .settings(GeneralSettings.commonSettings)
   .settings(
     publish / skip := false,
