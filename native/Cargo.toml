@@ -35,13 +35,7 @@ array_any_all = ["polars/array_any_all", "polars/dtype-array"]
 array_count = ["polars/array_count", "polars/dtype-array"]
 binary_encoding = ["polars/binary_encoding"]
 bitwise = ["polars/bitwise"]
-cloud = [
-    "polars/cloud",
-    "polars/aws",
-    "polars/gcp",
-    "polars/azure",
-    "polars/http",
-]
+cloud = ["polars/cloud", "polars/aws", "polars/gcp", "polars/azure", "polars/http"]
 cse = ["polars/cse"]
 csv = ["polars/csv"]
 cutqcut = ["polars/cutqcut"]

@@ -172,7 +172,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Configure SSH
-        uses: webfactory/ssh-agent@v0.9.1
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
