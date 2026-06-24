@@ -6,7 +6,7 @@ use jni::objects::{JBooleanArray, JClass, JLongArray, JObject, JObjectArray, JSt
 use jni::sys::{JNI_TRUE, jboolean, jint, jlong, jstring};
 use jni_fn::jni_fn;
 use polars::prelude::*;
-use polars_core::series::IsSorted;
+use polars_plan::plans::AExprSorted;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::utils::*;
@@ -191,7 +191,7 @@ pub fn optimization_toggle(
         .with_slice_pushdown(slicePushdown == JNI_TRUE)
         .with_comm_subplan_elim(commSubplanElim == JNI_TRUE)
         .with_comm_subexpr_elim(commSubexprElim == JNI_TRUE)
-        .with_new_streaming(streaming == JNI_TRUE);
+        .with_streaming(streaming == JNI_TRUE);
 
     to_ptr(ldf)
 }
@@ -432,12 +432,9 @@ pub fn set_sorted(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, mapping: 
 
         let descending = unsafe { *(is_descending.cast::<jboolean>()) };
 
-        let is_sorted = match descending == JNI_TRUE {
-            true => IsSorted::Descending,
-            false => IsSorted::Ascending,
-        };
+        let sorted_flag = AExprSorted::default().with_desc(Some(descending == JNI_TRUE));
 
-        exprs.push(col_expr.set_sorted_flag(is_sorted));
+        exprs.push(col_expr.set_sorted_flag(sorted_flag));
     }
 
     let ldf = from_ptr(ldf_ptr).with_columns(exprs);
