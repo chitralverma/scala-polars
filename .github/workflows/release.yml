@@ -116,7 +116,7 @@ jobs:
           sbt generateNativeLibrary
 
       - name: Temporarily save native library for ${{ matrix.arch }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: native_libs-${{ matrix.arch }}
           path: ${{env.NATIVE_LIB_LOCATION}}
@@ -148,7 +148,7 @@ jobs:
       - uses: sbt/setup-sbt@v1
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: native_libs-*
           path: ${{env.NATIVE_LIB_LOCATION}}
@@ -186,7 +186,7 @@ jobs:
       - uses: sbt/setup-sbt@v1
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: native_libs-*
           path: ${{env.NATIVE_LIB_LOCATION}}
