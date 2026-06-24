@@ -89,11 +89,12 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       .sort(Array(expr), Array(null_last), maintainOrder = maintain_order)
       .collect(noOptimization = true)
 
-  def set_sorted(mapping: Map[String, Boolean]): DataFrame =
-    set_sorted(mapping.asJava)
-
-  def set_sorted(mapping: java.util.Map[String, Boolean]): DataFrame =
-    toLazy.set_sorted(mapping).collect(noOptimization = true)
+  def set_sorted(
+      column: String,
+      descending: Boolean = false,
+      nullsLast: Boolean = false
+  ): DataFrame =
+    toLazy.set_sorted(column, descending, nullsLast).collect(noOptimization = true)
 
   def top_k(
       k: Int,

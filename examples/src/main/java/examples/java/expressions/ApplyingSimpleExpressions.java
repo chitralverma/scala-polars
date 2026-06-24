@@ -6,7 +6,6 @@ import com.github.chitralverma.polars.Polars;
 import com.github.chitralverma.polars.api.DataFrame;
 import com.github.chitralverma.polars.api.LazyFrame;
 import examples.scala.utils.CommonUtils;
-import java.util.Collections;
 import java.util.Random;
 
 public class ApplyingSimpleExpressions {
@@ -28,7 +27,7 @@ public class ApplyingSimpleExpressions {
             .with_column("time", lit(java.time.LocalTime.now()))
             .with_column("current_ts", lit(java.time.ZonedDateTime.now()))
             .sort(asc("name"), true, false)
-            .set_sorted(Collections.singletonMap("name", false))
+            .set_sorted("name", false, false)
             .top_k(2, "id", true, true, false)
             .limit(2) // .head(2)
             .tail(2)

@@ -106,11 +106,12 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
   def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
     sort(Array(expr), Array(nullLast), maintainOrder = maintainOrder)
 
-  def set_sorted(mapping: Map[String, Boolean]): LazyFrame =
-    set_sorted(mapping.asJava)
-
-  def set_sorted(mapping: java.util.Map[String, Boolean]): LazyFrame = {
-    val ldfPtr = lazy_frame.set_sorted(ptr, mapping)
+  def set_sorted(
+      column: String,
+      descending: Boolean = false,
+      nullsLast: Boolean = false
+  ): LazyFrame = {
+    val ldfPtr = lazy_frame.set_sorted(ptr, column, descending, nullsLast)
 
     LazyFrame.withPtr(ldfPtr)
   }
