@@ -76,10 +76,86 @@ clean:
     @just echo-command 'Cleaning core artifacts'
     @sbt -error clean cleanFiles reload
 
-# Run tests
+# Run tests (Scala + Java); pass a Scala version to scope, e.g. `just test 2.13.18`
 [group('dev')]
-test:
-    sbt +test
+test scala_version='':
+    @just echo-command 'Running tests'
+    @sbt {{ if scala_version == '' { '+test' } else { '"++' + scala_version + ' scala-polars/test"' } }}
+
+# Run tests reusing an already-built native lib (skips the Rust rebuild); requires `just build-native` first
+[group('dev')]
+test-fast scala_version='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    arch="$(rustc -vV | sed -n 's/^host: //p' | cut -d- -f1)"
+    libdir="$(find core/target native/target -type f \
+        \( -name 'libscala_polars.so' -o -name 'libscala_polars.dylib' -o -name 'scala_polars.dll' \) \
+        2>/dev/null | head -1)"
+    if [[ -z "${libdir}" ]]; then
+        echo "No built native library found. Run 'just build-native' first." >&2
+        exit 1
+    fi
+    staged="$(mktemp -d)/native-libs"
+    mkdir -p "${staged}/${arch}"
+    cp "${libdir}" "${staged}/${arch}/"
+    echo "Reusing native lib '${libdir}' (arch: ${arch})"
+    export SKIP_NATIVE_GENERATION=true
+    export NATIVE_LIB_LOCATION="${staged}"
+    just echo-command 'Running tests (reusing native lib)'
+    {{ if scala_version == '' { 'sbt +test' } else { 'sbt "++' + scala_version + ' scala-polars/test"' } }}
+
+# Generate Scala coverage reports (sbt-scoverage); reuses an existing native lib. Pass a Scala version to scope.
+[group('dev')]
+coverage scala_version='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    arch="$(rustc -vV | sed -n 's/^host: //p' | cut -d- -f1)"
+    libdir="$(find core/target native/target -type f \
+        \( -name 'libscala_polars.so' -o -name 'libscala_polars.dylib' -o -name 'scala_polars.dll' \) \
+        2>/dev/null | head -1)"
+    if [[ -z "${libdir}" ]]; then
+        echo "No built native library found. Run 'just build-native' first." >&2
+        exit 1
+    fi
+    staged="$(mktemp -d)/native-libs"
+    mkdir -p "${staged}/${arch}"
+    cp "${libdir}" "${staged}/${arch}/"
+    export SKIP_NATIVE_GENERATION=true
+    export NATIVE_LIB_LOCATION="${staged}"
+    just echo-command 'Running Scala coverage'
+    ver='{{ scala_version }}'
+    if [[ -z "${ver}" ]]; then
+        sbt coverage "scala-polars/test" "scala-polars/coverageReport"
+    else
+        sbt "++${ver}" coverage "scala-polars/test" "scala-polars/coverageReport"
+    fi
+    echo "Scala coverage report (HTML): core/target/scala-*/scoverage-report/index.html"
+    echo "Cobertura XML (for Codecov): core/target/scala-*/coverage-report/cobertura.xml"
+    echo "For Java coverage (JSeries.java) run 'just coverage-java'."
+
+# Generate Java coverage (sbt-jacoco) for the Java production source; reuses an existing native lib.
+[group('dev')]
+coverage-java scala_version='2.13.18':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    arch="$(rustc -vV | sed -n 's/^host: //p' | cut -d- -f1)"
+    libdir="$(find core/target native/target -type f \
+        \( -name 'libscala_polars.so' -o -name 'libscala_polars.dylib' -o -name 'scala_polars.dll' \) \
+        2>/dev/null | head -1)"
+    if [[ -z "${libdir}" ]]; then
+        echo "No built native library found. Run 'just build-native' first." >&2
+        exit 1
+    fi
+    staged="$(mktemp -d)/native-libs"
+    mkdir -p "${staged}/${arch}"
+    cp "${libdir}" "${staged}/${arch}/"
+    export SKIP_NATIVE_GENERATION=true
+    export NATIVE_LIB_LOCATION="${staged}"
+    just echo-command 'Running Java coverage (JaCoCo)'
+    sbt "++{{ scala_version }}" "scala-polars/jacoco"
+    report="$(find core/target -path '*/jacoco/report/jacoco.xml' 2>/dev/null | head -1)"
+    echo "Java coverage report (HTML): ${report%/jacoco.xml}/html/index.html"
+    echo "JaCoCo XML (for Codecov): ${report}"
 
 # Generate documentation
 [group('release')]

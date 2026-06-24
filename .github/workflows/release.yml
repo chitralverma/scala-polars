@@ -65,27 +65,27 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            arch: aarch64-unknown-linux-gnu
-            packages: "sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu"
-
-          - os: ubuntu-latest
             arch: x86_64-unknown-linux-gnu
             packages: ""
 
-          - os: windows-latest
-            arch: aarch64-pc-windows-msvc
+          - os: ubuntu-24.04-arm
+            arch: aarch64-unknown-linux-gnu
+            packages: ""
+
+          - os: macos-15-intel
+            arch: x86_64-apple-darwin
+            packages: "brew install sbt"
+
+          - os: macos-15
+            arch: aarch64-apple-darwin
             packages: ""
 
           - os: windows-latest
             arch: x86_64-pc-windows-msvc
             packages: ""
 
-          - os: macos-latest
-            arch: x86_64-apple-darwin
-            packages: "brew install sbt"
-
-          - os: macos-latest
-            arch: aarch64-apple-darwin
+          - os: windows-11-arm
+            arch: aarch64-pc-windows-msvc
             packages: ""
     steps:
       - name: Install system packages
@@ -133,7 +133,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ["8", "25"]
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        os: ["ubuntu-22.04", "windows-2022", "macos-latest"]
 
     steps:
       - uses: actions/checkout@v6
@@ -156,10 +156,43 @@ jobs:
 
       - name: Test for ${{ matrix.os }} ${{ matrix.java }}
         run: |
+          sbt +test
           sbt +assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-3.3.8/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+
+      # Coverage on one canonical leg (Ubuntu/JDK 8): scoverage (Scala) + JaCoCo (Java) XMLs → Codecov.
+      - name: Scala coverage report (scoverage)
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        run: sbt coverage scala-polars/test scala-polars/coverageReport
+
+      - name: Java coverage report (JaCoCo)
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        run: sbt scala-polars/jacoco
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        uses: codecov/codecov-action@v5
+        with:
+          files: >-
+            core/target/scala-*/coverage-report/cobertura.xml,
+            core/target/scala-*/jacoco/report/jacoco.xml
+          disable_search: true
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage reports (artifact)
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-reports
+          path: |
+            core/target/scala-*/scoverage-report/
+            core/target/scala-*/coverage-report/cobertura.xml
+            core/target/scala-*/jacoco/report/
+          if-no-files-found: warn
 
   publish:
     timeout-minutes: 15
