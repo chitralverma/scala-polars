@@ -6,14 +6,6 @@ object Utils {
 
   lazy val nativeRoot = taskKey[File]("Directory pointing to the native project root.")
 
-  def executeProcesses(
-      cmds: Seq[String],
-      cwd: Option[File] = None,
-      logger: Logger,
-      infoOnly: Boolean = false,
-      extraEnv: Seq[(String, String)] = Nil
-  ): Unit = cmds.foreach(cmd => executeProcess(cmd, cwd, logger, infoOnly = true))
-
   def executeProcess(
       cmd: String,
       cwd: Option[File] = None,

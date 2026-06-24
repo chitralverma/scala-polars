@@ -31,15 +31,17 @@ jobs:
         with:
           components: "clippy, rustfmt"
 
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-sort
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: native
           prefix-key: lint
 
       - name: Check all formatting
-        run: |
-          cargo install cargo-sort
-          sbt fmtCheckAll
+        run: just lint
 
       - name: Check doc issues
-        run: sbt makeSite
+        run: just site

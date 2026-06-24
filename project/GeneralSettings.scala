@@ -50,9 +50,4 @@ object GeneralSettings {
     }
   )
 
-  lazy val settings: Seq[Setting[_]] = Seq(
-    name := "scala-polars",
-    nativeRoot := baseDirectory.value.toPath.resolveSibling("native").toFile
-  )
-
 }

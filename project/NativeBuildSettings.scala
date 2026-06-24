@@ -31,7 +31,6 @@ object NativeBuildSettings {
 
           sys.env.get("SKIP_NATIVE_GENERATION") match {
             case None =>
-              val processLogger = getProcessLogger(sLog.value, infoOnly = true)
 
               val targetTriple = sys.env.getOrElse(
                 "TARGET_TRIPLE", {
@@ -50,21 +49,36 @@ object NativeBuildSettings {
               val arch = targetTriple.toLowerCase(java.util.Locale.ROOT).split("-").head
 
               val nativeOutputDir = resourceManaged.value.toPath.resolve(s"native/$arch/")
-              val cargoTomlPath = s"${baseDirectory.value.getParent}/native/Cargo.toml"
 
               val releaseFlag = sys.env.get("NATIVE_RELEASE") match {
-                case Some("true") => "--release"
-                case _ => ""
+                case Some("true") => Seq("--release")
+                case _ => Seq.empty
               }
 
+              val cargoFlags = sys.env.get("CARGO_FLAGS") match {
+                case Some(s) => s
+                case _ => "--locked"
+              }
+
+              val extraFlags =
+                if (cargoFlags.nonEmpty)
+                  cargoFlags.split("\\s+").filterNot(_ == "--release").toSeq
+                else Seq.empty
+
+              val baseCmd = Seq(
+                "cargo",
+                "build",
+                "-Z",
+                "unstable-options",
+                "--lib",
+                "--target",
+                targetTriple,
+                "--artifact-dir",
+                nativeOutputDir
+              )
+
               // Build the native project using cargo
-              val cmd =
-                s"""cargo build
-                   |-Z unstable-options
-                   |$releaseFlag
-                   |--lib
-                   |--target $targetTriple
-                   |--artifact-dir $nativeOutputDir""".stripMargin.replaceAll("\n", " ")
+              val cmd = (baseCmd ++ releaseFlag ++ extraFlags).mkString(" ")
 
               executeProcess(cmd = cmd, cwd = Some(nativeRoot.value), sLog.value, infoOnly = true)
               logger.success(s"Successfully built native library at location '$nativeOutputDir'")
@@ -78,6 +92,22 @@ object NativeBuildSettings {
                   )
 
                   IO.copyDirectory(nativeOutputDir.toFile, dest.toFile)
+
+                  // Verify the copy landed; a silent miss here previously surfaced
+                  // downstream as "No files were found" during artifact upload.
+                  val copied = Option(dest.toFile.listFiles())
+                    .map(_.toSeq)
+                    .getOrElse(Seq.empty)
+                  if (copied.isEmpty)
+                    logger.warn(
+                      s"No native library files present at destination '$dest' after copy. " +
+                        "Downstream artifact upload will fail."
+                    )
+                  else
+                    logger.success(
+                      s"Copied ${copied.size} native library file(s) to '$dest': " +
+                        copied.map(_.getName).mkString(", ")
+                    )
 
                 case None => ()
               }
@@ -95,36 +125,57 @@ object NativeBuildSettings {
         Def.task {
           val managedLibs = sys.env.get("SKIP_NATIVE_GENERATION") match {
             case None =>
-              Files
-                .find(
-                  resourceManaged.value.toPath.resolve("native/"),
-                  Int.MaxValue,
-                  (filePath, _) => filePath.toFile.isFile
-                )
-                .iterator()
-                .asScala
-                .toSeq
+              val nativeDir = resourceManaged.value.toPath.resolve("native/")
+              if (Files.exists(nativeDir)) {
+                Files
+                  .find(
+                    nativeDir,
+                    Int.MaxValue,
+                    (filePath, _) => filePath.toFile.isFile
+                  )
+                  .iterator()
+                  .asScala
+                  .toSeq
+              } else {
+                Seq.empty[Path]
+              }
 
             case Some(_) => Seq.empty[Path]
           }
 
           val externalNativeLibs = sys.env.get("NATIVE_LIB_LOCATION") match {
             case Some(path) =>
-              Files
-                .find(
-                  Paths.get(path),
-                  Int.MaxValue,
-                  (filePath, _) => filePath.toFile.isFile
-                )
-                .iterator()
-                .asScala
-                .toSeq
+              val externalPath = Paths.get(path)
+              if (Files.exists(externalPath)) {
+                Files
+                  .find(
+                    externalPath,
+                    Int.MaxValue,
+                    (filePath, _) => filePath.toFile.isFile
+                  )
+                  .iterator()
+                  .asScala
+                  .toSeq
+              } else {
+                sLog.value.warn(s"NATIVE_LIB_LOCATION '$path' does not exist; skipping.")
+                Seq.empty[Path]
+              }
 
             case None => Seq.empty[Path]
           }
 
           // Collect paths of built resources to later include in classpath
-          (managedLibs ++ externalNativeLibs).distinct.map(_.toAbsolutePath)
+          val allLibs = (managedLibs ++ externalNativeLibs).distinct.map(_.toAbsolutePath)
+
+          if (allLibs.isEmpty) {
+            sLog.value.warn(
+              "No native libraries were found. " +
+                "If you have not built them yet, run 'just build-native' first, " +
+                "or set the NATIVE_LIB_LOCATION environment variable to point to existing native libraries."
+            )
+          }
+
+          allLibs
         }
       }
       .dependsOn(generateNativeLibrary)
