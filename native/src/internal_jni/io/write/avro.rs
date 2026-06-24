@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use anyhow::Context;
 use jni::JNIEnv;
 use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
@@ -8,8 +7,8 @@ use polars::io::avro::{AvroCompression, AvroWriter};
 use polars::prelude::*;
 
 use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::get_df_and_writer;
-use crate::utils::error::ResultExt;
+use crate::internal_jni::io::write::write_dataframe;
+use crate::internal_jni::utils::from_ptr;
 
 fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression> {
     match compression {
@@ -47,19 +46,23 @@ pub fn writeAvro(
 
     let compression = options.remove("write_compression");
 
-    let (mut dataframe, writer) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
+    write_dataframe(
+        &mut env,
+        from_ptr(df_ptr),
+        filePath,
+        overwrite_mode,
+        options,
+        "Avro",
+        |writer, dataframe| {
+            let avro_compression = parse_avro_compression(compression);
 
-    let avro_compression = parse_avro_compression(compression);
+            let mut avro_writer = AvroWriter::new(writer).with_compression(avro_compression);
 
-    let mut avro_writer = AvroWriter::new(writer).with_compression(avro_compression);
+            if let Some(value) = record_name {
+                avro_writer = avro_writer.with_name(value)
+            }
 
-    if let Some(value) = record_name {
-        avro_writer = avro_writer.with_name(value)
-    }
-
-    avro_writer
-        .finish(&mut dataframe)
-        .context("Failed to write Avro data")
-        .unwrap_or_throw(&mut env);
+            avro_writer.finish(dataframe)
+        },
+    );
 }

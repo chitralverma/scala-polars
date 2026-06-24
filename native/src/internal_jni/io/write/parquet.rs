@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use anyhow::Context;
 use jni::JNIEnv;
 use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
@@ -9,8 +8,8 @@ use polars::prelude::*;
 use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
 
 use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::get_df_and_writer;
-use crate::utils::error::ResultExt;
+use crate::internal_jni::io::write::write_dataframe;
+use crate::internal_jni::utils::from_ptr;
 
 fn parse_parquet_compression(
     compression: Option<String>,
@@ -84,29 +83,33 @@ pub fn writeParquet(
             _ => StatisticsOptions::default(),
         });
 
-    let (mut dataframe, writer) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
+    write_dataframe(
+        &mut env,
+        from_ptr(df_ptr),
+        filePath,
+        overwrite_mode,
+        options,
+        "Parquet",
+        |writer, dataframe| {
+            let parquet_compression = parse_parquet_compression(compression, compression_level);
 
-    let parquet_compression = parse_parquet_compression(compression, compression_level);
+            let mut parquet_writer = ParquetWriter::new(writer)
+                .with_data_page_size(data_page_size)
+                .with_row_group_size(row_group_size);
 
-    let mut parquet_writer = ParquetWriter::new(writer)
-        .with_data_page_size(data_page_size)
-        .with_row_group_size(row_group_size);
+            if let Some(value) = is_parallel {
+                parquet_writer = parquet_writer.set_parallel(value)
+            }
 
-    if let Some(value) = is_parallel {
-        parquet_writer = parquet_writer.set_parallel(value)
-    }
+            if let Some(value) = write_stats {
+                parquet_writer = parquet_writer.with_statistics(value)
+            }
 
-    if let Some(value) = write_stats {
-        parquet_writer = parquet_writer.with_statistics(value)
-    }
+            if let Some(value) = parquet_compression {
+                parquet_writer = parquet_writer.with_compression(value)
+            }
 
-    if let Some(value) = parquet_compression {
-        parquet_writer = parquet_writer.with_compression(value)
-    }
-
-    parquet_writer
-        .finish(&mut dataframe)
-        .context("Failed to write Parquet data")
-        .unwrap_or_throw(&mut env);
+            parquet_writer.finish(dataframe).map(|_| ())
+        },
+    );
 }

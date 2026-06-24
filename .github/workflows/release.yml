@@ -116,7 +116,7 @@ jobs:
           sbt generateNativeLibrary
 
       - name: Temporarily save native library for ${{ matrix.arch }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: native_libs-${{ matrix.arch }}
           path: ${{env.NATIVE_LIB_LOCATION}}
@@ -132,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ["8", "11", "17", "21"]
+        java: ["8", "25"]
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
 
     steps:
@@ -148,7 +148,7 @@ jobs:
       - uses: sbt/setup-sbt@v1
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: native_libs-*
           path: ${{env.NATIVE_LIB_LOCATION}}
@@ -159,7 +159,7 @@ jobs:
           sbt +assembly
           java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
           java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
-          java -cp ./examples/target/scala-3.3.4/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+          java -cp ./examples/target/scala-3.3.8/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
 
   publish:
     timeout-minutes: 15
@@ -172,7 +172,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Configure SSH
-        uses: webfactory/ssh-agent@v0.9.1
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
@@ -186,7 +186,7 @@ jobs:
       - uses: sbt/setup-sbt@v1
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: native_libs-*
           path: ${{env.NATIVE_LIB_LOCATION}}

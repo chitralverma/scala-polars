@@ -11,10 +11,12 @@ use jni::JNIEnv;
 use jni::objects::JString;
 use object_store::path::Path;
 use object_store::{ObjectStore, ObjectStoreExt};
-use polars::io::cloud::{BlockingCloudWriter, CloudOptions, build_object_store};
-use polars::io::pl_async::get_runtime;
-use polars::io::{get_upload_chunk_size, get_upload_concurrency};
+use polars::io::cloud::cloud_writer::{CloudWriter, CloudWriterIoTraitWrap};
+use polars::io::cloud::{CloudOptions, build_object_store, object_path_from_str};
+use polars::io::configs::{upload_chunk_size, upload_concurrency};
+use polars::io::utils::file::WriteableTrait;
 use polars::prelude::*;
+use polars_core::runtime::ASYNC;
 
 use super::get_file_path;
 use crate::utils::error::ResultExt;
@@ -43,7 +45,7 @@ async fn create_cloud_writer(
     uri: &str,
     cloud_options: Option<&CloudOptions>,
     overwrite_mode: bool,
-) -> PolarsResult<BlockingCloudWriter> {
+) -> PolarsResult<CloudWriterIoTraitWrap> {
     let (cloud_location, object_store) =
         build_object_store(uri.into(), cloud_options, false).await?;
     let dyn_store = object_store.to_dyn_object_store().await;
@@ -55,34 +57,48 @@ async fn create_cloud_writer(
     )
     .await?;
 
-    let cloud_writer = BlockingCloudWriter::new_with_object_store(
-        dyn_store.clone(),
-        cloud_location.prefix.clone().into(),
-        get_upload_chunk_size(),
-        get_upload_concurrency(),
-    )?;
+    let mut cloud_writer = CloudWriter::new(
+        object_store,
+        object_path_from_str(&cloud_location.prefix)?,
+        upload_chunk_size(),
+        upload_concurrency(),
+        None,
+    );
+    cloud_writer.start().await?;
 
-    Ok(cloud_writer)
+    Ok(CloudWriterIoTraitWrap::from(cloud_writer))
 }
 
-fn get_df_and_writer(
+/// Writes a DataFrame to `filePath`, finalizing (committing) the upload afterwards. The
+/// `write` closure applies the format-specific writer to the opened cloud writer.
+pub(crate) fn write_dataframe<F>(
     env: &mut JNIEnv,
-    df_ptr: *mut DataFrame,
+    mut dataframe: DataFrame,
     filePath: JString,
     overwrite_mode: bool,
-    writer_options: PlHashMap<String, String>,
-) -> (DataFrame, BlockingCloudWriter) {
+    options: PlHashMap<String, String>,
+    format: &str,
+    write: F,
+) where
+    F: FnOnce(&mut CloudWriterIoTraitWrap, &mut DataFrame) -> PolarsResult<()>,
+{
     let full_path = get_file_path(env, filePath);
     let uri = PlRefPath::new(full_path);
 
-    let cloud_options = CloudOptions::from_untyped_config(uri.scheme(), &writer_options);
-    let writer: BlockingCloudWriter = get_runtime()
+    let cloud_options = CloudOptions::from_untyped_config(uri.scheme(), &options);
+    let mut writer: CloudWriterIoTraitWrap = ASYNC
         .block_on(async {
             create_cloud_writer(uri.as_str(), cloud_options.ok().as_ref(), overwrite_mode).await
         })
         .context("Failed to create writer")
         .unwrap_or_throw(env);
 
-    let dataframe = unsafe { &*df_ptr }.clone();
-    (dataframe, writer)
+    write(&mut writer, &mut dataframe)
+        .with_context(|| format!("Failed to write {format} data"))
+        .unwrap_or_throw(env);
+
+    writer
+        .close()
+        .with_context(|| format!("Failed to finalize {format} data"))
+        .unwrap_or_throw(env);
 }

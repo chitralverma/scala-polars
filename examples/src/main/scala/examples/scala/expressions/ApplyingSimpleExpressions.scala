@@ -23,7 +23,7 @@ object ApplyingSimpleExpressions {
       .with_column("time", lit(java.time.LocalTime.now()))
       .with_column("current_ts", lit(java.time.ZonedDateTime.now()))
       .sort(asc("name"), nullLast = true, maintainOrder = false)
-      .set_sorted(Map("name" -> false))
+      .set_sorted("name", descending = false)
       .top_k(2, "id", descending = true, nullLast = true, maintainOrder = false)
       .limit(2) // .head(2)
       .tail(2)
