@@ -73,7 +73,7 @@ object Versions {
   val jacksonVersion = "2.22.0"
 
   // Test stack — pinned to JDK 8-compatible releases (CI tests on JDK 8).
-  val scalaTestVersion = "3.2.19"
+  val scalaTestVersion = "3.2.20"
   val junitVersion = "4.13.2"
   val junitInterfaceVersion = "0.13.3"
 }
