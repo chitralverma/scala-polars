@@ -77,13 +77,13 @@ jobs:
 
           - os: macos-15-intel
             arch: x86_64-apple-darwin
-            packages: "brew install sbt llvm"
-            rustflags: "-C link-arg=-fuse-ld=lld"
+            packages: "brew install sbt"
+            rustflags: ""
 
           - os: macos-15
             arch: aarch64-apple-darwin
-            packages: "brew install llvm"
-            rustflags: "-C link-arg=-fuse-ld=lld"
+            packages: ""
+            rustflags: ""
 
           - os: windows-latest
             arch: x86_64-pc-windows-msvc
@@ -118,11 +118,6 @@ jobs:
         with:
           workspaces: native
           prefix-key: ${{ matrix.arch }}
-
-      # lld on macOS ships in the Homebrew `llvm` keg, not on PATH; expose it for `-fuse-ld=lld`.
-      - name: Expose Homebrew lld on PATH (macOS)
-        if: runner.os == 'macOS'
-        run: echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
 
       - name: Cross publish artifacts containing native library
         env:
