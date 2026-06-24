@@ -57,6 +57,7 @@ jobs:
   build-natives:
     name: ${{ matrix.arch }} build
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
     env:
       TARGET_TRIPLE: ${{ matrix.arch }}
     needs: [check-formatting]
@@ -66,27 +67,33 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64-unknown-linux-gnu
-            packages: ""
+            packages: "sudo apt-get update && sudo apt-get install -y mold"
+            rustflags: "-C link-arg=-fuse-ld=mold"
 
           - os: ubuntu-24.04-arm
             arch: aarch64-unknown-linux-gnu
-            packages: ""
+            packages: "sudo apt-get update && sudo apt-get install -y mold"
+            rustflags: "-C link-arg=-fuse-ld=mold"
 
           - os: macos-15-intel
             arch: x86_64-apple-darwin
-            packages: "brew install sbt"
+            packages: "brew install sbt llvm"
+            rustflags: "-C link-arg=-fuse-ld=lld"
 
           - os: macos-15
             arch: aarch64-apple-darwin
-            packages: ""
+            packages: "brew install llvm"
+            rustflags: "-C link-arg=-fuse-ld=lld"
 
           - os: windows-latest
             arch: x86_64-pc-windows-msvc
             packages: ""
+            rustflags: ""
 
           - os: windows-11-arm
             arch: aarch64-pc-windows-msvc
             packages: ""
+            rustflags: ""
     steps:
       - name: Install system packages
         run: ${{ matrix.packages }}
@@ -112,7 +119,14 @@ jobs:
           workspaces: native
           prefix-key: ${{ matrix.arch }}
 
+      # lld on macOS ships in the Homebrew `llvm` keg, not on PATH; expose it for `-fuse-ld=lld`.
+      - name: Expose Homebrew lld on PATH (macOS)
+        if: runner.os == 'macOS'
+        run: echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
+
       - name: Cross publish artifacts containing native library
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
         run: |
           rustup target add ${{ matrix.arch }}
           sbt generateNativeLibrary
