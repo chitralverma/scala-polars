@@ -1,14 +1,13 @@
 #![allow(non_snake_case)]
 
-use anyhow::Context;
 use jni::JNIEnv;
 use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
 use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::get_df_and_writer;
-use crate::utils::error::ResultExt;
+use crate::internal_jni::io::write::write_dataframe;
+use crate::internal_jni::utils::from_ptr;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
 pub fn writeCSV(
@@ -67,46 +66,50 @@ pub fn writeCSV(
         .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
         .unwrap_or(false);
 
-    let (mut dataframe, writer) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
+    write_dataframe(
+        &mut env,
+        from_ptr(df_ptr),
+        filePath,
+        overwrite_mode,
+        options,
+        "CSV",
+        |writer, dataframe| {
+            let mut csv_writer = CsvWriter::new(writer)
+                .with_date_format(date_format)
+                .with_time_format(time_format)
+                .with_datetime_format(datetime_format)
+                .with_float_precision(float_precision)
+                .with_float_scientific(float_scientific);
 
-    let mut csv_writer = CsvWriter::new(writer)
-        .with_date_format(date_format)
-        .with_time_format(time_format)
-        .with_datetime_format(datetime_format)
-        .with_float_precision(float_precision)
-        .with_float_scientific(float_scientific);
+            if let Some(value) = include_bom {
+                csv_writer = csv_writer.include_bom(value)
+            }
 
-    if let Some(value) = include_bom {
-        csv_writer = csv_writer.include_bom(value)
-    }
+            if let Some(value) = include_header {
+                csv_writer = csv_writer.include_header(value)
+            }
 
-    if let Some(value) = include_header {
-        csv_writer = csv_writer.include_header(value)
-    }
+            if let Some(value) = separator {
+                csv_writer = csv_writer.with_separator(value)
+            }
 
-    if let Some(value) = separator {
-        csv_writer = csv_writer.with_separator(value)
-    }
+            if let Some(value) = quote_char {
+                csv_writer = csv_writer.with_quote_char(value)
+            }
 
-    if let Some(value) = quote_char {
-        csv_writer = csv_writer.with_quote_char(value)
-    }
+            if let Some(value) = line_terminator {
+                csv_writer = csv_writer.with_line_terminator(value.into())
+            }
 
-    if let Some(value) = line_terminator {
-        csv_writer = csv_writer.with_line_terminator(value.into())
-    }
+            if let Some(value) = null_value {
+                csv_writer = csv_writer.with_null_value(value.into())
+            }
 
-    if let Some(value) = null_value {
-        csv_writer = csv_writer.with_null_value(value.into())
-    }
+            if let Some(value) = quote_style {
+                csv_writer = csv_writer.with_quote_style(value)
+            }
 
-    if let Some(value) = quote_style {
-        csv_writer = csv_writer.with_quote_style(value)
-    }
-
-    csv_writer
-        .finish(&mut dataframe)
-        .context("Failed to write CSV data")
-        .unwrap_or_throw(&mut env);
+            csv_writer.finish(dataframe)
+        },
+    );
 }

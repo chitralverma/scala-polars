@@ -1,14 +1,13 @@
 #![allow(non_snake_case)]
 
-use anyhow::Context;
 use jni::JNIEnv;
 use jni::objects::{JObject, JString};
 use jni_fn::jni_fn;
 use polars::prelude::*;
 
 use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::get_df_and_writer;
-use crate::utils::error::ResultExt;
+use crate::internal_jni::io::write::write_dataframe;
+use crate::internal_jni::utils::from_ptr;
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
 pub fn writeJson(
@@ -34,13 +33,17 @@ pub fn writeJson(
         .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
         .unwrap_or(false);
 
-    let (mut dataframe, writer) =
-        get_df_and_writer(&mut env, df_ptr, filePath, overwrite_mode, options);
-
-    let mut json_writer = JsonWriter::new(writer).with_json_format(json_format);
-
-    json_writer
-        .finish(&mut dataframe)
-        .context("Failed to write JSON data")
-        .unwrap_or_throw(&mut env);
+    write_dataframe(
+        &mut env,
+        from_ptr(df_ptr),
+        filePath,
+        overwrite_mode,
+        options,
+        "JSON",
+        |writer, dataframe| {
+            JsonWriter::new(writer)
+                .with_json_format(json_format)
+                .finish(dataframe)
+        },
+    );
 }
