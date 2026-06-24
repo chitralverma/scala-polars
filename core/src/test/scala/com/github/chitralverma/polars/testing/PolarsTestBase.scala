@@ -1,18 +1,20 @@
 package com.github.chitralverma.polars.testing
 
-import com.github.chitralverma.polars.api.{DataFrame, Series}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-/** Shared base for Scala test suites — a reusable test base, not a per-suite fixture. Suites extend
-  * it for frame-construction and assertion helpers, and should name the upstream pytest they
-  * replicate (e.g. `py-polars/tests/unit/operations/test_filter.py`) at the top of the file. The
-  * Java mirror is `AbstractPolarsJavaTest`.
+import com.github.chitralverma.polars.api.{DataFrame, Series}
+
+/** Shared base for Scala test suites — a reusable test base, not a per-suite fixture. Suites
+  * extend it for frame-construction and assertion helpers, and should name the upstream pytest
+  * they replicate (e.g. `py-polars/tests/unit/operations/test_filter.py`) at the top of the file.
+  * The Java mirror is `AbstractPolarsJavaTest`.
   */
 abstract class PolarsTestBase extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
-  /** Collect a [[DataFrame]] eagerly into row maps; values are plain JVM objects (Integer, ...). */
+  /** Collect a [[DataFrame]] eagerly into row maps; values are plain JVM objects (Integer, ...).
+    */
   protected def rowsOf(df: DataFrame): Seq[Map[String, AnyRef]] =
     df.rows().map(_.toMap).toList
 
