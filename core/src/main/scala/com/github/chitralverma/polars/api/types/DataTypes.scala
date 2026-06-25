@@ -229,7 +229,7 @@ case class Duration(protected val unitStr: String) extends DataType {
 case class ListType(tpe: DataType) extends DataType {
   override def simpleName: String = "list"
 
-  /** Borrowed from Apache Spark source to represent [[ListType]] as a tree string. */
+  /** Helper to represent [[ListType]] as a tree string. */
   private[polars] def buildFormattedString(prefix: String, buffer: StringBuffer): Unit = {
     buffer.append(s"$prefix-- element: ${tpe.simpleName}\n")
     DataType.buildFormattedString(tpe, s"$prefix    |", buffer)
@@ -249,7 +249,7 @@ case class StructType(fields: Array[Field]) extends DataType {
 
   def toSchema: Schema = Schema.fromFields(fields)
 
-  /** Borrowed from Apache Spark source to represent [[StructType]] as a tree string. */
+  /** Helper to represent [[StructType]] as a tree string. */
   private[polars] def buildFormattedString(prefix: String, buffer: StringBuffer): Unit =
     fields.foreach(field => field.buildFormattedString(prefix, buffer))
 
@@ -388,7 +388,7 @@ object DataType {
     }
   }
 
-  /** Borrowed from Apache Spark source to represent [[DataType]] as a tree string. */
+  /** Helper to represent [[DataType]] as a tree string. */
   private[polars] def buildFormattedString(
       dataType: DataType,
       prefix: String,

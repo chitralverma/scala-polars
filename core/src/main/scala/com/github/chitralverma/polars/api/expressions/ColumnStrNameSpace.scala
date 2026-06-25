@@ -8,7 +8,7 @@ import com.github.chitralverma.polars.internal.jni.expressions.column_expr
   * `col("x").str.to_uppercase`). This class provides the same scoped syntax on JVM columns,
   * mirroring the upstream polars API.
   */
-class ColumnStrNameSpace private[polars] (private val parent: Column) {
+class ColumnStrNameSpace private[polars] (private val parent: Expression) {
 
   /** Modify strings to their uppercase equivalent. */
   def to_uppercase: Column = {

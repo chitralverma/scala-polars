@@ -402,6 +402,14 @@ pub fn applyBinary(
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn alias(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, name: JString) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let s_name = j_string_to_string(&mut env, &name, Some("Failed to parse alias name"));
+    let expr = l_expr.alias(s_name);
+    to_ptr(expr)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
     free_ptr::<Expr>(ptr);
 }
