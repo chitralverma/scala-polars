@@ -65,11 +65,13 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: ubuntu-latest
+          # Build Linux on 22.04 (glibc 2.35), not 24.04 — produces libs that load on older
+          # glibc too. 24.04's glibc 2.39 would break consumers (and the 22.04 test leg).
+          - os: ubuntu-22.04
             arch: x86_64-unknown-linux-gnu
             packages: ""
 
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             arch: aarch64-unknown-linux-gnu
             packages: ""
 
@@ -145,7 +147,8 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
-          distribution: "temurin"
+          # zulu, not temurin: temurin has no JDK 8 for macOS arm64 (macos-latest). zulu ships it.
+          distribution: "zulu"
           cache: "sbt"
 
       - uses: sbt/setup-sbt@v1
