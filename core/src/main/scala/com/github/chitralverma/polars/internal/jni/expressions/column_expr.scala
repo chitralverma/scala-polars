@@ -22,6 +22,8 @@ private[polars] object column_expr extends Natively {
 
   @native def to_uppercase(ptr: Long): Long
 
+  @native def alias(ptr: Long, name: String): Long
+
   @native def free(ptr: Long): Unit
 
 }

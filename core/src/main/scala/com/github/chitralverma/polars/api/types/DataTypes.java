@@ -1,7 +1,7 @@
 package com.github.chitralverma.polars.api.types;
 
 /**
- * Spark-style Java-friendly facade for all Polars DataTypes.
+ * Java-friendly facade for all Polars DataTypes.
  * This class exposes public static final fields and static factory methods
  * so Java and Scala users can refer to types cleanly (e.g. {@code DataTypes.Int32}
  * instead of leaking Scala objects).

@@ -8,7 +8,7 @@ import com.github.chitralverma.polars.jsonMapper
 
 case class Field(name: String, dataType: DataType) {
 
-  /** Borrowed from Apache Spark source to represent [[Field]] as a tree string. */
+  /** Helper to represent [[Field]] as a tree string. */
   private[polars] def buildFormattedString(prefix: String, buffer: StringBuffer): Unit = {
     buffer.append(s"$prefix-- $name: ${dataType.simpleName} \n")
     DataType.buildFormattedString(dataType, s"$prefix    |", buffer)
@@ -72,7 +72,7 @@ class Schema {
     this
   }
 
-  /** Borrowed from Apache Spark source to represent Schema as a tree string. */
+  /** Helper to represent Schema as a tree string. */
   private[polars] def treeString: String = {
     val stringBuffer = new StringBuffer()
     stringBuffer.append("root\n")
