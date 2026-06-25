@@ -57,7 +57,7 @@ jobs:
   build-natives:
     name: ${{ matrix.arch }} build
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       TARGET_TRIPLE: ${{ matrix.arch }}
     needs: [check-formatting]
@@ -67,33 +67,27 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64-unknown-linux-gnu
-            packages: "sudo apt-get update && sudo apt-get install -y mold"
-            rustflags: "-C link-arg=-fuse-ld=mold"
+            packages: ""
 
           - os: ubuntu-24.04-arm
             arch: aarch64-unknown-linux-gnu
-            packages: "sudo apt-get update && sudo apt-get install -y mold"
-            rustflags: "-C link-arg=-fuse-ld=mold"
+            packages: ""
 
           - os: macos-15-intel
             arch: x86_64-apple-darwin
             packages: "brew install sbt"
-            rustflags: ""
 
           - os: macos-15
             arch: aarch64-apple-darwin
             packages: ""
-            rustflags: ""
 
           - os: windows-latest
             arch: x86_64-pc-windows-msvc
             packages: ""
-            rustflags: ""
 
           - os: windows-11-arm
             arch: aarch64-pc-windows-msvc
             packages: ""
-            rustflags: ""
     steps:
       - name: Install system packages
         run: ${{ matrix.packages }}
@@ -120,8 +114,6 @@ jobs:
           prefix-key: ${{ matrix.arch }}
 
       - name: Cross publish artifacts containing native library
-        env:
-          RUSTFLAGS: ${{ matrix.rustflags }}
         run: |
           rustup target add ${{ matrix.arch }}
           sbt generateNativeLibrary

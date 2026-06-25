@@ -236,5 +236,7 @@ version = "0.54"
 [profile.release]
 codegen-units = 1
 debug = false
-lto = "fat"
+# thin (not fat) LTO: far lower peak RAM + faster link so the free 4-vCPU ARM
+# runners finish, at a small binary-size cost vs fat.
+lto = "thin"
 strip = true
