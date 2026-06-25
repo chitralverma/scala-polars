@@ -18,7 +18,7 @@ env:
 
 jobs:
   check-formatting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       SKIP_NATIVE_GENERATION: true
@@ -79,11 +79,11 @@ jobs:
             arch: x86_64-apple-darwin
             packages: "brew install sbt"
 
-          - os: macos-15
+          - os: macos-14
             arch: aarch64-apple-darwin
             packages: ""
 
-          - os: windows-latest
+          - os: windows-2022
             arch: x86_64-pc-windows-msvc
             packages: ""
 
@@ -99,10 +99,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          # JDK only runs sbt's cargo orchestration here; bytecode floor stays JDK 8 via -release 8.
-          # JDK 8 is unavailable on the ARM/newer runners, so use a JDK present on all of them.
           java-version: "21"
-          distribution: "temurin"
+          distribution: "zulu"
           cache: "sbt"
 
       - uses: sbt/setup-sbt@v1
@@ -138,7 +136,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ["8", "25"]
-        os: ["ubuntu-22.04", "windows-2022", "macos-latest"]
+        os: ["ubuntu-22.04", "windows-2022", "macos-14"]
 
     steps:
       - uses: actions/checkout@v6
@@ -147,7 +145,6 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
-          # zulu, not temurin: temurin has no JDK 8 for macOS arm64 (macos-latest). zulu ships it.
           distribution: "zulu"
           cache: "sbt"
 
@@ -202,7 +199,7 @@ jobs:
 
   publish:
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       SKIP_NATIVE_GENERATION: true
