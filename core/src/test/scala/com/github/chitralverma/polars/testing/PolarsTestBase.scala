@@ -13,8 +13,7 @@ import com.github.chitralverma.polars.api.{DataFrame, Series}
   */
 abstract class PolarsTestBase extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
-  /** Collect a [[DataFrame]] eagerly into row maps; values are plain JVM objects (Integer, ...).
-    */
+  /** Collect a DataFrame eagerly into row maps; values are plain JVM objects (Integer, ...). */
   protected def rowsOf(df: DataFrame): Seq[Map[String, AnyRef]] =
     df.rows().map(_.toMap).toList
 

@@ -9,16 +9,16 @@ import java.util.Map;
 import org.junit.Assert;
 
 /**
- * Shared base for Java test cases — the Java mirror of {@code PolarsTestBase}. A reusable test
- * base, not a per-test fixture: test classes extend it for frame-construction and assertion
- * helpers, and should name the upstream pytest they replicate (e.g. {@code
- * py-polars/tests/unit/operations/test_filter.py}) at the top of the file.
+ * Shared base for Java test cases — the Java mirror of PolarsTestBase. A reusable test base, not a
+ * per-test fixture: test classes extend it for frame-construction and assertion helpers, and should
+ * name the upstream pytest they replicate (e.g. py-polars/tests/unit/operations/test_filter.py) at
+ * the top of the file.
  */
 public abstract class AbstractPolarsJavaTest {
 
   /**
-   * Collect a {@link DataFrame} eagerly into row maps. {@code DataFrame.rows()} returns a {@code
-   * scala.collection.Iterator}, whose {@code hasNext}/{@code next} are usable from Java directly.
+   * Collect a DataFrame eagerly into row maps. DataFrame.rows() returns a
+   * scala.collection.Iterator, whose hasNext / next are usable from Java directly.
    */
   protected List<Map<String, Object>> rowsOf(DataFrame df) {
     List<Map<String, Object>> out = new ArrayList<>();
