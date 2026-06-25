@@ -150,8 +150,11 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     *   when data type does not match.
     */
   def getInt(i: Int): Int = {
-    assertDataType(getDataType(i), IntegerType)
-    getAs[java.lang.Integer](i).intValue()
+    getDataType(i) match {
+      case Int8Type | Int16Type | Int32Type | UInt8Type | UInt16Type | UInt32Type =>
+      case x => assertDataType(x, Int32Type)
+    }
+    getAs[java.lang.Number](i).intValue()
   }
 
   /** Returns the value by column `name` as Int
@@ -168,8 +171,11 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     *   when data type does not match.
     */
   def getLong(i: Int): Long = {
-    assertDataType(getDataType(i), LongType)
-    getAs[java.lang.Long](i).longValue()
+    getDataType(i) match {
+      case Int64Type | UInt64Type | Int32Type | UInt32Type =>
+      case x => assertDataType(x, Int64Type)
+    }
+    getAs[java.lang.Number](i).longValue()
   }
 
   /** Returns the value by column `name` as Long
@@ -185,7 +191,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     *   when data type does not match.
     */
   def getFloat(i: Int): Float = {
-    assertDataType(getDataType(i), FloatType)
+    assertDataType(getDataType(i), Float32Type)
     getAs[java.lang.Float](i).floatValue()
   }
 
@@ -202,8 +208,11 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
     *   when data type does not match.
     */
   def getDouble(i: Int): Double = {
-    assertDataType(getDataType(i), DoubleType)
-    getAs[java.lang.Double](i).doubleValue()
+    getDataType(i) match {
+      case Float64Type | Float32Type =>
+      case x => assertDataType(x, Float64Type)
+    }
+    getAs[java.lang.Number](i).doubleValue()
   }
 
   /** Returns the value by column `name` as Double
@@ -305,7 +314,8 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
   def getJList[T: ClassTag](i: Int): java.util.List[T] = {
     getSchema.getFields(i).dataType match {
       case ListType(dt) => assertDataType(dt, DataType.typeToDataType[T]())
-      case x => assertDataType(x, ListType)
+      case x =>
+        assert(x.isInstanceOf[ListType], s"Data Type mismatch, expected ListType, found $x")
     }
 
     getAs[java.util.List[T]](i)
@@ -342,7 +352,7 @@ class Row private (private[polars] val arr: Array[Object], schema: Schema) {
       case StructType(fields) =>
         Schema.fromFields(fields)
       case x =>
-        assertDataType(x, StructType)
+        assert(x.isInstanceOf[StructType], s"Data Type mismatch, expected StructType, found $x")
         null
     }
 

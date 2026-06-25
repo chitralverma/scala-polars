@@ -1,5 +1,6 @@
 package com.github.chitralverma.polars.api.expressions
 
+import com.github.chitralverma.polars.api.types.DataType
 import com.github.chitralverma.polars.functions.lit
 import com.github.chitralverma.polars.internal.jni.expressions.column_expr
 
@@ -19,6 +20,54 @@ object BinaryOperators extends Enumeration {
 class Column private (p: Long) extends Expression(p) {
   import BinaryOperators._
   import UnaryOperators._
+
+  /** Returns the namespace accessor for string-related expressions. */
+  def str: ColumnStrNameSpace = {
+    checkClosed()
+    new ColumnStrNameSpace(this)
+  }
+
+  /** Cast the column to the specified DataType.
+    *
+    * @param dataType
+    *   target data type
+    */
+  def cast(dataType: DataType): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.cast(ptr, dataType.ffiName))
+  }
+
+  /** Check if the column values are present in the provided array.
+    *
+    * @param values
+    *   array of values to match
+    */
+  def isIn(values: Array[Any]): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.isIn(ptr, values))
+  }
+
+  /** Check if the column values are between the lower and upper bounds (inclusive).
+    *
+    * @param lower
+    *   lower bound
+    * @param upper
+    *   upper bound
+    */
+  def isBetween(lower: Any, upper: Any): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.isBetween(ptr, lower, upper))
+  }
+
+  /** Check if the string column matches the given SQL-like wildcard pattern.
+    *
+    * @param pattern
+    *   SQL-like pattern (e.g. "ap%")
+    */
+  def like(pattern: String): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.like(ptr, pattern))
+  }
 
   /** Not. */
   def unary_! : Column = {
