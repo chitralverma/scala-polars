@@ -2,7 +2,7 @@ use std::ops::{Add, Div, Mul, Rem, Sub};
 
 use anyhow::Context;
 use jni::JNIEnv;
-use jni::objects::{JClass, JString};
+use jni::objects::{JClass, JObject, JObjectArray, JString};
 use jni::sys::{jint, jlong};
 use jni_fn::jni_fn;
 use num_derive::FromPrimitive;
@@ -91,6 +91,278 @@ pub fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jin
         ))
         .unwrap_or_throw(&mut env);
 
+    to_ptr(expr)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn cast(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, dataType: JString) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let dt_str = j_string_to_string(
+        &mut env,
+        &dataType,
+        Some("Failed to parse provided DataType as string"),
+    );
+
+    let dtype: DataType = if dt_str.starts_with('{') {
+        serde_json::from_str(&dt_str)
+            .context(format!("Failed to deserialize DataType JSON: {dt_str}"))
+            .unwrap_or_throw(&mut env)
+    } else {
+        // Fallback to basic type name parsing
+        match dt_str.to_lowercase().as_str() {
+            "int8" => DataType::Int8,
+            "int16" => DataType::Int16,
+            "int32" => DataType::Int32,
+            "int64" => DataType::Int64,
+            "uint8" => DataType::UInt8,
+            "uint16" => DataType::UInt16,
+            "uint32" => DataType::UInt32,
+            "uint64" => DataType::UInt64,
+            "float32" => DataType::Float32,
+            "float64" => DataType::Float64,
+            "boolean" => DataType::Boolean,
+            "string" | "utf8" => DataType::String,
+            "binary" => DataType::Binary,
+            "date" => DataType::Date,
+            "null" => DataType::Null,
+            _ => {
+                // Try serde_json with quoted string
+                serde_json::from_str(&format!("\"{dt_str}\""))
+                    .context(format!("Failed to parse DataType: {dt_str}"))
+                    .unwrap_or_throw(&mut env)
+            },
+        }
+    };
+
+    let expr = l_expr.cast(dtype);
+    to_ptr(expr)
+}
+
+fn jobject_to_any_value<'local>(
+    env: &mut JNIEnv<'local>,
+    obj: &JObject<'local>,
+) -> AnyValue<'local> {
+    if obj.is_null() {
+        AnyValue::Null
+    } else if env
+        .is_instance_of(obj, "java/lang/Integer")
+        .unwrap_or(false)
+    {
+        let val = env
+            .call_method(obj, "intValue", "()I", &[])
+            .context("Failed to call intValue")
+            .unwrap_or_throw(env)
+            .i()
+            .unwrap_or(0);
+        AnyValue::Int32(val)
+    } else if env.is_instance_of(obj, "java/lang/Long").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "longValue", "()J", &[])
+            .context("Failed to call longValue")
+            .unwrap_or_throw(env)
+            .j()
+            .unwrap_or(0);
+        AnyValue::Int64(val)
+    } else if env.is_instance_of(obj, "java/lang/Byte").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "byteValue", "()B", &[])
+            .context("Failed to call byteValue")
+            .unwrap_or_throw(env)
+            .b()
+            .unwrap_or(0);
+        AnyValue::Int8(val)
+    } else if env.is_instance_of(obj, "java/lang/Short").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "shortValue", "()S", &[])
+            .context("Failed to call shortValue")
+            .unwrap_or_throw(env)
+            .s()
+            .unwrap_or(0);
+        AnyValue::Int16(val)
+    } else if env.is_instance_of(obj, "java/lang/String").unwrap_or(false) {
+        let jstr: &JString = obj.into();
+        let s = j_string_to_string(env, jstr, Some("Invalid String"));
+        AnyValue::StringOwned(s.into())
+    } else if env
+        .is_instance_of(obj, "java/lang/Boolean")
+        .unwrap_or(false)
+    {
+        let val = env
+            .call_method(obj, "booleanValue", "()Z", &[])
+            .context("Failed to call booleanValue")
+            .unwrap_or_throw(env)
+            .z()
+            .unwrap_or(false);
+        AnyValue::Boolean(val)
+    } else if env.is_instance_of(obj, "java/lang/Double").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "doubleValue", "()D", &[])
+            .context("Failed to call doubleValue")
+            .unwrap_or_throw(env)
+            .d()
+            .unwrap_or(0.0);
+        AnyValue::Float64(val)
+    } else if env.is_instance_of(obj, "java/lang/Float").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "floatValue", "()F", &[])
+            .context("Failed to call floatValue")
+            .unwrap_or_throw(env)
+            .f()
+            .unwrap_or(0.0);
+        AnyValue::Float32(val)
+    } else {
+        AnyValue::Null
+    }
+}
+
+fn jobject_to_expr<'local>(env: &mut JNIEnv<'local>, obj: &JObject<'local>) -> Expr {
+    if obj.is_null() {
+        NULL.lit()
+    } else if env
+        .is_instance_of(obj, "java/lang/Integer")
+        .unwrap_or(false)
+    {
+        let val = env
+            .call_method(obj, "intValue", "()I", &[])
+            .context("Failed to call intValue")
+            .unwrap_or_throw(env)
+            .i()
+            .unwrap_or(0);
+        lit(val)
+    } else if env.is_instance_of(obj, "java/lang/Long").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "longValue", "()J", &[])
+            .context("Failed to call longValue")
+            .unwrap_or_throw(env)
+            .j()
+            .unwrap_or(0);
+        lit(val)
+    } else if env.is_instance_of(obj, "java/lang/Byte").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "byteValue", "()B", &[])
+            .context("Failed to call byteValue")
+            .unwrap_or_throw(env)
+            .b()
+            .unwrap_or(0);
+        lit(val)
+    } else if env.is_instance_of(obj, "java/lang/Short").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "shortValue", "()S", &[])
+            .context("Failed to call shortValue")
+            .unwrap_or_throw(env)
+            .s()
+            .unwrap_or(0);
+        lit(val)
+    } else if env.is_instance_of(obj, "java/lang/String").unwrap_or(false) {
+        let jstr: &JString = obj.into();
+        let s = j_string_to_string(env, jstr, Some("Invalid String"));
+        lit(s)
+    } else if env
+        .is_instance_of(obj, "java/lang/Boolean")
+        .unwrap_or(false)
+    {
+        let val = env
+            .call_method(obj, "booleanValue", "()Z", &[])
+            .context("Failed to call booleanValue")
+            .unwrap_or_throw(env)
+            .z()
+            .unwrap_or(false);
+        lit(val)
+    } else if env.is_instance_of(obj, "java/lang/Double").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "doubleValue", "()D", &[])
+            .context("Failed to call doubleValue")
+            .unwrap_or_throw(env)
+            .d()
+            .unwrap_or(0.0);
+        lit(val)
+    } else if env.is_instance_of(obj, "java/lang/Float").unwrap_or(false) {
+        let val = env
+            .call_method(obj, "floatValue", "()F", &[])
+            .context("Failed to call floatValue")
+            .unwrap_or_throw(env)
+            .f()
+            .unwrap_or(0.0);
+        lit(val)
+    } else {
+        NULL.lit()
+    }
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn isIn(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, values: JObjectArray) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let len = env
+        .get_array_length(&values)
+        .context("Failed to get array length")
+        .unwrap_or_throw(&mut env);
+    let mut s_vec = Vec::with_capacity(len as usize);
+
+    for i in 0..len {
+        let obj = env
+            .get_object_array_element(&values, i)
+            .context("Failed to get array element")
+            .unwrap_or_throw(&mut env);
+        s_vec.push(jobject_to_any_value(&mut env, &obj));
+    }
+
+    let s = Series::from_any_values("values".into(), &s_vec, false)
+        .context("Failed to build series from any values")
+        .unwrap_or_throw(&mut env);
+    let expr = l_expr.is_in(lit(s).implode(false), true);
+    to_ptr(expr)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn isBetween<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass,
+    expr_ptr: *mut Expr,
+    lower: JObject<'local>,
+    upper: JObject<'local>,
+) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+
+    let l_lit = jobject_to_expr(&mut env, &lower);
+    let u_lit = jobject_to_expr(&mut env, &upper);
+
+    let expr = l_expr.is_between(l_lit, u_lit, ClosedInterval::Both);
+    to_ptr(expr)
+}
+
+fn escape_regex(s: &str) -> String {
+    let mut escaped = String::with_capacity(s.len() * 2);
+    for c in s.chars() {
+        match c {
+            '\\' | '.' | '+' | '*' | '?' | '(' | ')' | '|' | '[' | ']' | '{' | '}' | '^' | '$' => {
+                escaped.push('\\');
+                escaped.push(c);
+            },
+            _ => escaped.push(c),
+        }
+    }
+    escaped
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn like(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, pattern: JString) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let pat = j_string_to_string(
+        &mut env,
+        &pattern,
+        Some("Failed to parse pattern as string"),
+    );
+
+    let escaped = escape_regex(&pat);
+    let regex_pattern = format!("^{}$", escaped.replace('%', ".*").replace('_', "."));
+    let expr = l_expr.str().contains(lit(regex_pattern), true);
+    to_ptr(expr)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn to_uppercase(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let expr = l_expr.str().to_uppercase();
     to_ptr(expr)
 }
 

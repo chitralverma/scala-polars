@@ -11,39 +11,114 @@ import scala.util.matching.Regex
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeType
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.github.chitralverma.polars.jsonMapper
 
 trait DataType {
+
+  /** Returns the simple lowercase name of this DataType. */
   def simpleName: String =
     this.getClass.getSimpleName
       .stripSuffix("$")
       .stripSuffix("Type")
-      .stripSuffix("UDT")
       .toLowerCase(Locale.ROOT)
+
+  /** Returns the official JSON string representation of this DataType, compatible with Polars'
+    * upstream serde/FFI deserializer.
+    */
+  def ffiName: String = {
+    val node = toJsonNode
+    if (node.isTextual) node.textValue()
+    else jsonMapper.writeValueAsString(node)
+  }
+
+  private[polars] def toJsonNode: JsonNode
 }
 
-trait BasicDataType extends DataType
+trait BasicDataType extends DataType {
+  override private[polars] def toJsonNode: JsonNode =
+    jsonMapper.getNodeFactory.textNode(
+      this.getClass.getSimpleName
+        .stripSuffix("$")
+        .stripSuffix("Type")
+    )
+}
 
-case object StringType extends BasicDataType
+case object StringType extends BasicDataType {
+  override def simpleName: String = "string"
+}
 
-case object BooleanType extends BasicDataType
+case object BooleanType extends BasicDataType {
+  override def simpleName: String = "boolean"
+}
 
-case object IntegerType extends BasicDataType
+case object Int8Type extends BasicDataType {
+  override def simpleName: String = "int8"
+}
 
-case object LongType extends BasicDataType
+case object Int16Type extends BasicDataType {
+  override def simpleName: String = "int16"
+}
 
-case object FloatType extends BasicDataType
+case object Int32Type extends BasicDataType {
+  override def simpleName: String = "int32"
+}
 
-case object DoubleType extends BasicDataType
+case object Int64Type extends BasicDataType {
+  override def simpleName: String = "int64"
+}
 
-case object DateType extends BasicDataType
+case object UInt8Type extends BasicDataType {
+  override def simpleName: String = "uint8"
+}
 
-case object TimeType extends DataType
+case object UInt16Type extends BasicDataType {
+  override def simpleName: String = "uint16"
+}
 
-case object DateTimeType extends DataType
+case object UInt32Type extends BasicDataType {
+  override def simpleName: String = "uint32"
+}
 
-case object ListType extends DataType
+case object UInt64Type extends BasicDataType {
+  override def simpleName: String = "uint64"
+}
 
-case object StructType extends DataType
+case object Float32Type extends BasicDataType {
+  override def simpleName: String = "float32"
+}
+
+case object Float64Type extends BasicDataType {
+  override def simpleName: String = "float64"
+}
+
+case class DecimalType(precision: Option[Int], scale: Int) extends DataType {
+  override def simpleName: String = s"decimal[${precision.getOrElse(38)},$scale]"
+  override private[polars] def toJsonNode: JsonNode = {
+    val root = jsonMapper.getNodeFactory.objectNode()
+    val arr = jsonMapper.getNodeFactory.arrayNode()
+    precision match {
+      case Some(p) => arr.add(p)
+      case None => arr.addNull()
+    }
+    arr.add(scale)
+    root.set("Decimal", arr)
+    root
+  }
+}
+
+case object DateType extends BasicDataType {
+  override def simpleName: String = "date"
+}
+
+case object TimeType extends DataType {
+  override private[polars] def toJsonNode: JsonNode =
+    jsonMapper.getNodeFactory.textNode("Time")
+}
+
+case object NullType extends BasicDataType {
+  override def simpleName: String = "null"
+}
 
 case class TimeType(protected val unitStr: String) extends DataType {
   val timeUnit: Option[TimeUnit] =
@@ -59,6 +134,18 @@ case class TimeType(protected val unitStr: String) extends DataType {
     case Some(TimeUnit.MICROSECONDS) => "time[us]"
     case Some(TimeUnit.MILLISECONDS) => "time[ms]"
     case _ => "time"
+  }
+
+  override private[polars] def toJsonNode: JsonNode = {
+    val root = jsonMapper.getNodeFactory.objectNode()
+    val u = timeUnit match {
+      case Some(TimeUnit.NANOSECONDS) => "Nanoseconds"
+      case Some(TimeUnit.MICROSECONDS) => "Microseconds"
+      case Some(TimeUnit.MILLISECONDS) => "Milliseconds"
+      case _ => "Microseconds"
+    }
+    root.put("Time", u)
+    root
   }
 }
 
@@ -91,7 +178,22 @@ case class DateTimeType(protected val unitStr: String, protected val tzStr: Stri
       case (null, tz) => s"datetime[$tz]"
       case (tu, tz) => s"datetime[$tu, $tz]"
     }
+  }
 
+  override private[polars] def toJsonNode: JsonNode = {
+    val root = jsonMapper.getNodeFactory.objectNode()
+    val arr = jsonMapper.getNodeFactory.arrayNode()
+    val tu = timeUnit match {
+      case Some(TimeUnit.NANOSECONDS) => "Nanoseconds"
+      case Some(TimeUnit.MICROSECONDS) => "Microseconds"
+      case Some(TimeUnit.MILLISECONDS) => "Milliseconds"
+      case _ => "Microseconds"
+    }
+    arr.add(tu)
+    if (tzStr != null && tzStr.nonEmpty) arr.add(tzStr)
+    else arr.addNull()
+    root.set("Timestamp", arr)
+    root
   }
 }
 
@@ -110,6 +212,18 @@ case class Duration(protected val unitStr: String) extends DataType {
     case Some(TimeUnit.MILLISECONDS) => "duration[ms]"
     case _ => "duration"
   }
+
+  override private[polars] def toJsonNode: JsonNode = {
+    val root = jsonMapper.getNodeFactory.objectNode()
+    val tu = timeUnit match {
+      case Some(TimeUnit.NANOSECONDS) => "Nanoseconds"
+      case Some(TimeUnit.MICROSECONDS) => "Microseconds"
+      case Some(TimeUnit.MILLISECONDS) => "Milliseconds"
+      case _ => "Microseconds"
+    }
+    root.put("Duration", tu)
+    root
+  }
 }
 
 case class ListType(tpe: DataType) extends DataType {
@@ -121,6 +235,13 @@ case class ListType(tpe: DataType) extends DataType {
     DataType.buildFormattedString(tpe, s"$prefix    |", buffer)
   }
 
+  override private[polars] def toJsonNode: JsonNode = {
+    val root = jsonMapper.getNodeFactory.objectNode()
+    val listInner = jsonMapper.getNodeFactory.objectNode()
+    listInner.set("dtype", tpe.toJsonNode)
+    root.set("List", listInner)
+    root
+  }
 }
 
 case class StructType(fields: Array[Field]) extends DataType {
@@ -131,26 +252,53 @@ case class StructType(fields: Array[Field]) extends DataType {
   /** Borrowed from Apache Spark source to represent [[StructType]] as a tree string. */
   private[polars] def buildFormattedString(prefix: String, buffer: StringBuffer): Unit =
     fields.foreach(field => field.buildFormattedString(prefix, buffer))
+
+  override private[polars] def toJsonNode: JsonNode = {
+    val root = jsonMapper.getNodeFactory.objectNode()
+    val arr = jsonMapper.getNodeFactory.arrayNode()
+    fields.foreach { f =>
+      val fNode = jsonMapper.getNodeFactory.objectNode()
+      fNode.put("name", f.name)
+      fNode.set("dtype", f.dataType.toJsonNode)
+      arr.add(fNode)
+    }
+    root.set("Struct", arr)
+    root
+  }
 }
 
 object DataType {
 
   private[polars] final val StringRegex: Regex = """^(?i)Utf8|LargeUtf8|String$""".r
   private[polars] final val BooleanRegex: Regex = """^(?i)Boolean$""".r
-  private[polars] final val IntRegex: Regex = """^(?i)Int8|Int16|Int32|UInt8|UInt16|UInt32$""".r
-  private[polars] final val LongRegex: Regex = """^(?i)Int64|UInt64$""".r
+  private[polars] final val Int8Regex: Regex = """^(?i)Int8$""".r
+  private[polars] final val Int16Regex: Regex = """^(?i)Int16$""".r
+  private[polars] final val Int32Regex: Regex = """^(?i)Int32$""".r
+  private[polars] final val Int64Regex: Regex = """^(?i)Int64$""".r
+  private[polars] final val UInt8Regex: Regex = """^(?i)UInt8$""".r
+  private[polars] final val UInt16Regex: Regex = """^(?i)UInt16$""".r
+  private[polars] final val UInt32Regex: Regex = """^(?i)UInt32$""".r
+  private[polars] final val UInt64Regex: Regex = """^(?i)UInt64$""".r
   private[polars] final val FloatRegex: Regex = """^(?i)Float32$""".r
   private[polars] final val DoubleRegex: Regex = """^(?i)Float64$""".r
   private[polars] final val DateRegex: Regex = """^(?i)Date|Date32|Date64$""".r
+  private[polars] final val NullRegex: Regex = """^(?i)Null$""".r
 
   def fromBasicType(typeStr: String): DataType = typeStr match {
     case StringRegex() => StringType
     case BooleanRegex() => BooleanType
-    case IntRegex() => IntegerType
-    case LongRegex() => LongType
-    case FloatRegex() => FloatType
-    case DoubleRegex() => DoubleType
+    case Int8Regex() => Int8Type
+    case Int16Regex() => Int16Type
+    case Int32Regex() => Int32Type
+    case Int64Regex() => Int64Type
+    case UInt8Regex() => UInt8Type
+    case UInt16Regex() => UInt16Type
+    case UInt32Regex() => UInt32Type
+    case UInt64Regex() => UInt64Type
+    case FloatRegex() => Float32Type
+    case DoubleRegex() => Float64Type
     case DateRegex() => DateType
+    case NullRegex() => NullType
     case typeStr =>
       throw new IllegalArgumentException(s"Unknown basic type `$typeStr` is not supported.")
   }
@@ -175,6 +323,19 @@ object DataType {
       // For Duration Type
       case JsonNodeType.OBJECT if node.hasNonNull("Duration") =>
         Duration(node.get("Duration").textValue())
+
+      // For Decimal Type
+      case JsonNodeType.OBJECT if node.has("Decimal") =>
+        val decNode = node.get("Decimal")
+        if (decNode.isNull || decNode.isMissingNode) {
+          DecimalType(None, 0)
+        } else {
+          val elements = decNode.elements().asScala.toSeq
+          val precision =
+            if (elements.nonEmpty && !elements.head.isNull) Some(elements.head.asInt()) else None
+          val scale = if (elements.length > 1) elements(1).asInt() else 0
+          DecimalType(precision, scale)
+        }
 
       // For DateTime Type
       case JsonNodeType.OBJECT if node.hasNonNull("Timestamp") =>
@@ -208,16 +369,18 @@ object DataType {
   def typeToDataType[T: ClassTag](): DataType = {
     val clazz = implicitly[ClassTag[T]].runtimeClass
     clazz match {
-      case c if c == classOf[java.lang.Integer] || c == classOf[Int] => IntegerType
-      case c if c == classOf[java.lang.Long] || c == classOf[Long] => LongType
+      case c if c == classOf[java.lang.Byte] || c == classOf[Byte] => Int8Type
+      case c if c == classOf[java.lang.Short] || c == classOf[Short] => Int16Type
+      case c if c == classOf[java.lang.Integer] || c == classOf[Int] => Int32Type
+      case c if c == classOf[java.lang.Long] || c == classOf[Long] => Int64Type
       case c if c == classOf[java.lang.Boolean] || c == classOf[Boolean] => BooleanType
-      case c if c == classOf[java.lang.Float] || c == classOf[Float] => FloatType
-      case c if c == classOf[java.lang.Double] || c == classOf[Double] => DoubleType
+      case c if c == classOf[java.lang.Float] || c == classOf[Float] => Float32Type
+      case c if c == classOf[java.lang.Double] || c == classOf[Double] => Float64Type
       case c if c == classOf[java.time.LocalDate] => DateType
       case c if c == classOf[java.time.LocalTime] => TimeType
-      case c if c == classOf[java.time.ZonedDateTime] => DateTimeType
+      case c if c == classOf[java.time.ZonedDateTime] => DateTimeType(null, null)
       case c if c == classOf[java.lang.String] || c == classOf[String] => StringType
-      case c if c == classOf[java.util.List[_]] => ListType
+      case c if c == classOf[java.util.List[_]] => ListType(null)
       case c =>
         throw new IllegalArgumentException(
           s"Data type could not be found for class `${c.getSimpleName}`"

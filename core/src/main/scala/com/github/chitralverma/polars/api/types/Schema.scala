@@ -26,14 +26,18 @@ class Schema {
 
   def getField(i: Int): Option[Field] = Try(getFields(i)).toOption
 
-  def getField(name: String, ignoreCase: Boolean = false): Option[Field] =
+  def getField(name: String): Option[Field] = getField(name, ignoreCase = false)
+
+  def getField(name: String, ignoreCase: Boolean): Option[Field] =
     getFields.find { field =>
       val fieldName = field.name
       if (ignoreCase) fieldName.equalsIgnoreCase(name)
       else fieldName.equals(name)
     }
 
-  def getFieldIndex(name: String, ignoreCase: Boolean = false): Option[Int] =
+  def getFieldIndex(name: String): Option[Int] = getFieldIndex(name, ignoreCase = false)
+
+  def getFieldIndex(name: String, ignoreCase: Boolean): Option[Int] =
     getField(name, ignoreCase).map(f => getFields.indexOf(f))
 
   override def toString: String = treeString

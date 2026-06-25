@@ -12,6 +12,16 @@ private[polars] object column_expr extends Natively {
 
   @native def applyBinary(leftPtr: Long, rightPtr: Long, op: Int): Long
 
+  @native def cast(ptr: Long, dataType: String): Long
+
+  @native def isIn(ptr: Long, values: Array[Any]): Long
+
+  @native def isBetween(ptr: Long, lower: Any, upper: Any): Long
+
+  @native def like(ptr: Long, pattern: String): Long
+
+  @native def to_uppercase(ptr: Long): Long
+
   @native def free(ptr: Long): Unit
 
 }
