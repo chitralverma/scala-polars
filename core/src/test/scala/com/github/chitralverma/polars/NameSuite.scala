@@ -30,17 +30,17 @@ class NameSuite extends PolarsTestBase {
     assertColumnValues(dfLit, "LitX", 42, 42, 42)
   }
 
-  test("name namespace: change case (to_uppercase / to_lowercase)") {
+  test("name namespace: change case (toUppercase / toLowercase)") {
     val df = intFrame("ColX", 1, 2, 3)
 
-    // Test to_uppercase
-    val dfUpper = df.select(col("ColX").name.to_uppercase)
+    // Test toUppercase
+    val dfUpper = df.select(col("ColX").name.toUppercase)
     dfUpper.schema.getField("COLX") shouldBe defined
     dfUpper.schema.getField("ColX") should not be defined
     assertColumnValues(dfUpper, "COLX", 1, 2, 3)
 
-    // Test to_lowercase
-    val dfLower = df.select(col("ColX").name.to_lowercase)
+    // Test toLowercase
+    val dfLower = df.select(col("ColX").name.toLowercase)
     dfLower.schema.getField("colx") shouldBe defined
     dfLower.schema.getField("ColX") should not be defined
     assertColumnValues(dfLower, "colx", 1, 2, 3)

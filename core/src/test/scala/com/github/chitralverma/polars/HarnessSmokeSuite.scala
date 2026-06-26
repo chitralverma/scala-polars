@@ -16,7 +16,7 @@ class HarnessSmokeSuite extends PolarsTestBase {
 
   test("build a frame, apply col(a) + 1, collect, and read values back") {
     val df = intFrame("a", 1, 2, 3)
-    val result = df.with_column("b", col("a") + 1)
+    val result = df.withColumn("b", col("a") + 1)
 
     assertRowCount(result, 3)
     assertColumns(result, "a", "b")

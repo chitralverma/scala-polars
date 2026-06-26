@@ -1,5 +1,6 @@
 package com.github.chitralverma.polars
 
+import com.github.chitralverma.polars.api.expressions.Expression
 import com.github.chitralverma.polars.functions._
 import com.github.chitralverma.polars.testing.PolarsTestBase
 
@@ -8,32 +9,32 @@ import com.github.chitralverma.polars.testing.PolarsTestBase
   */
 class UnarySuite extends PolarsTestBase {
 
-  test("unary predicates: is_finite, is_infinite, is_empty, drop_nulls, drop_nans") {
+  test("unary predicates: isFinite, isInfinite, isEmpty, dropNulls, dropNans") {
     val df = doubleFrame("ColX", 1.0, Double.NaN, Double.PositiveInfinity)
 
-    // Test is_finite
-    val dfFinite = df.select(col("ColX").is_finite.alias("finite"))
+    // Test isFinite
+    val dfFinite = df.select(col("ColX").isFinite.alias("finite"))
     assertColumnValues(dfFinite, "finite", true, false, false)
 
-    // Test is_infinite
-    val dfInfinite = df.select(col("ColX").is_infinite.alias("infinite"))
+    // Test isInfinite
+    val dfInfinite = df.select(col("ColX").isInfinite.alias("infinite"))
     assertColumnValues(dfInfinite, "infinite", false, false, true)
 
-    // Test drop_nans
-    val dfDropNans = df.select(col("ColX").drop_nans().alias("non_nan"))
+    // Test dropNans
+    val dfDropNans = df.select(col("ColX").dropNans().alias("non_nan"))
     assertColumnValues(dfDropNans, "non_nan", 1.0, Double.PositiveInfinity)
 
-    // Test drop_nulls using shift-introduced nulls
+    // Test dropNulls using shift-introduced nulls
     val dfShifted = intFrame("ColY", 1, 2, 3)
-    val dfDropNulls = dfShifted.select(col("ColY").shift(1).drop_nulls().alias("non_null"))
+    val dfDropNulls = dfShifted.select(col("ColY").shift(1).dropNulls().alias("non_null"))
     assertColumnValues(dfDropNulls, "non_null", 1, 2)
 
-    // Test is_empty
-    val dfEmpty = df.select(col("ColX").is_empty.alias("empty"))
+    // Test isEmpty
+    val dfEmpty = df.select(col("ColX").isEmpty.alias("empty"))
     assertColumnValues(dfEmpty, "empty", false)
   }
 
-  test("unary transforms: reverse, slice, head, tail, limit, gather_every, shift") {
+  test("unary transforms: reverse, slice, head, tail, limit, gatherEvery, shift") {
     val df = intFrame("ColX", 1, 2, 3, 4, 5)
 
     // Test reverse
@@ -55,8 +56,8 @@ class UnarySuite extends PolarsTestBase {
     val dfTail = df.select(col("ColX").tail(2).alias("tail"))
     assertColumnValues(dfTail, "tail", 4, 5)
 
-    // Test gather_every
-    val dfGather = df.select(col("ColX").gather_every(2, 1).alias("gathered"))
+    // Test gatherEvery
+    val dfGather = df.select(col("ColX").gatherEvery(2, 1).alias("gathered"))
     assertColumnValues(dfGather, "gathered", 2, 4)
 
     // Test shift (positive and negative)
@@ -65,9 +66,17 @@ class UnarySuite extends PolarsTestBase {
 
     val dfShiftNeg = df.select(col("ColX").shift(-2).alias("shifted_neg"))
     assertColumnValues(dfShiftNeg, "shifted_neg", 3, 4, 5, null, null)
+
+    // Test gatherEvery argument validation
+    an[IllegalArgumentException] shouldBe thrownBy {
+      col("ColX").gatherEvery(0)
+    }
+    an[IllegalArgumentException] shouldBe thrownBy {
+      col("ColX").gatherEvery(2, -1)
+    }
   }
 
-  test("unary distincts: unique, is_unique, is_duplicated, is_first_distinct, is_last_distinct") {
+  test("unary distincts: unique, isUnique, isDuplicated, isFirstDistinct, isLastDistinct") {
     val df = intFrame("ColX", 1, 2, 2, 3, 1)
 
     // Test unique (without maintaining order)
@@ -80,33 +89,54 @@ class UnarySuite extends PolarsTestBase {
     val dfUniqueStable = df.select(col("ColX").unique(maintainOrder = true).alias("unique"))
     assertColumnValues(dfUniqueStable, "unique", 1, 2, 3)
 
-    // Test is_unique (mask of elements that occur exactly once)
-    val dfIsUnique = df.select(col("ColX").is_unique.alias("is_unique"))
+    // Test isUnique (mask of elements that occur exactly once)
+    val dfIsUnique = df.select(col("ColX").isUnique.alias("is_unique"))
     assertColumnValues(dfIsUnique, "is_unique", false, false, false, true, false)
 
-    // Test is_duplicated (mask of elements that occur more than once)
-    val dfIsDuplicated = df.select(col("ColX").is_duplicated.alias("is_duplicated"))
+    // Test isDuplicated (mask of elements that occur more than once)
+    val dfIsDuplicated = df.select(col("ColX").isDuplicated.alias("is_duplicated"))
     assertColumnValues(dfIsDuplicated, "is_duplicated", true, true, true, false, true)
 
-    // Test is_first_distinct (mask of first occurrence of distinct elements)
-    val dfIsFirst = df.select(col("ColX").is_first_distinct.alias("is_first"))
+    // Test isFirstDistinct (mask of first occurrence of distinct elements)
+    val dfIsFirst = df.select(col("ColX").isFirstDistinct.alias("is_first"))
     assertColumnValues(dfIsFirst, "is_first", true, true, false, true, false)
 
-    // Test is_last_distinct (mask of last occurrence of distinct elements)
-    val dfIsLast = df.select(col("ColX").is_last_distinct.alias("is_last"))
+    // Test isLastDistinct (mask of last occurrence of distinct elements)
+    val dfIsLast = df.select(col("ColX").isLastDistinct.alias("is_last"))
     assertColumnValues(dfIsLast, "is_last", false, false, true, true, true)
   }
 
-  test("unary distinct aggregations: mode, unique_counts") {
+  test("unary distinct aggregations: mode, uniqueCounts") {
     val df = intFrame("ColX", 2, 2, 3, 1, 2)
 
     // Test mode (most frequent values)
     val dfMode = df.select(col("ColX").mode().alias("mode"))
     assertColumnValues(dfMode, "mode", 2)
 
-    // Test unique_counts (number of occurrences per unique value in order of appearance)
-    val dfUniqueCounts = df.select(col("ColX").unique_counts().alias("counts"))
+    // Test uniqueCounts (number of occurrences per unique value in order of appearance)
+    val dfUniqueCounts = df.select(col("ColX").uniqueCounts().alias("counts"))
     assertColumnValues(dfUniqueCounts, "counts", 3, 1, 1)
+  }
+
+  test("sorting and top-K with duplicate expressions") {
+    val df = intFrame("ColX", 3, 1, 2)
+
+    // Test sort with duplicate expressions and matching null_last array length
+    val sortedDf = df.toLazy
+      .sort(Array[Expression](col("ColX"), col("ColX")), Array(true, true), maintainOrder = false)
+      .collect()
+    assertColumnValues(sortedDf, "ColX", 1, 2, 3) // ascending twice (default)
+
+    // Test topK with duplicate expressions and matching nullLast array length
+    val topKDf = df.toLazy
+      .topK(
+        2,
+        Array[Expression](col("ColX"), col("ColX")),
+        Array(true, true),
+        maintainOrder = false
+      )
+      .collect()
+    assertColumnValues(topKDf, "ColX", 3, 2)
   }
 
 }

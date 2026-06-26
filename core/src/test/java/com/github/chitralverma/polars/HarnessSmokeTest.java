@@ -23,7 +23,7 @@ public class HarnessSmokeTest extends AbstractPolarsJavaTest {
   @Test
   public void buildFrameApplyColPlusOneCollectAndReadBack() {
     DataFrame df = intFrame("a", 1, 2, 3);
-    DataFrame result = df.with_column("b", col("a").plus(1));
+    DataFrame result = df.withColumn("b", col("a").plus(1));
 
     assertRowCount(result, 3);
     assertColumns(result, "a", "b");

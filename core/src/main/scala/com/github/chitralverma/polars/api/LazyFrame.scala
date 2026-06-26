@@ -98,7 +98,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
     )
 
     val ldfPtr =
-      lazy_frame.sortFromExprs(ptr, exprs.map(_.ptr).distinct, null_last, maintainOrder)
+      lazy_frame.sortFromExprs(ptr, exprs.map(_.ptr), null_last, maintainOrder)
 
     LazyFrame.withPtr(ldfPtr)
   }
@@ -106,7 +106,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
   def sort(expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
     sort(Array(expr), Array(nullLast), maintainOrder = maintainOrder)
 
-  def set_sorted(
+  def setSorted(
       column: String,
       descending: Boolean = false,
       nullsLast: Boolean = false
@@ -116,27 +116,27 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def top_k(
+  def topK(
       k: Int,
       exprs: Array[Expression],
-      null_last: Array[Boolean],
+      nullLast: Array[Boolean],
       maintainOrder: Boolean
   ): LazyFrame = {
     assert(
-      exprs.length == null_last.length,
+      exprs.length == nullLast.length,
       s"Length of provided expressions (${exprs.length}) and their " +
-        s"null_last (${null_last.length}) is not equal."
+        s"nullLast (${nullLast.length}) is not equal."
     )
     val ldfPtr =
-      lazy_frame.topKFromExprs(ptr, k, exprs.map(_.ptr).distinct, null_last, maintainOrder)
+      lazy_frame.topKFromExprs(ptr, k, exprs.map(_.ptr), nullLast, maintainOrder)
 
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def top_k(k: Int, expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
-    top_k(k, Array(expr), Array(nullLast), maintainOrder = maintainOrder)
+  def topK(k: Int, expr: Expression, nullLast: Boolean, maintainOrder: Boolean): LazyFrame =
+    topK(k, Array(expr), Array(nullLast), maintainOrder = maintainOrder)
 
-  def top_k(
+  def topK(
       k: Int,
       cols: Array[String],
       descending: Array[Boolean],
@@ -153,17 +153,17 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       Expression.withPtr(column_expr.sort_column_by_name(column, bool))
     }
 
-    top_k(k, exprs, null_last = nullLast, maintainOrder = maintainOrder)
+    topK(k, exprs, nullLast = nullLast, maintainOrder = maintainOrder)
   }
 
-  def top_k(
+  def topK(
       k: Int,
       col: String,
       descending: Boolean,
       nullLast: Boolean,
       maintainOrder: Boolean
   ): LazyFrame =
-    top_k(k, Array(col), Array(descending), Array(nullLast), maintainOrder = maintainOrder)
+    topK(k, Array(col), Array(descending), Array(nullLast), maintainOrder = maintainOrder)
 
   def limit(n: Long): LazyFrame =
     LazyFrame.withPtr(lazy_frame.limit(ptr, n))
@@ -184,7 +184,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def with_column(name: String, expr: Expression): LazyFrame = {
+  def withColumn(name: String, expr: Expression): LazyFrame = {
     val ldfPtr = lazy_frame.withColumn(ptr, name, expr.ptr)
 
     LazyFrame.withPtr(ldfPtr)
@@ -213,9 +213,9 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
     LazyFrame.withPtr(ldfPtr)
   }
 
-  def drop_nulls: LazyFrame = drop_nulls()
+  def dropNulls: LazyFrame = dropNulls()
 
-  def drop_nulls(
+  def dropNulls(
       subset: Array[String] = Array.empty
   ): LazyFrame = {
     val ldfPtr = lazy_frame.drop_nulls(ptr, subset)
