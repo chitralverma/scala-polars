@@ -56,6 +56,54 @@ private[polars] object column_expr extends Natively {
 
   @native def unique_counts(ptr: Long): Long
 
+  @native def sum(ptr: Long): Long
+
+  @native def min(ptr: Long): Long
+
+  @native def max(ptr: Long): Long
+
+  @native def mean(ptr: Long): Long
+
+  @native def median(ptr: Long): Long
+
+  @native def std(ptr: Long, ddof: Int): Long
+
+  @native def `var`(ptr: Long, ddof: Int): Long
+
+  @native def product(ptr: Long): Long
+
+  @native def count(ptr: Long): Long
+
+  @native def len(ptr: Long): Long
+
+  @native def n_unique(ptr: Long): Long
+
+  @native def approx_n_unique(ptr: Long): Long
+
+  @native def null_count(ptr: Long): Long
+
+  @native def first(ptr: Long): Long
+
+  @native def last(ptr: Long): Long
+
+  @native def quantile(ptr: Long, q: Double, method: String): Long
+
+  @native def arg_min(ptr: Long): Long
+
+  @native def arg_max(ptr: Long): Long
+
+  @native def arg_sort(ptr: Long, descending: Boolean, nullsLast: Boolean): Long
+
+  @native def skew(ptr: Long, bias: Boolean): Long
+
+  @native def kurtosis(ptr: Long, fisher: Boolean, bias: Boolean): Long
+
+  @native def any(ptr: Long, ignoreNulls: Boolean): Long
+
+  @native def all(ptr: Long, ignoreNulls: Boolean): Long
+
+  @native def cum_sum(ptr: Long, reverse: Boolean): Long
+
   @native def free(ptr: Long): Unit
 
 }
