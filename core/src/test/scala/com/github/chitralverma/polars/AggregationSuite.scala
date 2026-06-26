@@ -34,6 +34,22 @@ class AggregationSuite extends PolarsTestBase {
     // first, last
     assertColumnValues(df.select(col("ColX").first().alias("first")), "first", 1)
     assertColumnValues(df.select(col("ColX").last().alias("last")), "last", 4)
+
+    // any, all (on boolean expression), cumSum
+    val dfBool = df.select((col("ColX") > 2).alias("b")) // [false, false, true, true]
+    assertColumnValues(dfBool.select(col("b").any().alias("any_b")), "any_b", true)
+    assertColumnValues(dfBool.select(col("b").all().alias("all_b")), "all_b", false)
+
+    val dfCum = df.select(col("ColX").cumSum().alias("cum_sum"))
+    assertColumnValues(dfCum, "cum_sum", 1, 3, 6, 10)
+
+    // Test ddof validation (Copilot check)
+    an[IllegalArgumentException] shouldBe thrownBy {
+      col("ColX").std(-1)
+    }
+    an[IllegalArgumentException] shouldBe thrownBy {
+      col("ColX").`var`(256)
+    }
   }
 
   test("expression-level indexing, sorting, shape, and quantile reductions") {
@@ -59,7 +75,7 @@ class AggregationSuite extends PolarsTestBase {
   test("free companion functions mirroring pl.*") {
     val df = intFrame("ColX", 1, 2, 3, 4)
 
-    // sum, min, max, mean, median, std, var, count, nUnique, approxNUnique, first, last, quantile
+    // sum, min, max, mean, median, std, var, count, nUnique, approxNUnique, first, last, quantile, any, all, cumSum
     assertColumnValues(df.select(sum("ColX").alias("sum")), "sum", 10)
     assertColumnValues(df.select(min("ColX").alias("min")), "min", 1)
     assertColumnValues(df.select(max("ColX").alias("max")), "max", 4)
@@ -74,11 +90,19 @@ class AggregationSuite extends PolarsTestBase {
     assertColumnValues(df.select(last("ColX").alias("last")), "last", 4)
     assertColumnValues(df.select(quantile("ColX", 0.5, "linear").alias("q")), "q", 2.5)
 
+    val dfBool = df.select((col("ColX") > 2).alias("b"))
+    assertColumnValues(dfBool.select(any("b").alias("any_b")), "any_b", true)
+    assertColumnValues(dfBool.select(functions.all("b").alias("all_b")), "all_b", false)
+
+    assertColumnValues(df.select(cumSum("ColX").alias("cum_sum")), "cum_sum", 1, 3, 6, 10)
+
     // len() free function row-count helper
     assertColumnValues(df.select(len().alias("total_rows")), "total_rows", 4)
   }
 
-  test("horizontal aggregates: sumHorizontal, meanHorizontal, minHorizontal, maxHorizontal, allHorizontal, anyHorizontal") {
+  test(
+    "horizontal aggregates: sumHorizontal, meanHorizontal, minHorizontal, maxHorizontal, allHorizontal, anyHorizontal"
+  ) {
     val df = intFrame("A", 1, 2, 3).withColumn("B", col("A") * 10) // B = [10, 20, 30]
 
     // sumHorizontal, meanHorizontal
@@ -106,6 +130,80 @@ class AggregationSuite extends PolarsTestBase {
 
     val dfAll = dfBool.select(allHorizontal(col("A_bool"), col("B_bool")).alias("all_h"))
     assertColumnValues(dfAll, "all_h", true, true, false, false)
+  }
+
+  test("test_vertical: alias for col agg (equivalence of free-fn and expr form)") {
+    // Replicates test_vertical.py::test_alias_for_col_agg and test_alias_for_col_agg_bool
+    // Skipped: selectors (cs.*), as_expression (not yet supported)
+    val df = intFrame("a", 1, 4)
+    assertColumnValues(df.select(min("a").alias("m")), "m", 1)
+    assertColumnValues(df.select(max("a").alias("m")), "m", 4)
+    assertColumnValues(df.select(sum("a").alias("m")), "m", 5)
+    assertColumnValues(df.select(cumSum("a").alias("m")), "m", 1, 5)
+
+    val dfBool = booleanFrame("b", true, false)
+    assertColumnValues(dfBool.select(any("b").alias("any")), "any", true)
+    assertColumnValues(dfBool.select(functions.all("b").alias("all")), "all", false)
+  }
+
+  test("test_horizontal: max_min_nulls_consistency, nested_min_max, broadcasting, and raises") {
+    // Replicates test_horizontal.py::test_max_min_nulls_consistency (using shift for nulls)
+    // Skipped: cum_sum_horizontal (deferred to Phase 10 Structs), pl.duration, Decimal dtypes
+    val dfNulls = intFrame("a", 10, 20, 30)
+      .withColumn("b", col("a").shift(1)) // [null, 10, 20]
+      .withColumn("c", col("a").shift(-1)) // [20, 30, null]
+    assertColumnValues(
+      dfNulls.select(maxHorizontal(col("a"), col("b"), col("c")).alias("max_h")),
+      "max_h",
+      20,
+      30,
+      30
+    )
+    assertColumnValues(
+      dfNulls.select(minHorizontal(col("a"), col("b"), col("c")).alias("min_h")),
+      "min_h",
+      10,
+      10,
+      20
+    )
+
+    // Replicates test_horizontal.py::test_nested_min_max
+    val dfNested =
+      intFrame("a", 1).withColumn("b", lit(2)).withColumn("c", lit(3)).withColumn("d", lit(4))
+    val dfNestedRes = dfNested.select(
+      maxHorizontal(minHorizontal(col("a"), col("b")), minHorizontal(col("c"), col("d")))
+        .alias("t")
+    )
+    assertColumnValues(dfNestedRes, "t", 3)
+
+    // Replicates test_horizontal.py::test_horizontal_broadcasting
+    val dfBroad = intFrame("a", 1, 3).withColumn("b", lit(3)) // b = [3, 3] (literal broadcasted)
+    assertColumnValues(
+      dfBroad.select(sumHorizontal(lit(1), col("a"), col("b")).alias("sum_h")),
+      "sum_h",
+      5,
+      7
+    )
+
+    // Replicates test_horizontal.py::test_mean_horizontal_bool
+    val dfBoolMean = booleanFrame("a", true, false, false)
+      .withColumn("b", col("a").reverse()) // [false, false, true]
+    assertColumnValues(
+      dfBoolMean.select(meanHorizontal(col("a"), col("b")).alias("mean_h")),
+      "mean_h",
+      0.5,
+      0.0,
+      0.5
+    )
+
+    // Replicates test_horizontal.py::test_raise_invalid_types_21835 (min_horizontal on int and string raises)
+    val dfInvalid = api.DataFrame.fromSeries(
+      api.Series.ofInt("x", Array(1)),
+      api.Series.ofString("y", Array("two"))
+    )
+    assertThrows[RuntimeException] {
+      dfInvalid.select(minHorizontal(col("x"), col("y")))
+    }
   }
 
 }

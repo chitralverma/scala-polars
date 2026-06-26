@@ -98,6 +98,12 @@ private[polars] object column_expr extends Natively {
 
   @native def kurtosis(ptr: Long, fisher: Boolean, bias: Boolean): Long
 
+  @native def any(ptr: Long, ignoreNulls: Boolean): Long
+
+  @native def all(ptr: Long, ignoreNulls: Boolean): Long
+
+  @native def cum_sum(ptr: Long, reverse: Boolean): Long
+
   @native def free(ptr: Long): Unit
 
 }

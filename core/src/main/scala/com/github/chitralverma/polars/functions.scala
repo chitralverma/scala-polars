@@ -106,6 +106,21 @@ object functions {
     col(colName).quantile(q, method)
   def quantile(colName: String, q: Double): Column = col(colName).quantile(q)
 
+  def any(col: Expression, ignoreNulls: Boolean): Column = col.any(ignoreNulls)
+  def any(col: Expression): Column = col.any()
+  def any(colName: String, ignoreNulls: Boolean): Column = col(colName).any(ignoreNulls)
+  def any(colName: String): Column = col(colName).any()
+
+  def all(col: Expression, ignoreNulls: Boolean): Column = col.all(ignoreNulls)
+  def all(col: Expression): Column = col.all()
+  def all(colName: String, ignoreNulls: Boolean): Column = col(colName).all(ignoreNulls)
+  def all(colName: String): Column = col(colName).all()
+
+  def cumSum(col: Expression, reverse: Boolean): Column = col.cumSum(reverse)
+  def cumSum(col: Expression): Column = col.cumSum()
+  def cumSum(colName: String, reverse: Boolean): Column = col(colName).cumSum(reverse)
+  def cumSum(colName: String): Column = col(colName).cumSum()
+
   // --- Horizontal Aggregations ---
 
   import com.github.chitralverma.polars.internal.jni.expressions.functions_expr

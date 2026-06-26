@@ -39,6 +39,30 @@ public class AggregationTest extends AbstractPolarsJavaTest {
     // first, last
     assertColumnValues(df.select(col("ColX").first().alias("first")), "first", 1);
     assertColumnValues(df.select(col("ColX").last().alias("last")), "last", 4);
+
+    // any, all (on boolean expression), cumSum
+    DataFrame dfBool =
+        df.select(col("ColX").greaterThan(2).alias("b")); // [false, false, true, true]
+    assertColumnValues(dfBool.select(col("b").any().alias("any_b")), "any_b", true);
+    assertColumnValues(dfBool.select(col("b").all().alias("all_b")), "all_b", false);
+
+    DataFrame dfCum = df.select(col("ColX").cumSum().alias("cum_sum"));
+    assertColumnValues(dfCum, "cum_sum", 1, 3, 6, 10);
+
+    // Test ddof validation (Copilot check)
+    try {
+      col("ColX").std(-1);
+      org.junit.Assert.fail("Expected IllegalArgumentException for ddof < 0");
+    } catch (IllegalArgumentException e) {
+      org.junit.Assert.assertTrue(e.getMessage().contains("must be between 0 and 255"));
+    }
+
+    try {
+      col("ColX").var(256);
+      org.junit.Assert.fail("Expected IllegalArgumentException for ddof > 255");
+    } catch (IllegalArgumentException e) {
+      org.junit.Assert.assertTrue(e.getMessage().contains("must be between 0 and 255"));
+    }
   }
 
   @Test
@@ -66,7 +90,8 @@ public class AggregationTest extends AbstractPolarsJavaTest {
   public void freeCompanionFunctions() {
     DataFrame df = intFrame("ColX", 1, 2, 3, 4);
 
-    // sum, min, max, mean, median, std, var, count, nUnique, approxNUnique, first, last, quantile
+    // sum, min, max, mean, median, std, var, count, nUnique, approxNUnique, first, last, quantile,
+    // any, all, cumSum
     assertColumnValues(df.select(sum("ColX").alias("sum")), "sum", 10);
     assertColumnValues(df.select(min("ColX").alias("min")), "min", 1);
     assertColumnValues(df.select(max("ColX").alias("max")), "max", 4);
@@ -80,6 +105,12 @@ public class AggregationTest extends AbstractPolarsJavaTest {
     assertColumnValues(df.select(first("ColX").alias("first")), "first", 1);
     assertColumnValues(df.select(last("ColX").alias("last")), "last", 4);
     assertColumnValues(df.select(quantile("ColX", 0.5, "linear").alias("q")), "q", 2.5);
+
+    DataFrame dfBool = df.select(col("ColX").greaterThan(2).alias("b"));
+    assertColumnValues(dfBool.select(any("b").alias("any_b")), "any_b", true);
+    assertColumnValues(dfBool.select(all("b").alias("all_b")), "all_b", false);
+
+    assertColumnValues(df.select(cumSum("ColX").alias("cum_sum")), "cum_sum", 1, 3, 6, 10);
 
     // len() free function
     assertColumnValues(df.select(len().alias("total_rows")), "total_rows", 4);
@@ -115,5 +146,80 @@ public class AggregationTest extends AbstractPolarsJavaTest {
 
     DataFrame dfAll = dfBool.select(allHorizontal(col("A_bool"), col("B_bool")).alias("all_h"));
     assertColumnValues(dfAll, "all_h", true, true, false, false);
+  }
+
+  @Test
+  public void testVerticalAliasForColAgg() {
+    // Replicates test_vertical.py::test_alias_for_col_agg and test_alias_for_col_agg_bool
+    // Skipped: selectors (cs.*), as_expression (not yet supported)
+    DataFrame df = intFrame("a", 1, 4);
+    assertColumnValues(df.select(min("a").alias("m")), "m", 1);
+    assertColumnValues(df.select(max("a").alias("m")), "m", 4);
+    assertColumnValues(df.select(sum("a").alias("m")), "m", 5);
+    assertColumnValues(df.select(cumSum("a").alias("m")), "m", 1, 5);
+
+    DataFrame dfBool = booleanFrame("b", true, false);
+    assertColumnValues(dfBool.select(any("b").alias("any")), "any", true);
+    assertColumnValues(dfBool.select(all("b").alias("all")), "all", false);
+  }
+
+  @Test
+  public void testHorizontalAggregationsEdgeCases() {
+    // Replicates test_horizontal.py::test_max_min_nulls_consistency (using shift for nulls)
+    // Skipped: cum_sum_horizontal (deferred to Phase 10 Structs), pl.duration, Decimal dtypes
+    DataFrame dfNulls =
+        intFrame("a", 10, 20, 30)
+            .withColumn("b", col("a").shift(1)) // [null, 10, 20]
+            .withColumn("c", col("a").shift(-1)); // [20, 30, null]
+    assertColumnValues(
+        dfNulls.select(maxHorizontal(col("a"), col("b"), col("c")).alias("max_h")),
+        "max_h",
+        20,
+        30,
+        30);
+    assertColumnValues(
+        dfNulls.select(minHorizontal(col("a"), col("b"), col("c")).alias("min_h")),
+        "min_h",
+        10,
+        10,
+        20);
+
+    // Replicates test_horizontal.py::test_nested_min_max
+    DataFrame dfNested =
+        intFrame("a", 1).withColumn("b", lit(2)).withColumn("c", lit(3)).withColumn("d", lit(4));
+    DataFrame dfNestedRes =
+        dfNested.select(
+            maxHorizontal(minHorizontal(col("a"), col("b")), minHorizontal(col("c"), col("d")))
+                .alias("t"));
+    assertColumnValues(dfNestedRes, "t", 3);
+
+    // Replicates test_horizontal.py::test_horizontal_broadcasting
+    DataFrame dfBroad =
+        intFrame("a", 1, 3).withColumn("b", lit(3)); // b = [3, 3] (literal broadcasted)
+    assertColumnValues(
+        dfBroad.select(sumHorizontal(lit(1), col("a"), col("b")).alias("sum_h")), "sum_h", 5, 7);
+
+    // Replicates test_horizontal.py::test_mean_horizontal_bool
+    DataFrame dfBoolMean =
+        booleanFrame("a", true, false, false)
+            .withColumn("b", col("a").reverse()); // [false, false, true]
+    assertColumnValues(
+        dfBoolMean.select(meanHorizontal(col("a"), col("b")).alias("mean_h")),
+        "mean_h",
+        0.5,
+        0.0,
+        0.5);
+
+    // Replicates test_horizontal.py::test_raise_invalid_types_21835
+    DataFrame dfInvalid =
+        DataFrame.fromSeries(
+            com.github.chitralverma.polars.api.Series.ofInt("x", new int[] {1}),
+            com.github.chitralverma.polars.api.Series.ofString("y", new String[] {"two"}));
+    try {
+      dfInvalid.select(minHorizontal(col("x"), col("y")));
+      org.junit.Assert.fail("Expected RuntimeException for invalid horizontal min types");
+    } catch (RuntimeException e) {
+      // Expected native-side validation panic
+    }
   }
 }

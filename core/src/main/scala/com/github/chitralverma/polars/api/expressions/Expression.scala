@@ -287,10 +287,11 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Standard deviation of the values.
     *
     * @param ddof
-    *   Delta Degrees of Freedom (default is 1)
+    *   Delta Degrees of Freedom (default is 1, must be between 0 and 255)
     */
   def std(ddof: Int): Column = {
     checkClosed()
+    require(ddof >= 0 && ddof <= 255, s"std: 'ddof' must be between 0 and 255, but got $ddof")
     Column.withPtr(column_expr.std(ptr, ddof))
   }
 
@@ -300,10 +301,11 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Variance of the values.
     *
     * @param ddof
-    *   Delta Degrees of Freedom (default is 1)
+    *   Delta Degrees of Freedom (default is 1, must be between 0 and 255)
     */
   def `var`(ddof: Int): Column = {
     checkClosed()
+    require(ddof >= 0 && ddof <= 255, s"var: 'ddof' must be between 0 and 255, but got $ddof")
     Column.withPtr(column_expr.`var`(ptr, ddof))
   }
 
@@ -442,6 +444,45 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
 
   /** Compute the kurtosis of the values with Fisher's definition and bias correction. */
   def kurtosis(): Column = kurtosis(fisher = true, bias = true)
+
+  /** Return whether any of the values in the boolean expression are true.
+    *
+    * @param ignoreNulls
+    *   whether to ignore null values
+    */
+  def any(ignoreNulls: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.any(ptr, ignoreNulls))
+  }
+
+  /** Return whether any of the values in the boolean expression are true (ignoring nulls). */
+  def any(): Column = any(ignoreNulls = true)
+
+  /** Return whether all of the values in the boolean expression are true.
+    *
+    * @param ignoreNulls
+    *   whether to ignore null values
+    */
+  def all(ignoreNulls: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.all(ptr, ignoreNulls))
+  }
+
+  /** Return whether all of the values in the boolean expression are true (ignoring nulls). */
+  def all(): Column = all(ignoreNulls = true)
+
+  /** Compute the cumulative sum of the values.
+    *
+    * @param reverse
+    *   whether to compute the sum in reverse order
+    */
+  def cumSum(reverse: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.cum_sum(ptr, reverse))
+  }
+
+  /** Compute the cumulative sum of the values. */
+  def cumSum(): Column = cumSum(reverse = false)
 
   override def close(): Unit = synchronized {
     if (!isClosed && _ptr != 0) {

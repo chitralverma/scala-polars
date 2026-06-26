@@ -659,6 +659,24 @@ pub fn kurtosis(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, fisher: bool, bias: b
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn any(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ignore_nulls: bool) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.any(ignore_nulls))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn all(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ignore_nulls: bool) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.all(ignore_nulls))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn cum_sum(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, reverse: bool) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.cum_sum(reverse))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
     free_ptr::<Expr>(ptr);
 }
