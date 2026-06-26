@@ -24,6 +24,38 @@ private[polars] object column_expr extends Natively {
 
   @native def alias(ptr: Long, name: String): Long
 
+  @native def is_finite(ptr: Long): Long
+
+  @native def is_infinite(ptr: Long): Long
+
+  @native def is_empty(ptr: Long): Long
+
+  @native def drop_nulls(ptr: Long): Long
+
+  @native def drop_nans(ptr: Long): Long
+
+  @native def reverse(ptr: Long): Long
+
+  @native def slice(ptr: Long, offset: Long, length: Long): Long
+
+  @native def shift(ptr: Long, periods: Long): Long
+
+  @native def gather_every(ptr: Long, n: Long, offset: Long): Long
+
+  @native def unique(ptr: Long, maintainOrder: Boolean): Long
+
+  @native def is_unique(ptr: Long): Long
+
+  @native def is_duplicated(ptr: Long): Long
+
+  @native def is_first_distinct(ptr: Long): Long
+
+  @native def is_last_distinct(ptr: Long): Long
+
+  @native def mode(ptr: Long): Long
+
+  @native def unique_counts(ptr: Long): Long
+
   @native def free(ptr: Long): Unit
 
 }

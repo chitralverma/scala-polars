@@ -410,6 +410,107 @@ pub fn alias(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, name: JString) -> 
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_finite(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_finite())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_infinite(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_infinite())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_empty(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_empty(false))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn drop_nulls(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.drop_nulls())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn drop_nans(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.drop_nans())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn reverse(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.reverse())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn slice(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, offset: jlong, length: jlong) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.slice(lit(offset), lit(length)))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn shift(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, periods: jlong) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.shift(lit(periods)))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn gather_every(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, n: jlong, offset: jlong) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.gather_every(n as usize, offset as usize))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, maintain_order: bool) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let expr = if maintain_order {
+        l_expr.unique_stable()
+    } else {
+        l_expr.unique()
+    };
+    to_ptr(expr)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_unique())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_duplicated(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_duplicated())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_first_distinct(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_first_distinct())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn is_last_distinct(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.is_last_distinct())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn mode(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.mode(false))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn unique_counts(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.unique_counts())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
 pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
     free_ptr::<Expr>(ptr);
 }
