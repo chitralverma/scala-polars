@@ -254,6 +254,195 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
     Column.withPtr(column_expr.unique_counts(ptr))
   }
 
+  /** Reduce groups to the sum of all the values. */
+  def sum(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.sum(ptr))
+  }
+
+  /** Reduce groups to the minimal value. */
+  def min(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.min(ptr))
+  }
+
+  /** Reduce groups to the maximum value. */
+  def max(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.max(ptr))
+  }
+
+  /** Reduce groups to the mean value. */
+  def mean(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.mean(ptr))
+  }
+
+  /** Reduce groups to the median value. */
+  def median(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.median(ptr))
+  }
+
+  /** Standard deviation of the values.
+    *
+    * @param ddof
+    *   Delta Degrees of Freedom (default is 1)
+    */
+  def std(ddof: Int): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.std(ptr, ddof))
+  }
+
+  /** Standard deviation of the values with ddof = 1. */
+  def std(): Column = std(1)
+
+  /** Variance of the values.
+    *
+    * @param ddof
+    *   Delta Degrees of Freedom (default is 1)
+    */
+  def `var`(ddof: Int): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.`var`(ptr, ddof))
+  }
+
+  /** Variance of the values with ddof = 1. */
+  def `var`(): Column = `var`(1)
+
+  /** Variance of the values.
+    *
+    * @param ddof
+    *   Delta Degrees of Freedom (default is 1)
+    */
+  def variance(ddof: Int): Column = `var`(ddof)
+
+  /** Variance of the values with ddof = 1. */
+  def variance(): Column = `var`(1)
+
+  /** Reduce groups to the product of all the values. */
+  def product(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.product(ptr))
+  }
+
+  /** Count the non-null values. */
+  def count(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.count(ptr))
+  }
+
+  /** Return the number of elements (including nulls). */
+  def len(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.len(ptr))
+  }
+
+  /** Return the number of unique values. */
+  def nUnique(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.n_unique(ptr))
+  }
+
+  /** Return the approximate number of unique values. */
+  def approxNUnique(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.approx_n_unique(ptr))
+  }
+
+  /** Return the number of null values. */
+  def nullCount(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.null_count(ptr))
+  }
+
+  /** Reduce groups to the first value. */
+  def first(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.first(ptr))
+  }
+
+  /** Reduce groups to the last value. */
+  def last(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.last(ptr))
+  }
+
+  /** Return the quantile value of the values.
+    *
+    * @param q
+    *   quantile value (must be between 0.0 and 1.0)
+    * @param method
+    *   interpolation method (e.g. "nearest", "linear")
+    */
+  def quantile(q: Double, method: String): Column = {
+    checkClosed()
+    require(q >= 0.0 && q <= 1.0, s"quantile: 'q' must be between 0.0 and 1.0, but got $q")
+    Column.withPtr(column_expr.quantile(ptr, q, method))
+  }
+
+  /** Return the quantile value of the values with "nearest" interpolation.
+    *
+    * @param q
+    *   quantile value (must be between 0.0 and 1.0)
+    */
+  def quantile(q: Double): Column = quantile(q, "nearest")
+
+  /** Return the index of the minimal value. */
+  def argMin(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arg_min(ptr))
+  }
+
+  /** Return the index of the maximum value. */
+  def argMax(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arg_max(ptr))
+  }
+
+  /** Return the indices that would sort the values.
+    *
+    * @param descending
+    *   whether to sort descending
+    * @param nullsLast
+    *   whether to put nulls last
+    */
+  def argSort(descending: Boolean, nullsLast: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arg_sort(ptr, descending, nullsLast))
+  }
+
+  /** Return the indices that would sort the values ascending. */
+  def argSort(): Column = argSort(descending = false, nullsLast = false)
+
+  /** Compute the skewness of the values.
+    *
+    * @param bias
+    *   whether to correct for statistical bias
+    */
+  def skew(bias: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.skew(ptr, bias))
+  }
+
+  /** Compute the skewness of the values with bias correction. */
+  def skew(): Column = skew(bias = true)
+
+  /** Compute the kurtosis of the values.
+    *
+    * @param fisher
+    *   whether to use Fisher's definition of kurtosis (default is true)
+    * @param bias
+    *   whether to correct for statistical bias (default is true)
+    */
+  def kurtosis(fisher: Boolean, bias: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.kurtosis(ptr, fisher, bias))
+  }
+
+  /** Compute the kurtosis of the values with Fisher's definition and bias correction. */
+  def kurtosis(): Column = kurtosis(fisher = true, bias = true)
+
   override def close(): Unit = synchronized {
     if (!isClosed && _ptr != 0) {
       column_expr.free(_ptr)

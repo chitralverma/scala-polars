@@ -3,7 +3,7 @@ use std::ops::{Add, Div, Mul, Rem, Sub};
 use anyhow::Context;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JObjectArray, JString};
-use jni::sys::{jint, jlong};
+use jni::sys::{jdouble, jint, jlong};
 use jni_fn::jni_fn;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -508,6 +508,154 @@ pub fn mode(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
 pub fn unique_counts(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
     let l_expr = from_ptr(expr_ptr);
     to_ptr(l_expr.unique_counts())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn sum(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.sum())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn min(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.min())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn max(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.max())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn mean(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.mean())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn median(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.median())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn std(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ddof: jint) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.std(ddof as u8))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn var(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ddof: jint) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.var(ddof as u8))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn product(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.product())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn count(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.count())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn len(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.len())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn n_unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.n_unique())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn approx_n_unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.approx_n_unique())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn null_count(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.null_count())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn first(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.first())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn last(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.last())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn quantile(
+    mut env: JNIEnv,
+    _: JClass,
+    expr_ptr: *mut Expr,
+    q: jdouble,
+    method: JString,
+) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    let s_method = j_string_to_string(&mut env, &method, Some("Failed to parse quantile method"));
+    let q_method = match s_method.to_lowercase().as_str() {
+        "nearest" => QuantileMethod::Nearest,
+        "lower" => QuantileMethod::Lower,
+        "higher" => QuantileMethod::Higher,
+        "midpoint" => QuantileMethod::Midpoint,
+        "linear" => QuantileMethod::Linear,
+        "equiprobable" => QuantileMethod::Equiprobable,
+        _ => QuantileMethod::Nearest,
+    };
+    to_ptr(l_expr.quantile(lit(q), q_method))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn arg_min(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.arg_min())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn arg_max(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.arg_max())
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn arg_sort(
+    _: JNIEnv,
+    _: JClass,
+    expr_ptr: *mut Expr,
+    descending: bool,
+    nulls_last: bool,
+) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.arg_sort(descending, nulls_last))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn skew(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, bias: bool) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.skew(bias))
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
+pub fn kurtosis(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, fisher: bool, bias: bool) -> jlong {
+    let l_expr = from_ptr(expr_ptr);
+    to_ptr(l_expr.kurtosis(fisher, bias))
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
