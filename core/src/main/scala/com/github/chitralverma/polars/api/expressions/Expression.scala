@@ -84,35 +84,35 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   }
 
   /** Check if the values in this expression are finite. */
-  def is_finite: Column = {
+  def isFinite: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_finite(ptr))
   }
 
   /** Check if the values in this expression are infinite. */
-  def is_infinite: Column = {
+  def isInfinite: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_infinite(ptr))
   }
 
   /** Check if the expression is empty.
     *
-    * @note
-    *   This function is unstable in Polars and may change in future versions.
+    * This is a whole-column aggregation returning a single boolean scalar, not a per-element
+    * check. Null values are not ignored.
     */
-  def is_empty: Column = {
+  def isEmpty: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_empty(ptr))
   }
 
   /** Drop null values from this expression. */
-  def drop_nulls(): Column = {
+  def dropNulls(): Column = {
     checkClosed()
     Column.withPtr(column_expr.drop_nulls(ptr))
   }
 
   /** Drop NaN values from this expression. */
-  def drop_nans(): Column = {
+  def dropNans(): Column = {
     checkClosed()
     Column.withPtr(column_expr.drop_nans(ptr))
   }
@@ -138,82 +138,106 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Get the first n elements of this expression.
     *
     * @param n
-    *   number of elements to return (default is 10)
+    *   number of elements to return
     */
-  def head(n: Long = 10): Column = {
+  def head(n: Long): Column = {
     checkClosed()
     slice(0, n)
   }
 
+  /** Get the first 10 elements of this expression. */
+  def head(): Column = head(10)
+
   /** Get the last n elements of this expression.
     *
     * @param n
-    *   number of elements to return (default is 10)
+    *   number of elements to return
     */
-  def tail(n: Long = 10): Column = {
+  def tail(n: Long): Column = {
     checkClosed()
     slice(-n, n)
   }
 
-  /** Alias for [[head]].
+  /** Get the last 10 elements of this expression. */
+  def tail(): Column = tail(10)
+
+  /** Alias for `head`.
     *
     * @param n
-    *   number of elements to return (default is 10)
+    *   number of elements to return
     */
-  def limit(n: Long = 10): Column = head(n)
+  def limit(n: Long): Column = head(n)
+
+  /** Alias for `head`. */
+  def limit(): Column = limit(10)
 
   /** Gather every nth element, starting at the offset.
     *
     * @param n
-    *   gather elements with this step size
+    *   gather elements with this step size (must be >= 1)
     * @param offset
-    *   start gathering from this index (default is 0)
+    *   start gathering from this index (default is 0, must be >= 0)
     */
-  def gather_every(n: Long, offset: Long = 0): Column = {
+  def gatherEvery(n: Long, offset: Long): Column = {
     checkClosed()
+    require(n >= 1, s"gatherEvery: step size 'n' must be >= 1, but got $n")
+    require(offset >= 0, s"gatherEvery: 'offset' must be >= 0, but got $offset")
     Column.withPtr(column_expr.gather_every(ptr, n, offset))
   }
+
+  /** Gather every nth element.
+    *
+    * @param n
+    *   gather elements with this step size (must be >= 1)
+    */
+  def gatherEvery(n: Long): Column = gatherEvery(n, 0)
 
   /** Shift elements in this expression by periods.
     *
     * @param periods
     *   number of positions to shift
     */
-  def shift(periods: Long = 1): Column = {
+  def shift(periods: Long): Column = {
     checkClosed()
     Column.withPtr(column_expr.shift(ptr, periods))
   }
+
+  /** Shift elements in this expression by 1 position. */
+  def shift(): Column = shift(1)
 
   /** Get unique values from this expression.
     *
     * @param maintainOrder
     *   whether to maintain the original order of elements
     */
-  def unique(maintainOrder: Boolean = false): Column = {
+  def unique(maintainOrder: Boolean): Column = {
     checkClosed()
     Column.withPtr(column_expr.unique(ptr, maintainOrder))
   }
 
+  /** Get unique values from this expression. */
+  def unique(): Column = unique(false)
+
   /** Mask indicating unique values in this expression. */
-  def is_unique: Column = {
+  def isUnique: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_unique(ptr))
   }
 
   /** Mask indicating duplicated values in this expression. */
-  def is_duplicated: Column = {
+  def isDuplicated: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_duplicated(ptr))
   }
 
   /** Mask indicating the first occurrence of distinct values in this expression. */
-  def is_first_distinct: Column = {
+  def isFirstDistinct: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_first_distinct(ptr))
   }
 
   /** Mask indicating the last occurrence of distinct values in this expression. */
-  def is_last_distinct: Column = {
+  def isLastDistinct: Column = {
     checkClosed()
     Column.withPtr(column_expr.is_last_distinct(ptr))
   }
@@ -225,7 +249,7 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   }
 
   /** Return the counts of unique values in this expression. */
-  def unique_counts(): Column = {
+  def uniqueCounts(): Column = {
     checkClosed()
     Column.withPtr(column_expr.unique_counts(ptr))
   }

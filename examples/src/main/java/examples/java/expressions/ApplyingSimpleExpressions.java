@@ -20,20 +20,20 @@ public class ApplyingSimpleExpressions {
         input
             .cache()
             .select("id", "name")
-            .with_column("lower_than_four", col("id").lessThanEqualTo(4))
+            .withColumn("lower_than_four", col("id").lessThanEqualTo(4))
             .filter(col("lower_than_four"))
-            .with_column("long_value", lit(new Random().nextLong()))
-            .with_column("date", lit(java.time.LocalDate.now()))
-            .with_column("time", lit(java.time.LocalTime.now()))
-            .with_column("current_ts", lit(java.time.ZonedDateTime.now()))
+            .withColumn("long_value", lit(new Random().nextLong()))
+            .withColumn("date", lit(java.time.LocalDate.now()))
+            .withColumn("time", lit(java.time.LocalTime.now()))
+            .withColumn("current_ts", lit(java.time.ZonedDateTime.now()))
             .sort(asc("name"), true, false)
-            .set_sorted("name", false, false)
-            .top_k(2, "id", true, true, false)
+            .setSorted("name", false, false)
+            .topK(2, "id", true, true, false)
             .limit(2) // .head(2)
             .tail(2)
             .drop("long_value")
             .rename("lower_than_four", "less_than_four")
-            .drop_nulls();
+            .dropNulls();
 
     ldf = Polars.concat(ldf, new LazyFrame[] {ldf, ldf});
     ldf = ldf.unique();

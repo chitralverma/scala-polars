@@ -39,14 +39,14 @@ public class NameTest extends AbstractPolarsJavaTest {
   public void nameChangeCase() {
     DataFrame df = intFrame("ColX", 1, 2, 3);
 
-    // Test to_uppercase
-    DataFrame dfUpper = df.select(col("ColX").name().to_uppercase());
+    // Test toUppercase
+    DataFrame dfUpper = df.select(col("ColX").name().toUppercase());
     Assert.assertTrue(dfUpper.schema().getField("COLX").isDefined());
     Assert.assertFalse(dfUpper.schema().getField("ColX").isDefined());
     assertColumnValues(dfUpper, "COLX", 1, 2, 3);
 
-    // Test to_lowercase
-    DataFrame dfLower = df.select(col("ColX").name().to_lowercase());
+    // Test toLowercase
+    DataFrame dfLower = df.select(col("ColX").name().toLowercase());
     Assert.assertTrue(dfLower.schema().getField("colx").isDefined());
     Assert.assertFalse(dfLower.schema().getField("ColX").isDefined());
     assertColumnValues(dfLower, "colx", 1, 2, 3);

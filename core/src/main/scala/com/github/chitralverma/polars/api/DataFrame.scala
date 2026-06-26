@@ -89,14 +89,14 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       .sort(Array(expr), Array(null_last), maintainOrder = maintain_order)
       .collect(noOptimization = true)
 
-  def set_sorted(
+  def setSorted(
       column: String,
       descending: Boolean = false,
       nullsLast: Boolean = false
   ): DataFrame =
-    toLazy.set_sorted(column, descending, nullsLast).collect(noOptimization = true)
+    toLazy.setSorted(column, descending, nullsLast).collect(noOptimization = true)
 
-  def top_k(
+  def topK(
       k: Int,
       cols: Array[String],
       descending: Array[Boolean],
@@ -104,10 +104,10 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       maintainOrder: Boolean
   ): DataFrame =
     toLazy
-      .top_k(k, cols, descending, nullLast, maintainOrder)
+      .topK(k, cols, descending, nullLast, maintainOrder)
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
-  def top_k(
+  def topK(
       k: Int,
       expr: String,
       descending: Boolean,
@@ -115,7 +115,7 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       maintainOrder: Boolean
   ): DataFrame =
     toLazy
-      .top_k(
+      .topK(
         k = k,
         cols = Array(expr),
         descending = Array(descending),
@@ -124,19 +124,19 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       )
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
-  def top_k(
+  def topK(
       k: Int,
       exprs: Array[Expression],
-      null_last: Array[Boolean],
-      maintain_order: Boolean
+      nullLast: Array[Boolean],
+      maintainOrder: Boolean
   ): DataFrame =
     toLazy
-      .top_k(k, exprs, null_last, maintain_order)
+      .topK(k, exprs, nullLast, maintainOrder)
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
-  def top_k(k: Int, expr: Expression, null_last: Boolean, maintain_order: Boolean): DataFrame =
+  def topK(k: Int, expr: Expression, nullLast: Boolean, maintainOrder: Boolean): DataFrame =
     toLazy
-      .top_k(k, Array(expr), Array(null_last), maintainOrder = maintain_order)
+      .topK(k, Array(expr), Array(nullLast), maintainOrder = maintainOrder)
       .collect(projectionPushdown = false, predicatePushdown = false, commSubplanElim = false)
 
   def limit(n: Long): DataFrame =
@@ -151,19 +151,19 @@ class DataFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
 
   def last(): DataFrame = tail(1)
 
-  def with_column(name: String, expr: Expression): DataFrame =
-    toLazy.with_column(name, expr).collect(noOptimization = true)
+  def withColumn(name: String, expr: Expression): DataFrame =
+    toLazy.withColumn(name, expr).collect(noOptimization = true)
 
   @varargs
   def drop(colName: String, colNames: String*): DataFrame =
     toLazy.drop(colName, colNames: _*).collect(noOptimization = true)
 
-  def drop_nulls: DataFrame = drop_nulls()
+  def dropNulls: DataFrame = dropNulls()
 
-  def drop_nulls(
+  def dropNulls(
       subset: Array[String] = Array.empty
   ): DataFrame =
-    toLazy.drop_nulls(subset).collect(noOptimization = true)
+    toLazy.dropNulls(subset).collect(noOptimization = true)
 
   def rename(oldName: String, newName: String): DataFrame =
     rename(Collections.singletonMap(oldName, newName))

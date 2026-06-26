@@ -49,12 +49,12 @@ public class DataTypeTest extends AbstractPolarsJavaTest {
     DataFrame df = intFrame("a", 1, 2, 3);
 
     // Cast Int32 -> Int16
-    DataFrame result1 = df.with_column("b", col("a").cast(DataTypes.Int16));
+    DataFrame result1 = df.withColumn("b", col("a").cast(DataTypes.Int16));
     assertColumns(result1, "a", "b");
     Assert.assertEquals(Int16Type$.MODULE$, result1.schema().getField("b").get().dataType());
 
     // Cast Int32 -> Float64
-    DataFrame result2 = df.with_column("b", col("a").cast(DataTypes.Float64));
+    DataFrame result2 = df.withColumn("b", col("a").cast(DataTypes.Float64));
     Assert.assertEquals(Float64Type$.MODULE$, result2.schema().getField("b").get().dataType());
     assertColumnValues(result2, "b", 1.0, 2.0, 3.0);
   }
@@ -80,7 +80,7 @@ public class DataTypeTest extends AbstractPolarsJavaTest {
   @Test
   public void stringToUppercase() {
     DataFrame df = stringFrame("a", "apple", "banana");
-    DataFrame result = df.with_column("b", col("a").str().to_uppercase());
+    DataFrame result = df.withColumn("b", col("a").str().toUppercase());
 
     assertRowCount(result, 2);
     assertColumns(result, "a", "b");

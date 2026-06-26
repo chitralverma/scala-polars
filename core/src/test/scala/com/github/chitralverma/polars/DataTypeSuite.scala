@@ -40,17 +40,17 @@ class DataTypeSuite extends PolarsTestBase {
     val df = intFrame("a", 1, 2, 3)
 
     // Cast Int32 -> Int16
-    val result1 = df.with_column("b", col("a").cast(DataTypes.Int16))
+    val result1 = df.withColumn("b", col("a").cast(DataTypes.Int16))
     assertColumns(result1, "a", "b")
     result1.schema.getField("b").get.dataType shouldBe Int16Type
 
     // Cast Int32 -> Float64
-    val result2 = df.with_column("b", col("a").cast(DataTypes.Float64))
+    val result2 = df.withColumn("b", col("a").cast(DataTypes.Float64))
     result2.schema.getField("b").get.dataType shouldBe Float64Type
     assertColumnValues(result2, "b", 1.0, 2.0, 3.0)
 
     // Cast Int32 -> String
-    val result3 = df.with_column("b", col("a").cast(DataTypes.String))
+    val result3 = df.withColumn("b", col("a").cast(DataTypes.String))
     result3.schema.getField("b").get.dataType shouldBe StringType
     assertColumnValues(result3, "b", "1", "2", "3")
   }
@@ -71,9 +71,9 @@ class DataTypeSuite extends PolarsTestBase {
     assertColumnValues(result, "a", 2, 3)
   }
 
-  test("str.to_uppercase end-to-end") {
+  test("str.toUppercase end-to-end") {
     val df = stringFrame("a", "apple", "banana")
-    val result = df.with_column("b", col("a").str.to_uppercase)
+    val result = df.withColumn("b", col("a").str.toUppercase)
 
     assertRowCount(result, 2)
     assertColumns(result, "a", "b")

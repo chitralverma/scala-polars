@@ -20,25 +20,25 @@ public class UnaryTest extends AbstractPolarsJavaTest {
   public void unaryPredicates() {
     DataFrame df = doubleFrame("ColX", 1.0, Double.NaN, Double.POSITIVE_INFINITY);
 
-    // Test is_finite
-    DataFrame dfFinite = df.select(col("ColX").is_finite().alias("finite"));
+    // Test isFinite
+    DataFrame dfFinite = df.select(col("ColX").isFinite().alias("finite"));
     assertColumnValues(dfFinite, "finite", true, false, false);
 
-    // Test is_infinite
-    DataFrame dfInfinite = df.select(col("ColX").is_infinite().alias("infinite"));
+    // Test isInfinite
+    DataFrame dfInfinite = df.select(col("ColX").isInfinite().alias("infinite"));
     assertColumnValues(dfInfinite, "infinite", false, false, true);
 
-    // Test drop_nans
-    DataFrame dfDropNans = df.select(col("ColX").drop_nans().alias("non_nan"));
+    // Test dropNans
+    DataFrame dfDropNans = df.select(col("ColX").dropNans().alias("non_nan"));
     assertColumnValues(dfDropNans, "non_nan", 1.0, Double.POSITIVE_INFINITY);
 
-    // Test drop_nulls using shift-introduced nulls
+    // Test dropNulls using shift-introduced nulls
     DataFrame dfShifted = intFrame("ColY", 1, 2, 3);
-    DataFrame dfDropNulls = dfShifted.select(col("ColY").shift(1).drop_nulls().alias("non_null"));
+    DataFrame dfDropNulls = dfShifted.select(col("ColY").shift(1).dropNulls().alias("non_null"));
     assertColumnValues(dfDropNulls, "non_null", 1, 2);
 
-    // Test is_empty
-    DataFrame dfEmpty = df.select(col("ColX").is_empty().alias("empty"));
+    // Test isEmpty
+    DataFrame dfEmpty = df.select(col("ColX").isEmpty().alias("empty"));
     assertColumnValues(dfEmpty, "empty", false);
   }
 
@@ -65,8 +65,8 @@ public class UnaryTest extends AbstractPolarsJavaTest {
     DataFrame dfTail = df.select(col("ColX").tail(2).alias("tail"));
     assertColumnValues(dfTail, "tail", 4, 5);
 
-    // Test gather_every
-    DataFrame dfGather = df.select(col("ColX").gather_every(2, 1).alias("gathered"));
+    // Test gatherEvery
+    DataFrame dfGather = df.select(col("ColX").gatherEvery(2, 1).alias("gathered"));
     assertColumnValues(dfGather, "gathered", 2, 4);
 
     // Test shift (positive and negative)
@@ -75,6 +75,21 @@ public class UnaryTest extends AbstractPolarsJavaTest {
 
     DataFrame dfShiftNeg = df.select(col("ColX").shift(-2).alias("shifted_neg"));
     assertColumnValues(dfShiftNeg, "shifted_neg", 3, 4, 5, null, null);
+
+    // Test gatherEvery argument validation
+    try {
+      col("ColX").gatherEvery(0);
+      Assert.fail("Expected IllegalArgumentException for n == 0");
+    } catch (IllegalArgumentException e) {
+      Assert.assertTrue(e.getMessage().contains("must be >= 1"));
+    }
+
+    try {
+      col("ColX").gatherEvery(2, -1);
+      Assert.fail("Expected IllegalArgumentException for offset < 0");
+    } catch (IllegalArgumentException e) {
+      Assert.assertTrue(e.getMessage().contains("must be >= 0"));
+    }
   }
 
   @Test
@@ -91,20 +106,20 @@ public class UnaryTest extends AbstractPolarsJavaTest {
     DataFrame dfUniqueStable = df.select(col("ColX").unique(true).alias("unique"));
     assertColumnValues(dfUniqueStable, "unique", 1, 2, 3);
 
-    // Test is_unique
-    DataFrame dfIsUnique = df.select(col("ColX").is_unique().alias("is_unique"));
+    // Test isUnique
+    DataFrame dfIsUnique = df.select(col("ColX").isUnique().alias("is_unique"));
     assertColumnValues(dfIsUnique, "is_unique", false, false, false, true, false);
 
-    // Test is_duplicated
-    DataFrame dfIsDuplicated = df.select(col("ColX").is_duplicated().alias("is_duplicated"));
+    // Test isDuplicated
+    DataFrame dfIsDuplicated = df.select(col("ColX").isDuplicated().alias("is_duplicated"));
     assertColumnValues(dfIsDuplicated, "is_duplicated", true, true, true, false, true);
 
-    // Test is_first_distinct
-    DataFrame dfIsFirst = df.select(col("ColX").is_first_distinct().alias("is_first"));
+    // Test isFirstDistinct
+    DataFrame dfIsFirst = df.select(col("ColX").isFirstDistinct().alias("is_first"));
     assertColumnValues(dfIsFirst, "is_first", true, true, false, true, false);
 
-    // Test is_last_distinct
-    DataFrame dfIsLast = df.select(col("ColX").is_last_distinct().alias("is_last"));
+    // Test isLastDistinct
+    DataFrame dfIsLast = df.select(col("ColX").isLastDistinct().alias("is_last"));
     assertColumnValues(dfIsLast, "is_last", false, false, true, true, true);
   }
 
@@ -116,8 +131,38 @@ public class UnaryTest extends AbstractPolarsJavaTest {
     DataFrame dfMode = df.select(col("ColX").mode().alias("mode"));
     assertColumnValues(dfMode, "mode", 2);
 
-    // Test unique_counts
-    DataFrame dfUniqueCounts = df.select(col("ColX").unique_counts().alias("counts"));
+    // Test uniqueCounts
+    DataFrame dfUniqueCounts = df.select(col("ColX").uniqueCounts().alias("counts"));
     assertColumnValues(dfUniqueCounts, "counts", 3, 1, 1);
+  }
+
+  @Test
+  public void sortingAndTopKWithDuplicateExpressions() {
+    DataFrame df = intFrame("ColX", 3, 1, 2);
+
+    // Test sort with duplicate expressions and matching null_last array length
+    DataFrame sortedDf =
+        df.toLazy()
+            .sort(
+                new com.github.chitralverma.polars.api.expressions.Expression[] {
+                  col("ColX"), col("ColX")
+                },
+                new boolean[] {true, true},
+                false)
+            .collect();
+    assertColumnValues(sortedDf, "ColX", 1, 2, 3); // ascending twice (default)
+
+    // Test topK with duplicate expressions and matching nullLast array length
+    DataFrame topKDf =
+        df.toLazy()
+            .topK(
+                2,
+                new com.github.chitralverma.polars.api.expressions.Expression[] {
+                  col("ColX"), col("ColX")
+                },
+                new boolean[] {true, true},
+                false)
+            .collect();
+    assertColumnValues(topKDf, "ColX", 3, 2);
   }
 }
