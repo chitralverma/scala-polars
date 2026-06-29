@@ -28,9 +28,8 @@ pub trait JavaArrayToVec {
     where
         <Self as JavaArrayToVec>::InternalType: TypeArray,
     {
-        // The borrowed return value has no null sentinel; pinning a valid array only fails
-        // on a fatal JVM condition (e.g. OOM). Abort explicitly to keep the failure mode
-        // deterministic rather than unwinding a panic across the JNI boundary.
+        // The borrowed return has no null sentinel and this only fails on a fatal JVM
+        // condition (e.g. OOM), so abort explicitly rather than unwind across the boundary.
         let elements = unsafe { env.get_array_elements_critical(array, NoCopyBack) };
         match elements {
             Ok(elements) => elements,

@@ -16,10 +16,8 @@ fn format_nested_error(error: &Error) -> String {
     formatted.trim_end().to_string()
 }
 
-/// Throws `err` as a Java `RuntimeException`, unless an exception is already pending.
-///
-/// Re-throwing over a pending exception fails and hides the original, so callers on
-/// any native error path can invoke this safely.
+/// Throws `err` as a Java `RuntimeException`, unless an exception is already pending
+/// (re-throwing over one fails and hides the original).
 pub fn throw_java_exception(env: &mut JNIEnv, err: Error) {
     if env.exception_check().unwrap_or(false) {
         return;
@@ -37,7 +35,7 @@ pub trait ResultExt<T> {
     fn unwrap_or_throw(self, env: &mut JNIEnv) -> T;
 }
 
-// Throws the error as a Java exception, then returns a default sentinel for the JNI boundary.
+// Throws the error, then returns the default sentinel for the JNI boundary.
 macro_rules! impl_result_ext {
     ($t:ty, $def:expr) => {
         impl ResultExt<$t> for Result<$t, Error> {
