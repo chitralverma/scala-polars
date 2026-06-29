@@ -1,7 +1,7 @@
 use anyhow::Error;
 use jni::errors::Result as JniResult;
 use jni::{JNIEnv, sys};
-use polars::prelude::{DataFrame, Expr, LazyFrame, Series};
+use polars::prelude::{DataFrame, DataType, Expr, LazyFrame, PlHashMap, Series};
 
 fn format_nested_error(error: &Error) -> String {
     let mut formatted = String::new();
@@ -18,10 +18,8 @@ fn format_nested_error(error: &Error) -> String {
 }
 
 pub fn throw_java_exception(env: &mut JNIEnv, err: Error) -> JniResult<()> {
-    // Find the Java exception class directly to avoid recursion
+    // Resolved directly (not via find_java_class) to avoid recursion.
     let exception_class = env.find_class("java/lang/RuntimeException")?;
-
-    // Throw the exception with the provided message
     env.throw_new(exception_class, format_nested_error(&err))?;
     Ok(())
 }
@@ -31,23 +29,8 @@ pub trait ResultExt<T> {
     fn unwrap_or_throw(self, env: &mut JNIEnv) -> T;
 }
 
-// 1. Default/fallback implementation: throw exception and abort.
-impl<T> ResultExt<T> for Result<T, Error> {
-    default fn unwrap_or_throw(self, env: &mut JNIEnv) -> T {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
-                std::process::abort();
-            },
-        }
-    }
-}
-
-// 2. Specialized implementations for primitive/Default types:
-macro_rules! impl_result_ext_safe {
+// Throws the error as a Java exception, then returns a default sentinel for the JNI boundary.
+macro_rules! impl_result_ext {
     ($t:ty, $def:expr) => {
         impl ResultExt<$t> for Result<$t, Error> {
             fn unwrap_or_throw(self, env: &mut JNIEnv) -> $t {
@@ -65,18 +48,27 @@ macro_rules! impl_result_ext_safe {
     };
 }
 
-impl_result_ext_safe!(i64, 0);
-impl_result_ext_safe!(i32, 0);
-impl_result_ext_safe!(u8, 0);
-impl_result_ext_safe!((), ());
-impl_result_ext_safe!(f64, 0.0);
-impl_result_ext_safe!(f32, 0.0);
-impl_result_ext_safe!(bool, false);
-impl_result_ext_safe!(sys::jobject, std::ptr::null_mut());
-impl_result_ext_safe!(DataFrame, DataFrame::default());
-impl_result_ext_safe!(LazyFrame, LazyFrame::default());
-impl_result_ext_safe!(Series, Series::default());
-impl_result_ext_safe!(Expr, Expr::default());
+impl_result_ext!(i64, 0);
+impl_result_ext!(i32, 0);
+impl_result_ext!(u8, 0);
+impl_result_ext!((), ());
+impl_result_ext!(f64, 0.0);
+impl_result_ext!(f32, 0.0);
+impl_result_ext!(bool, false);
+impl_result_ext!(sys::jobject, std::ptr::null_mut());
+impl_result_ext!(DataFrame, DataFrame::default());
+impl_result_ext!(LazyFrame, LazyFrame::default());
+impl_result_ext!(Series, Series::default());
+impl_result_ext!(Expr, Expr::default());
+impl_result_ext!(DataType, DataType::Null);
+impl_result_ext!(PlHashMap<String, String>, PlHashMap::default());
+impl_result_ext!(String, String::default());
+impl_result_ext!(chrono::NaiveDate, chrono::NaiveDate::default());
+impl_result_ext!(chrono::NaiveTime, chrono::NaiveTime::default());
+impl_result_ext!(chrono::NaiveDateTime, chrono::NaiveDateTime::default());
+impl_result_ext!(Vec<chrono::NaiveDate>, Vec::new());
+impl_result_ext!(Vec<chrono::NaiveTime>, Vec::new());
+impl_result_ext!(Vec<chrono::NaiveDateTime>, Vec::new());
 
 impl<'local> ResultExt<jni::objects::JObject<'local>>
     for Result<jni::objects::JObject<'local>, Error>
@@ -126,24 +118,53 @@ impl<'local> ResultExt<jni::objects::JClass<'local>>
     }
 }
 
-pub fn catch_unwind_or_throw<T, F>(env: &mut JNIEnv, f: F) -> T
-where
-    F: FnOnce() -> T + std::panic::UnwindSafe,
-    Result<T, Error>: ResultExt<T>,
+impl<'local> ResultExt<jni::objects::JObjectArray<'local>>
+    for Result<jni::objects::JObjectArray<'local>, Error>
 {
-    let result = std::panic::catch_unwind(f);
-    match result {
-        Ok(val) => val,
-        Err(err) => {
-            let msg = if let Some(s) = err.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = err.downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown Rust panic".to_string()
-            };
-            let anyhow_err = anyhow::anyhow!("Rust Panic: {}", msg);
-            Err(anyhow_err).unwrap_or_throw(env)
-        },
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JObjectArray<'local> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                jni::objects::JObjectArray::from(jni::objects::JObject::null())
+            },
+        }
+    }
+}
+
+impl<'local, T: jni::objects::TypeArray> ResultExt<jni::objects::JPrimitiveArray<'local, T>>
+    for Result<jni::objects::JPrimitiveArray<'local, T>, Error>
+{
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JPrimitiveArray<'local, T> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                jni::objects::JPrimitiveArray::from(jni::objects::JObject::null())
+            },
+        }
+    }
+}
+
+impl<'local> ResultExt<jni::objects::JValueGen<jni::objects::JObject<'local>>>
+    for Result<jni::objects::JValueGen<jni::objects::JObject<'local>>, Error>
+{
+    fn unwrap_or_throw(
+        self,
+        env: &mut JNIEnv,
+    ) -> jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                jni::objects::JValueGen::Void
+            },
+        }
     }
 }

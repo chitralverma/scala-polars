@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::expect_fun_call)]
-#![feature(min_specialization)]
 
 use anyhow::Context;
 use internal_jni::utils::{j_string_to_string, string_to_j_string};
@@ -38,33 +37,40 @@ pub fn version(mut env: JNIEnv, _object: JObject) -> jstring {
         .unwrap_or_throw(&mut env)
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.common$")]
-pub fn setConfigs(mut env: JNIEnv, _object: JObject, options: JObject) -> jboolean {
+fn setConfigs_inner(env: &mut JNIEnv, options: &JObject) -> anyhow::Result<()> {
     let map = env
-        .get_map(&options)
-        .context("Failed to get mapping to rename columns")
-        .unwrap_or_throw(&mut env);
+        .get_map(options)
+        .context("Failed to get mapping to set configs")?;
 
     let mut map_iterator = map
-        .iter(&mut env)
-        .context("Failed to get mapping to rename columns")
-        .unwrap_or_throw(&mut env);
+        .iter(env)
+        .context("Failed to get mapping iterator to set configs")?;
 
-    while let Ok(Some((key, value))) = map_iterator.next(&mut env) {
+    while let Ok(Some((key, value))) = map_iterator.next(env) {
         let key_str = j_string_to_string(
-            &mut env,
+            env,
             &JString::from(key),
             Some("Failed to parse the provided config key as string"),
         );
 
         let value_str = j_string_to_string(
-            &mut env,
+            env,
             &JString::from(value),
             Some("Failed to parse the provided config value as string"),
         );
 
         unsafe { std::env::set_var(key_str, value_str) };
     }
+    Ok(())
+}
 
-    JNI_TRUE
+#[jni_fn("com.github.chitralverma.polars.internal.jni.common$")]
+pub fn setConfigs(mut env: JNIEnv, _object: JObject, options: JObject) -> jboolean {
+    match setConfigs_inner(&mut env, &options) {
+        Ok(_) => JNI_TRUE,
+        Err(err) => {
+            let _ = crate::utils::error::throw_java_exception(&mut env, err);
+            0
+        },
+    }
 }
