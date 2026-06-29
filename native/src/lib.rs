@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::expect_fun_call)]
+#![feature(min_specialization)]
 
 use anyhow::Context;
 use internal_jni::utils::{j_string_to_string, string_to_j_string};
