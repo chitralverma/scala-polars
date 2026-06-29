@@ -1,6 +1,7 @@
 use anyhow::Error;
 use jni::errors::Result as JniResult;
 use jni::{JNIEnv, sys};
+use polars::prelude::cloud::cloud_writer::CloudWriterIoTraitWrap;
 use polars::prelude::{DataFrame, Expr, LazyFrame, Series};
 
 fn format_nested_error(error: &Error) -> String {
@@ -121,6 +122,145 @@ impl<'local> ResultExt<jni::objects::JClass<'local>>
                     let _ = throw_java_exception(env, err);
                 }
                 jni::objects::JClass::from(jni::objects::JObject::null())
+            },
+        }
+    }
+}
+
+impl<'local> ResultExt<jni::objects::JObjectArray<'local>>
+    for Result<jni::objects::JObjectArray<'local>, Error>
+{
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JObjectArray<'local> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                unsafe { std::mem::zeroed() }
+            },
+        }
+    }
+}
+
+impl<'local, T: jni::objects::TypeArray> ResultExt<jni::objects::JPrimitiveArray<'local, T>>
+    for Result<jni::objects::JPrimitiveArray<'local, T>, Error>
+{
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JPrimitiveArray<'local, T> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                unsafe { std::mem::zeroed() }
+            },
+        }
+    }
+}
+
+impl<'local> ResultExt<jni::objects::JValueGen<jni::objects::JObject<'local>>>
+    for Result<jni::objects::JValueGen<jni::objects::JObject<'local>>, Error>
+{
+    fn unwrap_or_throw(
+        self,
+        env: &mut JNIEnv,
+    ) -> jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                jni::objects::JValueGen::Void
+            },
+        }
+    }
+}
+
+impl ResultExt<CloudWriterIoTraitWrap> for Result<CloudWriterIoTraitWrap, Error> {
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> CloudWriterIoTraitWrap {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                unsafe { std::mem::zeroed() }
+            },
+        }
+    }
+}
+
+impl<'local> ResultExt<Option<jni::objects::JObject<'local>>>
+    for Result<Option<jni::objects::JObject<'local>>, Error>
+{
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> Option<jni::objects::JObject<'local>> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                None
+            },
+        }
+    }
+}
+
+impl ResultExt<Vec<chrono::NaiveDate>> for Result<Vec<chrono::NaiveDate>, Error> {
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> Vec<chrono::NaiveDate> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                Vec::new()
+            },
+        }
+    }
+}
+
+impl ResultExt<Vec<chrono::NaiveTime>> for Result<Vec<chrono::NaiveTime>, Error> {
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> Vec<chrono::NaiveTime> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                Vec::new()
+            },
+        }
+    }
+}
+
+impl ResultExt<Vec<chrono::NaiveDateTime>> for Result<Vec<chrono::NaiveDateTime>, Error> {
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> Vec<chrono::NaiveDateTime> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                Vec::new()
+            },
+        }
+    }
+}
+
+impl ResultExt<polars::prelude::PlHashMap<String, String>>
+    for Result<polars::prelude::PlHashMap<String, String>, Error>
+{
+    fn unwrap_or_throw(self, env: &mut JNIEnv) -> polars::prelude::PlHashMap<String, String> {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                if !env.exception_check().unwrap_or(false) {
+                    let _ = throw_java_exception(env, err);
+                }
+                polars::prelude::PlHashMap::default()
             },
         }
     }

@@ -192,9 +192,9 @@ pub fn new_struct_series(mut env: JNIEnv, _: JClass, name: JString, values: JLon
         data.len(),
         data.iter(),
     )
+    .map(|s| s.into_series())
     .context("Failed to create struct series from provided list of series")
-    .unwrap_or_throw(&mut env)
-    .into_series();
+    .unwrap_or_throw(&mut env);
 
     to_ptr(series)
 }

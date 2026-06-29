@@ -29,10 +29,8 @@ pub trait JavaArrayToVec {
         <Self as JavaArrayToVec>::InternalType: TypeArray,
     {
         unsafe {
-            let mut cloned_env = env.unsafe_clone();
             env.get_array_elements_critical(array, NoCopyBack)
-                .context("Failed to get elements of the array")
-                .unwrap_or_throw(&mut cloned_env)
+                .expect("Failed to get elements of the array")
         }
     }
 
@@ -131,40 +129,38 @@ impl<'a> IntoJava<'a> for &StructArray {
             }
         });
 
-        let map = env
-            .new_object("java/util/HashMap", "()V", &[])
-            .context("Failed to initialize map for struct field")
-            .unwrap_or_throw(env);
+        let map_res = (|| -> anyhow::Result<JObject> {
+            let map = env
+                .new_object("java/util/HashMap", "()V", &[])
+                .context("Failed to initialize map for struct field")?;
 
-        let j_map = JMap::from_env(env, &map)
-            .context("Failed to initialize map for struct field")
-            .unwrap_or_throw(env);
+            let j_map =
+                JMap::from_env(env, &map).context("Failed to initialize map for struct field")?;
 
-        for (name, s) in iter {
-            let series = s
-                .context(format!(
+            for (name, s) in iter {
+                let series = s.context(format!(
                     "Failed to retrieve series for struct field `{name}`"
-                ))
-                .unwrap_or_throw(env);
+                ))?;
 
-            let key = unsafe {
-                JObject::from_raw(string_to_j_string(
-                    env,
-                    &name,
-                    Some(format!("Failed to parse value `{name}` as a series name")),
-                ))
-            };
+                let key = unsafe {
+                    JObject::from_raw(string_to_j_string(
+                        env,
+                        &name,
+                        Some(format!("Failed to parse value `{name}` as a series name")),
+                    ))
+                };
 
-            // Get first value only as series was sliced beforehand
-            let value = AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
+                // Get first value only as series was sliced beforehand
+                let value = AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
 
-            j_map
-                .put(env, &key, &value)
-                .context("Failed to put entry in map for struct field")
-                .unwrap_or_throw(env);
-        }
+                j_map
+                    .put(env, &key, &value)
+                    .context("Failed to put entry in map for struct field")?;
+            }
+            Ok(map)
+        })();
 
-        map
+        map_res.unwrap_or_throw(env)
     }
 }
 
@@ -188,25 +184,25 @@ impl<'a> IntoJava<'a> for &[u8] {
 
 impl<'a> IntoJava<'a> for Series {
     fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
-        let j_list_obj = env
-            .new_object("java/util/ArrayList", "()V", &[])
-            .context("Failed to initialize an array for series values")
-            .unwrap_or_throw(env);
+        let list_res = (|| -> anyhow::Result<JObject> {
+            let j_list_obj = env
+                .new_object("java/util/ArrayList", "()V", &[])
+                .context("Failed to initialize an array for series values")?;
 
-        let j_list = JList::from_env(env, &j_list_obj)
-            .context("Failed to initialize an array for series values")
-            .unwrap_or_throw(env);
+            let j_list = JList::from_env(env, &j_list_obj)
+                .context("Failed to initialize an array for series values")?;
 
-        for any_value in self.iter() {
-            let wrapped = AnyValueWrapper(any_value.clone());
-            let element = wrapped.into_java(env);
-            j_list
-                .add(env, &element)
-                .context(format!("Failed to set value `{any_value}` from series"))
-                .unwrap_or_throw(env);
-        }
+            for any_value in self.iter() {
+                let wrapped = AnyValueWrapper(any_value.clone());
+                let element = wrapped.into_java(env);
+                j_list
+                    .add(env, &element)
+                    .context(format!("Failed to set value `{any_value}` from series"))?;
+            }
+            Ok(j_list_obj)
+        })();
 
-        j_list_obj
+        list_res.unwrap_or_throw(env)
     }
 }
 
