@@ -29,10 +29,15 @@ pub trait JavaArrayToVec {
         <Self as JavaArrayToVec>::InternalType: TypeArray,
     {
         // The borrowed return value has no null sentinel; pinning a valid array only fails
-        // on a fatal JVM condition (e.g. OOM), so aborting here is correct.
-        unsafe {
-            env.get_array_elements_critical(array, NoCopyBack)
-                .expect("Failed to get critical elements of the primitive array")
+        // on a fatal JVM condition (e.g. OOM). Abort explicitly to keep the failure mode
+        // deterministic rather than unwinding a panic across the JNI boundary.
+        let elements = unsafe { env.get_array_elements_critical(array, NoCopyBack) };
+        match elements {
+            Ok(elements) => elements,
+            Err(err) => {
+                eprintln!("Fatal: failed to get critical elements of the primitive array: {err}");
+                std::process::abort();
+            },
         }
     }
 

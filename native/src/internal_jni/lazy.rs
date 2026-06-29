@@ -24,7 +24,7 @@ pub fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jstr
     match schema_res {
         Ok(schema_str) => string_to_j_string(&mut env, schema_str, None::<&str>),
         Err(err) => {
-            let _ = crate::utils::error::throw_java_exception(&mut env, err);
+            crate::utils::error::throw_java_exception(&mut env, err);
             std::ptr::null_mut()
         },
     }
@@ -318,7 +318,7 @@ pub fn rename(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, options: JObj
     match rename_inner(&mut env, ldf_ptr, &options) {
         Ok(ldf) => to_ptr(ldf),
         Err(err) => {
-            let _ = crate::utils::error::throw_java_exception(&mut env, err);
+            crate::utils::error::throw_java_exception(&mut env, err);
             0
         },
     }

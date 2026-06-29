@@ -6,7 +6,7 @@ use anyhow::Context;
 use internal_jni::utils::{j_string_to_string, string_to_j_string};
 use jni::JNIEnv;
 use jni::objects::{JObject, JString};
-use jni::sys::{JNI_TRUE, jboolean, jstring};
+use jni::sys::{JNI_FALSE, JNI_TRUE, jboolean, jstring};
 use jni_fn::jni_fn;
 use utils::error::ResultExt;
 
@@ -69,8 +69,8 @@ pub fn setConfigs(mut env: JNIEnv, _object: JObject, options: JObject) -> jboole
     match setConfigs_inner(&mut env, &options) {
         Ok(_) => JNI_TRUE,
         Err(err) => {
-            let _ = crate::utils::error::throw_java_exception(&mut env, err);
-            0
+            crate::utils::error::throw_java_exception(&mut env, err);
+            JNI_FALSE
         },
     }
 }

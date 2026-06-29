@@ -1,5 +1,4 @@
 use anyhow::Error;
-use jni::errors::Result as JniResult;
 use jni::{JNIEnv, sys};
 use polars::prelude::{DataFrame, DataType, Expr, LazyFrame, PlHashMap, Series};
 
@@ -17,11 +16,20 @@ fn format_nested_error(error: &Error) -> String {
     formatted.trim_end().to_string()
 }
 
-pub fn throw_java_exception(env: &mut JNIEnv, err: Error) -> JniResult<()> {
+/// Throws `err` as a Java `RuntimeException`, unless an exception is already pending.
+///
+/// Re-throwing over a pending exception fails and hides the original, so callers on
+/// any native error path can invoke this safely.
+pub fn throw_java_exception(env: &mut JNIEnv, err: Error) {
+    if env.exception_check().unwrap_or(false) {
+        return;
+    }
+
     // Resolved directly (not via find_java_class) to avoid recursion.
-    let exception_class = env.find_class("java/lang/RuntimeException")?;
-    env.throw_new(exception_class, format_nested_error(&err))?;
-    Ok(())
+    let throw_res = env
+        .find_class("java/lang/RuntimeException")
+        .and_then(|class| env.throw_new(class, format_nested_error(&err)));
+    let _ = throw_res;
 }
 
 /// Trait to unwrap `Result` or throw an exception.
@@ -37,9 +45,24 @@ macro_rules! impl_result_ext {
                 match self {
                     Ok(val) => val,
                     Err(err) => {
-                        if !env.exception_check().unwrap_or(false) {
-                            let _ = throw_java_exception(env, err);
-                        }
+                        throw_java_exception(env, err);
+                        $def
+                    },
+                }
+            }
+        }
+    };
+}
+
+// Same as `impl_result_ext`, but for types carrying a `'local` lifetime.
+macro_rules! impl_result_ext_local {
+    ($t:ty, $def:expr) => {
+        impl<'local> ResultExt<$t> for Result<$t, Error> {
+            fn unwrap_or_throw(self, env: &mut JNIEnv) -> $t {
+                match self {
+                    Ok(val) => val,
+                    Err(err) => {
+                        throw_java_exception(env, err);
                         $def
                     },
                 }
@@ -70,69 +93,23 @@ impl_result_ext!(Vec<chrono::NaiveDate>, Vec::new());
 impl_result_ext!(Vec<chrono::NaiveTime>, Vec::new());
 impl_result_ext!(Vec<chrono::NaiveDateTime>, Vec::new());
 
-impl<'local> ResultExt<jni::objects::JObject<'local>>
-    for Result<jni::objects::JObject<'local>, Error>
-{
-    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JObject<'local> {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
-                jni::objects::JObject::null()
-            },
-        }
-    }
-}
-
-impl<'local> ResultExt<jni::objects::JString<'local>>
-    for Result<jni::objects::JString<'local>, Error>
-{
-    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JString<'local> {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
-                jni::objects::JString::from(jni::objects::JObject::null())
-            },
-        }
-    }
-}
-
-impl<'local> ResultExt<jni::objects::JClass<'local>>
-    for Result<jni::objects::JClass<'local>, Error>
-{
-    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JClass<'local> {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
-                jni::objects::JClass::from(jni::objects::JObject::null())
-            },
-        }
-    }
-}
-
-impl<'local> ResultExt<jni::objects::JObjectArray<'local>>
-    for Result<jni::objects::JObjectArray<'local>, Error>
-{
-    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JObjectArray<'local> {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
-                jni::objects::JObjectArray::from(jni::objects::JObject::null())
-            },
-        }
-    }
-}
+impl_result_ext_local!(jni::objects::JObject<'local>, jni::objects::JObject::null());
+impl_result_ext_local!(
+    jni::objects::JString<'local>,
+    jni::objects::JString::from(jni::objects::JObject::null())
+);
+impl_result_ext_local!(
+    jni::objects::JClass<'local>,
+    jni::objects::JClass::from(jni::objects::JObject::null())
+);
+impl_result_ext_local!(
+    jni::objects::JObjectArray<'local>,
+    jni::objects::JObjectArray::from(jni::objects::JObject::null())
+);
+impl_result_ext_local!(
+    jni::objects::JValueGen<jni::objects::JObject<'local>>,
+    jni::objects::JValueGen::Void
+);
 
 impl<'local, T: jni::objects::TypeArray> ResultExt<jni::objects::JPrimitiveArray<'local, T>>
     for Result<jni::objects::JPrimitiveArray<'local, T>, Error>
@@ -141,29 +118,8 @@ impl<'local, T: jni::objects::TypeArray> ResultExt<jni::objects::JPrimitiveArray
         match self {
             Ok(val) => val,
             Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
+                throw_java_exception(env, err);
                 jni::objects::JPrimitiveArray::from(jni::objects::JObject::null())
-            },
-        }
-    }
-}
-
-impl<'local> ResultExt<jni::objects::JValueGen<jni::objects::JObject<'local>>>
-    for Result<jni::objects::JValueGen<jni::objects::JObject<'local>>, Error>
-{
-    fn unwrap_or_throw(
-        self,
-        env: &mut JNIEnv,
-    ) -> jni::objects::JValueGen<jni::objects::JObject<'local>> {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                if !env.exception_check().unwrap_or(false) {
-                    let _ = throw_java_exception(env, err);
-                }
-                jni::objects::JValueGen::Void
             },
         }
     }
