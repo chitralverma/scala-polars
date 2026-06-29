@@ -292,7 +292,10 @@ fn rename_inner(
     let mut old_vec: Vec<String> = Vec::new();
     let mut new_vec: Vec<String> = Vec::new();
 
-    while let Ok(Some((new, old))) = map_iterator.next(env) {
+    while let Some((new, old)) = map_iterator
+        .next(env)
+        .context("Failed to read next entry while renaming columns")?
+    {
         let key_str = j_string_to_string(
             env,
             &JString::from(new),

@@ -46,7 +46,10 @@ fn setConfigs_inner(env: &mut JNIEnv, options: &JObject) -> anyhow::Result<()> {
         .iter(env)
         .context("Failed to get mapping iterator to set configs")?;
 
-    while let Ok(Some((key, value))) = map_iterator.next(env) {
+    while let Some((key, value)) = map_iterator
+        .next(env)
+        .context("Failed to read next entry while setting configs")?
+    {
         let key_str = j_string_to_string(
             env,
             &JString::from(key),
