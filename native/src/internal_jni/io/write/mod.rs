@@ -18,7 +18,7 @@ use polars::io::utils::file::WriteableTrait;
 use polars::prelude::*;
 use polars_core::runtime::ASYNC;
 
-use super::get_file_path;
+use super::{get_file_path, parse_cloud_options};
 use crate::utils::error::ResultExt;
 
 async fn ensure_write_mode(
@@ -86,11 +86,10 @@ pub(crate) fn write_dataframe<F>(
     let uri = PlRefPath::new(full_path);
 
     let res = (|| -> anyhow::Result<()> {
-        let cloud_options = CloudOptions::from_untyped_config(uri.scheme(), &options)
-            .context("Failed to parse the provided cloud options")?;
+        let cloud_options = parse_cloud_options(uri.scheme(), options)?;
         let mut writer: CloudWriterIoTraitWrap = ASYNC
             .block_on(async {
-                create_cloud_writer(uri.as_str(), Some(&cloud_options), overwrite_mode).await
+                create_cloud_writer(uri.as_str(), cloud_options.as_ref(), overwrite_mode).await
             })
             .context("Failed to create writer")?;
 

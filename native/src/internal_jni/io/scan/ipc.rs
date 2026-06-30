@@ -75,7 +75,13 @@ pub unsafe fn scanIPC(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: 
         .as_ref()
         .and_then(|x| x.scheme());
 
-    let cloud_options = parse_cloud_options(&mut env, cloud_scheme, options);
+    let cloud_options = match parse_cloud_options(cloud_scheme, options) {
+        Ok(opts) => opts,
+        Err(err) => {
+            crate::utils::error::throw_java_exception(&mut env, err);
+            return 0;
+        },
+    };
 
     let options = IpcScanOptions {
         record_batch_statistics: use_statistics,
