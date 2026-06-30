@@ -3,12 +3,11 @@ use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JObjectArray, JString};
 use jni::sys::jlong;
 use jni_fn::jni_fn;
-use polars::io::cloud::CloudOptions;
 use polars::io::{HiveOptions, RowIndex};
 use polars::prelude::*;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
-use crate::internal_jni::io::{get_file_path, parse_json_to_options};
+use crate::internal_jni::io::{get_file_path, parse_cloud_options, parse_json_to_options};
 use crate::internal_jni::utils::to_ptr;
 use crate::utils::error::ResultExt;
 
@@ -76,7 +75,7 @@ pub unsafe fn scanIPC(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: 
         .as_ref()
         .and_then(|x| x.scheme());
 
-    let cloud_options = CloudOptions::from_untyped_config(cloud_scheme, options).ok();
+    let cloud_options = parse_cloud_options(&mut env, cloud_scheme, options);
 
     let options = IpcScanOptions {
         record_batch_statistics: use_statistics,

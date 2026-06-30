@@ -23,9 +23,11 @@ pub fn throw_java_exception(env: &mut JNIEnv, err: Error) {
         Ok(true) => return,
         Ok(false) => {},
         Err(check_err) => {
-            // The JNI state is already broken; issuing more calls would compound it.
+            // A failing exception_check means the JNI state is unreliable; returning a
+            // sentinel with no pending exception would silently corrupt error reporting,
+            // so abort rather than continue.
             eprintln!("Fatal: JNI exception_check failed: {check_err}");
-            return;
+            std::process::abort();
         },
     }
 
