@@ -18,7 +18,7 @@ use polars::io::utils::file::WriteableTrait;
 use polars::prelude::*;
 use polars_core::runtime::ASYNC;
 
-use super::get_file_path;
+use super::{get_file_path, parse_cloud_options};
 use crate::utils::error::ResultExt;
 
 async fn ensure_write_mode(
@@ -85,20 +85,22 @@ pub(crate) fn write_dataframe<F>(
     let full_path = get_file_path(env, filePath);
     let uri = PlRefPath::new(full_path);
 
-    let cloud_options = CloudOptions::from_untyped_config(uri.scheme(), &options);
-    let mut writer: CloudWriterIoTraitWrap = ASYNC
-        .block_on(async {
-            create_cloud_writer(uri.as_str(), cloud_options.ok().as_ref(), overwrite_mode).await
-        })
-        .context("Failed to create writer")
-        .unwrap_or_throw(env);
+    let res = (|| -> anyhow::Result<()> {
+        let cloud_options = parse_cloud_options(uri.scheme(), options)?;
+        let mut writer: CloudWriterIoTraitWrap = ASYNC
+            .block_on(async {
+                create_cloud_writer(uri.as_str(), cloud_options.as_ref(), overwrite_mode).await
+            })
+            .context("Failed to create writer")?;
 
-    write(&mut writer, &mut dataframe)
-        .with_context(|| format!("Failed to write {format} data"))
-        .unwrap_or_throw(env);
+        write(&mut writer, &mut dataframe)
+            .with_context(|| format!("Failed to write {format} data"))?;
 
-    writer
-        .close()
-        .with_context(|| format!("Failed to finalize {format} data"))
-        .unwrap_or_throw(env);
+        writer
+            .close()
+            .with_context(|| format!("Failed to finalize {format} data"))?;
+        Ok(())
+    })();
+
+    res.unwrap_or_throw(env);
 }

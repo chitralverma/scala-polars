@@ -7,11 +7,10 @@ use jni::objects::{JClass, JObject, JObjectArray, JString};
 use jni::sys::jlong;
 use jni_fn::jni_fn;
 use polars::io::RowIndex;
-use polars::io::cloud::CloudOptions;
 use polars::prelude::*;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
-use crate::internal_jni::io::{get_file_path, parse_json_to_options};
+use crate::internal_jni::io::{get_file_path, parse_cloud_options, parse_json_to_options};
 use crate::internal_jni::utils::to_ptr;
 use crate::utils::error::ResultExt;
 
@@ -82,7 +81,13 @@ pub unsafe fn scanJsonLines(
         .as_ref()
         .and_then(|x| x.scheme());
 
-    let cloud_options = CloudOptions::from_untyped_config(cloud_scheme, options).ok();
+    let cloud_options = match parse_cloud_options(cloud_scheme, options) {
+        Ok(opts) => opts,
+        Err(err) => {
+            crate::utils::error::throw_java_exception(&mut env, err);
+            return 0;
+        },
+    };
 
     let ldf = LazyJsonLineReader::new_with_sources(sources)
         .low_memory(low_memory)

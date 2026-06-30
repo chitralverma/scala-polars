@@ -15,16 +15,19 @@ use crate::utils::error::ResultExt;
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
 pub fn schemaString(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame) -> jstring {
     let ldf = &mut from_ptr(ldf_ptr);
-    let schema = ldf
+    let schema_res = ldf
         .collect_schema()
         .map(|op| op.to_arrow(CompatLevel::oldest()))
         .context("Failed to get schema of LazyFrame")
-        .unwrap_or_throw(&mut env);
+        .and_then(|schema| serde_json::to_string(&schema).context("Failed to serialize schema"));
 
-    serde_json::to_string(&schema)
-        .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
-        .context("Failed to serialize schema")
-        .unwrap_or_throw(&mut env)
+    match schema_res {
+        Ok(schema_str) => string_to_j_string(&mut env, schema_str, None::<&str>),
+        Err(err) => {
+            crate::utils::error::throw_java_exception(&mut env, err);
+            std::ptr::null_mut()
+        },
+    }
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
@@ -273,40 +276,55 @@ pub fn drop(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, col_names: JObj
     to_ptr(ldf)
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
-pub fn rename(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, options: JObject) -> jlong {
+fn rename_inner(
+    env: &mut JNIEnv,
+    ldf_ptr: *mut LazyFrame,
+    options: &JObject,
+) -> anyhow::Result<LazyFrame> {
     let map = env
-        .get_map(&options)
-        .context("Failed to get mapping to rename columns")
-        .unwrap_or_throw(&mut env);
+        .get_map(options)
+        .context("Failed to get mapping to rename columns")?;
 
     let mut map_iterator = map
-        .iter(&mut env)
-        .context("Failed to get mapping to rename columns")
-        .unwrap_or_throw(&mut env);
+        .iter(env)
+        .context("Failed to get mapping iterator to rename columns")?;
 
     let mut old_vec: Vec<String> = Vec::new();
     let mut new_vec: Vec<String> = Vec::new();
 
-    while let Ok(Some((new, old))) = map_iterator.next(&mut env) {
-        let key_str = j_string_to_string(
-            &mut env,
+    while let Some((new, old)) = map_iterator
+        .next(env)
+        .context("Failed to read next entry while renaming columns")?
+    {
+        let key_str = try_j_string_to_string(
+            env,
             &JString::from(new),
             Some("Failed to parse the provided existing column name as string"),
-        );
+        )?;
 
-        let value_str = j_string_to_string(
-            &mut env,
+        let value_str = try_j_string_to_string(
+            env,
             &JString::from(old),
             Some("Failed to parse the provided new column name as string"),
-        );
+        )?;
 
         old_vec.push(key_str);
         new_vec.push(value_str);
     }
 
     let ldf = from_ptr(ldf_ptr).rename(old_vec, new_vec, false);
-    to_ptr(ldf)
+    Ok(ldf)
+}
+
+#[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]
+pub fn rename(mut env: JNIEnv, _: JClass, ldf_ptr: *mut LazyFrame, options: JObject) -> jlong {
+    match rename_inner(&mut env, ldf_ptr, &options) {
+        Ok(ldf) => to_ptr(ldf),
+        Err(err) => {
+            crate::utils::error::throw_java_exception(&mut env, err);
+            0
+        },
+    }
 }
 
 #[jni_fn("com.github.chitralverma.polars.internal.jni.lazy_frame$")]

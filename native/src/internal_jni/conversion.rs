@@ -28,11 +28,15 @@ pub trait JavaArrayToVec {
     where
         <Self as JavaArrayToVec>::InternalType: TypeArray,
     {
-        unsafe {
-            let mut cloned_env = env.unsafe_clone();
-            env.get_array_elements_critical(array, NoCopyBack)
-                .context("Failed to get elements of the array")
-                .unwrap_or_throw(&mut cloned_env)
+        // The borrowed return has no null sentinel and this only fails on a fatal JVM
+        // condition (e.g. OOM), so abort explicitly rather than unwind across the boundary.
+        let elements = unsafe { env.get_array_elements_critical(array, NoCopyBack) };
+        match elements {
+            Ok(elements) => elements,
+            Err(err) => {
+                eprintln!("Fatal: failed to get critical elements of the primitive array: {err}");
+                std::process::abort();
+            },
         }
     }
 
@@ -131,40 +135,41 @@ impl<'a> IntoJava<'a> for &StructArray {
             }
         });
 
-        let map = env
-            .new_object("java/util/HashMap", "()V", &[])
-            .context("Failed to initialize map for struct field")
-            .unwrap_or_throw(env);
+        let map_res = (|| -> anyhow::Result<JObject> {
+            let map = env
+                .new_object("java/util/HashMap", "()V", &[])
+                .context("Failed to initialize map for struct field")?;
 
-        let j_map = JMap::from_env(env, &map)
-            .context("Failed to initialize map for struct field")
-            .unwrap_or_throw(env);
+            let j_map =
+                JMap::from_env(env, &map).context("Failed to initialize map for struct field")?;
 
-        for (name, s) in iter {
-            let series = s
-                .context(format!(
+            for (name, s) in iter {
+                let series = s.context(format!(
                     "Failed to retrieve series for struct field `{name}`"
-                ))
-                .unwrap_or_throw(env);
+                ))?;
 
-            let key = unsafe {
-                JObject::from_raw(string_to_j_string(
-                    env,
-                    &name,
-                    Some(format!("Failed to parse value `{name}` as a series name")),
-                ))
-            };
+                let key_obj = unsafe {
+                    JObject::from_raw(string_to_j_string(
+                        env,
+                        &name,
+                        Some(format!("Failed to parse value `{name}` as a series name")),
+                    ))
+                };
+                let key = env.auto_local(key_obj);
 
-            // Get first value only as series was sliced beforehand
-            let value = AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
+                // Get first value only as series was sliced beforehand
+                let value_obj =
+                    AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
+                let value = env.auto_local(value_obj);
 
-            j_map
-                .put(env, &key, &value)
-                .context("Failed to put entry in map for struct field")
-                .unwrap_or_throw(env);
-        }
+                j_map
+                    .put(env, &key, &value)
+                    .context("Failed to put entry in map for struct field")?;
+            }
+            Ok(map)
+        })();
 
-        map
+        map_res.unwrap_or_throw(env)
     }
 }
 
@@ -188,25 +193,28 @@ impl<'a> IntoJava<'a> for &[u8] {
 
 impl<'a> IntoJava<'a> for Series {
     fn into_java(self, env: &mut JNIEnv<'a>) -> JObject<'a> {
-        let j_list_obj = env
-            .new_object("java/util/ArrayList", "()V", &[])
-            .context("Failed to initialize an array for series values")
-            .unwrap_or_throw(env);
+        let list_res = (|| -> anyhow::Result<JObject> {
+            let j_list_obj = env
+                .new_object("java/util/ArrayList", "()V", &[])
+                .context("Failed to initialize an array for series values")?;
 
-        let j_list = JList::from_env(env, &j_list_obj)
-            .context("Failed to initialize an array for series values")
-            .unwrap_or_throw(env);
+            let j_list = JList::from_env(env, &j_list_obj)
+                .context("Failed to initialize an array for series values")?;
 
-        for any_value in self.iter() {
-            let wrapped = AnyValueWrapper(any_value.clone());
-            let element = wrapped.into_java(env);
-            j_list
-                .add(env, &element)
-                .context(format!("Failed to set value `{any_value}` from series"))
-                .unwrap_or_throw(env);
-        }
+            for any_value in self.iter() {
+                let wrapped = AnyValueWrapper(any_value.clone());
+                // Auto-delete the per-element local ref so a large series does not
+                // overflow the JVM local-reference table before the method returns.
+                let element_obj = wrapped.into_java(env);
+                let element = env.auto_local(element_obj);
+                j_list
+                    .add(env, &element)
+                    .context(format!("Failed to set value `{any_value}` from series"))?;
+            }
+            Ok(j_list_obj)
+        })();
 
-        j_list_obj
+        list_res.unwrap_or_throw(env)
     }
 }
 
