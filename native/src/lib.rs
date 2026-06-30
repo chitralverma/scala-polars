@@ -11,9 +11,7 @@ use utils::error::ThrowRuntimeException;
 pub mod internal_jni;
 pub mod utils;
 
-/// Wraps [`native_method!`] with the `common$` config common to every entry point in this object
-/// (owning class and error policy). This object exposes no native handles, so there is no
-/// `type_map`.
+/// Injects the shared `common$` config into [`native_method!`] (no handles, so no `type_map`).
 macro_rules! common_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -84,5 +82,4 @@ fn set_configs<'local>(
     Ok(JNI_TRUE)
 }
 
-/// All native methods exported by the `common` object.
 pub const METHODS: &[NativeMethod] = &[VERSION_METHOD, SET_CONFIGS_METHOD];

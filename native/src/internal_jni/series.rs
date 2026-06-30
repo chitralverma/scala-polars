@@ -11,7 +11,7 @@ use crate::internal_jni::handle::{Handle, SeriesHandle};
 use crate::internal_jni::utils::{j_string_array_to_vec, j_string_to_string};
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `series$` config common to every entry point in this module.
+/// Injects the shared `series$` config into [`native_method!`].
 macro_rules! series_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -316,7 +316,6 @@ decl_free!(
     SeriesHandle
 );
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     NEW_LONG_SERIES_METHOD,
     NEW_INT_SERIES_METHOD,

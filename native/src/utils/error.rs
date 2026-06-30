@@ -2,8 +2,8 @@ use anyhow::Error;
 use jni::Env;
 use jni::errors::ErrorPolicy;
 
-/// Formats an [`anyhow::Error`] together with its full `Caused by:` chain so the
-/// nested context attached at each JNI boundary survives the trip to the JVM.
+/// Formats an [`anyhow::Error`] with its full `Caused by:` chain so the context attached at each
+/// JNI boundary survives to the JVM.
 fn format_nested_error(error: &Error) -> String {
     let mut formatted = String::new();
 
@@ -18,18 +18,12 @@ fn format_nested_error(error: &Error) -> String {
     formatted.trim_end().to_string()
 }
 
-/// [`ErrorPolicy`] that throws the closure error as a Java `RuntimeException`,
-/// carrying the full [`anyhow`] cause chain, and returns the type's default
-/// sentinel for the JNI boundary.
+/// Throws the closure error as a Java `RuntimeException` carrying the full [`anyhow`] cause chain,
+/// returning the type's default sentinel.
 ///
-/// This is the project-specific counterpart to [`jni::errors::ThrowRuntimeExAndDefault`].
-/// We provide our own so the policy is generic over [`anyhow::Error`] (which does
-/// not implement [`std::error::Error`]) and so the thrown message preserves the
-/// nested context rather than a single flat line.
-///
-/// If an exception is already pending when an error or panic occurs, that
-/// exception takes precedence: re-throwing over a pending exception fails and
-/// would hide the original.
+/// A project-specific counterpart to [`jni::errors::ThrowRuntimeExAndDefault`], needed because that
+/// policy is bounded on `std::error::Error` (which [`anyhow::Error`] does not implement) and emits a
+/// single flat line rather than the cause chain. A pending exception takes precedence over a new throw.
 #[derive(Debug, Default)]
 pub struct ThrowRuntimeException;
 
@@ -44,9 +38,7 @@ impl<T: Default> ErrorPolicy<T, Error> for ThrowRuntimeException {
         if env.exception_check() {
             return Ok(T::default());
         }
-        // `Env::throw` returns `Err(Error::JavaException)` after creating the pending
-        // exception; we intentionally let that exception propagate to Java and do not
-        // surface the sentinel error here.
+        // `throw` returns `Err(JavaException)` after raising; discard it and let the exception fly.
         let _ = env.throw(format_nested_error(&err));
         Ok(T::default())
     }

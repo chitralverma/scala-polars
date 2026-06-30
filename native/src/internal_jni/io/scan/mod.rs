@@ -11,9 +11,8 @@ use polars::prelude::*;
 use crate::internal_jni::io::parse_cloud_options;
 use crate::internal_jni::utils::j_string_array_to_vec;
 
-/// Builds the [`ScanSources`] from the provided JVM path array and derives the cloud options
-/// from the remaining (format-specific keys already removed) `options` map. The map is consumed
-/// by [`parse_cloud_options`], so callers must strip format-specific keys beforehand.
+/// Builds the [`ScanSources`] from the JVM path array and derives cloud options from the remaining
+/// `options`. `parse_cloud_options` consumes the map, so callers must strip format-specific keys first.
 pub(crate) fn build_scan_sources(
     env: &mut Env,
     paths: &JObjectArray<JString>,

@@ -9,8 +9,7 @@ use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::internal_jni::utils::j_string_to_string;
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `literal_expr$` config common to every entry point in this
-/// module (owning class, error policy, and the handle `type_map`).
+/// Injects the shared `literal_expr$` config into [`native_method!`].
 macro_rules! lit_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -191,7 +190,6 @@ fn from_date_time<'local>(
     Ok(ExprHandle::alloc(lit(datetime)))
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     NULL_LIT_METHOD,
     FROM_STRING_METHOD,

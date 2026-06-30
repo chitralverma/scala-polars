@@ -1,16 +1,10 @@
-//! Shared declarative macros for folding the `native_method!` const + impl-fn pairs.
-//!
-//! The per-module `*_method!` wrappers (defined in each JNI module) inject that module's
-//! `java_type`, `error_policy`, and handle `type_map` so each entry point collapses to a single
-//! `native_method!` shorthand. The macros here cover entry points whose bodies are identical
-//! across modules (currently `free`), folding both the constant and the implementation function.
+//! Shared declarative macros for the JNI layer. Per-module `*_method!` wrappers (defined in each
+//! module) inject that module's `java_type`/`error_policy`/`type_map`; the macros here fold both
+//! the `NativeMethod` constant and impl function for entry points whose body is identical across
+//! modules (currently `free`).
 
-/// Declares the `free(ptr: Long): Unit` native method for a handle type: emits both the
-/// `NativeMethod` constant and the implementation that reclaims the boxed allocation.
-///
-/// `$java_type` is the binary name of the owning Scala companion object; `$handle` is the handle
-/// whose `free_raw` reclaims the pointer. Expands in the caller's scope, so `ThrowRuntimeException`
-/// and the handle's `Handle` trait must be imported there.
+/// Declares the `free(ptr: Long)` native method (constant + impl) for `$handle`. Expands in the
+/// caller's scope, so `ThrowRuntimeException` and the handle's `Handle` trait must be imported there.
 macro_rules! decl_free {
     ($const_name:ident, $java_type:literal, $handle:ty) => {
         const $const_name: ::jni::NativeMethod = ::jni::native_method! {

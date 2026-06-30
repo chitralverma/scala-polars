@@ -5,8 +5,7 @@ use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::internal_jni::utils::j_string_to_string;
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `name_expr$` config common to every entry point in this
-/// module (owning class, error policy, and the handle `type_map`).
+/// Injects the shared `name_expr$` config into [`native_method!`].
 macro_rules! name_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -87,7 +86,6 @@ fn to_lowercase<'local>(
     Ok(ExprHandle::alloc(expr.get().name().to_lowercase()))
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     KEEP_METHOD,
     PREFIX_METHOD,

@@ -12,8 +12,7 @@ use crate::internal_jni::handle::{DataFrameHandle, Handle, LazyFrameHandle, Seri
 use crate::internal_jni::macros::decl_free;
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `data_frame$` config common to every entry point in this
-/// module (owning class, error policy, and the handle `type_map`).
+/// Injects the shared `data_frame$` config into [`native_method!`].
 macro_rules! df_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -142,7 +141,6 @@ decl_free!(
     DataFrameHandle
 );
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     SCHEMA_STRING_METHOD,
     SHOW_METHOD,

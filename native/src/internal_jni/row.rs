@@ -9,7 +9,7 @@ use crate::internal_jni::handle::{DataFrameHandle, Handle, RowIteratorHandle};
 use crate::internal_jni::utils::get_n_rows;
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `row$` config common to every entry point in this module.
+/// Injects the shared `row$` config into [`native_method!`].
 macro_rules! row_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -63,9 +63,8 @@ fn advance_iterator<'local>(
 
         Ok(j_array)
     } else {
-        // Returning a null array signals end-of-iteration: the Scala caller wraps the result in
-        // `Option(value)`, which is `None` only for a JVM-null reference (an empty array would be
-        // `Some` and never terminate the iterator).
+        // Must be a JVM null (not an empty array): the Scala caller treats `Option(value) == None`
+        // as end-of-iteration, and an empty array would be `Some` and loop forever.
         Ok(unsafe { JObjectArray::<JObject>::from_raw(env, std::ptr::null_mut()) })
     }
 }
@@ -134,7 +133,6 @@ impl RowIterator {
     }
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     CREATE_ITERATOR_METHOD,
     ADVANCE_ITERATOR_METHOD,

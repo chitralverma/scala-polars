@@ -13,7 +13,7 @@ use crate::internal_jni::macros::decl_free;
 use crate::internal_jni::utils::{j_object_ref_to_string, j_string_to_string};
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `column_expr$` config common to every entry point in this module.
+/// Injects the shared `column_expr$` config into [`native_method!`].
 macro_rules! col_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -662,7 +662,6 @@ decl_free!(
     ExprHandle
 );
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     IS_FINITE_METHOD,
     IS_INFINITE_METHOD,

@@ -7,7 +7,7 @@ use crate::internal_jni::io::parse_json_to_options;
 use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `io.write$` config common to every entry point in this module.
+/// Injects the shared `io.write$` config into [`native_method!`].
 macro_rules! write_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -61,5 +61,4 @@ fn write_json<'local>(
     Ok(())
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[WRITE_JSON_METHOD];

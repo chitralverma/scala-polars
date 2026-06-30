@@ -13,7 +13,7 @@ use crate::internal_jni::utils::{
 };
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `lazy_frame$` config common to every entry point in this module.
+/// Injects the shared `lazy_frame$` config into [`native_method!`].
 macro_rules! ldf_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -494,7 +494,6 @@ fn extract_expr_and_direction(expr: &Expr, default_direction: bool) -> (Expr, bo
     }
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     SCHEMA_STRING_METHOD,
     SELECT_FROM_STRINGS_METHOD,

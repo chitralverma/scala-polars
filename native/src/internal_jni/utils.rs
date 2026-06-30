@@ -3,8 +3,6 @@ use jni::Env;
 use jni::objects::*;
 use jni::sys::*;
 
-/// Creates a new Java string from `s`, returning the raw `jstring` for return
-/// across the JNI boundary.
 pub fn string_to_j_string(env: &mut Env, s: impl AsRef<str>) -> anyhow::Result<jstring> {
     Ok(env
         .new_string(s)
@@ -12,7 +10,6 @@ pub fn string_to_j_string(env: &mut Env, s: impl AsRef<str>) -> anyhow::Result<j
         .into_raw())
 }
 
-/// Reads a Java string into an owned Rust `String`.
 pub fn j_string_to_string<T>(env: &Env, s: &JString, msg: Option<T>) -> anyhow::Result<String>
 where
     T: AsRef<str> + Send + Sync + std::fmt::Display + 'static,

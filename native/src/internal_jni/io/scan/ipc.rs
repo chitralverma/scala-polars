@@ -9,7 +9,7 @@ use crate::internal_jni::io::parse_json_to_options;
 use crate::internal_jni::io::scan::build_scan_sources;
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `io.scan$` config common to every entry point in this module.
+/// Injects the shared `io.scan$` config into [`native_method!`].
 macro_rules! scan_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -109,5 +109,4 @@ fn scan_ipc<'local>(
     Ok(LazyFrameHandle::alloc(ldf))
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[SCAN_IPC_METHOD];

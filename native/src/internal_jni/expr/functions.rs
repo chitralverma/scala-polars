@@ -10,8 +10,7 @@ use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::utils::error::ThrowRuntimeException;
 
-/// Wraps [`native_method!`] with the `functions_expr$` config common to every entry point in this
-/// module (owning class, error policy, and the handle `type_map`).
+/// Injects the shared `functions_expr$` config into [`native_method!`].
 macro_rules! fn_method {
     ($($tt:tt)*) => {
         native_method! {
@@ -139,7 +138,6 @@ fn mean_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-/// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
     ANY_HORIZONTAL_METHOD,
     ALL_HORIZONTAL_METHOD,

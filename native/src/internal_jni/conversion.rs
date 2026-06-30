@@ -10,7 +10,6 @@ use rust_decimal::prelude::ToPrimitive;
 use crate::internal_jni::utils::string_to_j_string;
 
 pub trait IntoJava<'a> {
-    /// Converts the implementing type into a `JObject` on the JVM side.
     fn try_into_java(self, env: &mut Env<'a>) -> anyhow::Result<JObject<'a>>;
 }
 
@@ -22,10 +21,8 @@ pub trait JavaArrayToVec {
     fn to_vec(env: &mut Env, array: Self) -> anyhow::Result<Vec<Self::Output>>;
 }
 
-/// Reads the elements of a primitive array via a JNI critical region.
-///
-/// The borrowed region has no null sentinel and this only fails on a fatal JVM
-/// condition (e.g. OOM), so abort explicitly rather than unwind across the boundary.
+/// Reads a primitive array via a JNI critical region. The borrowed region has no null sentinel and
+/// only fails on a fatal JVM condition (e.g. OOM), so abort rather than unwind across the boundary.
 fn read_primitive_array<'env, 'arr, T, R>(
     env: &mut Env<'env>,
     array: &JPrimitiveArray<'arr, T>,
@@ -242,8 +239,7 @@ impl<'a> IntoJava<'a> for AnyValueWrapper<'_> {
     }
 }
 
-/// Boxes a primitive `value` into its Java wrapper class via the wrapper's
-/// static `valueOf` factory.
+/// Boxes a primitive `value` into its Java wrapper class via the wrapper's static `valueOf`.
 pub fn box_primitive<'a, T: Into<JValue<'a>>>(
     env: &mut Env<'a>,
     value: T,

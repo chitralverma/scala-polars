@@ -20,8 +20,7 @@ use polars_core::runtime::ASYNC;
 
 use super::{get_file_path, parse_cloud_options};
 
-/// Parses the shared `write_mode` option into an overwrite flag, removing the key from the map.
-/// Returns `true` only when the value equals `overwrite` (case-insensitive); otherwise `false`.
+/// Removes the shared `write_mode` key, returning `true` when it equals `overwrite` (ignoring case).
 pub(crate) fn parse_overwrite_mode(options: &mut PlHashMap<String, String>) -> bool {
     options
         .remove("write_mode")
@@ -77,8 +76,8 @@ async fn create_cloud_writer(
     Ok(CloudWriterIoTraitWrap::from(cloud_writer))
 }
 
-/// Writes a DataFrame to `file_path`, finalizing (committing) the upload afterwards. The
-/// `write` closure applies the format-specific writer to the opened cloud writer.
+/// Writes a DataFrame to `file_path` via `write` (the format-specific writer), then commits the
+/// upload by closing the cloud writer.
 pub(crate) fn write_dataframe<F>(
     env: &mut Env,
     mut dataframe: DataFrame,
