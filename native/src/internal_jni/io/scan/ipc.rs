@@ -9,13 +9,22 @@ use crate::internal_jni::io::parse_json_to_options;
 use crate::internal_jni::io::scan::build_scan_sources;
 use crate::utils::error::ThrowRuntimeException;
 
-const SCAN_IPC_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.io.scan$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
+/// Wraps [`native_method!`] with the `io.scan$` config common to every entry point in this module.
+macro_rules! scan_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.io.scan$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe LazyFrameHandle => long },
+            $($tt)*
+        }
+    };
+}
+
+const SCAN_IPC_METHOD: NativeMethod = scan_method!(
     extern fn scan_ipc(paths: [java.lang.String], options: java.lang.String) -> LazyFrameHandle,
     name = "scanIPC",
-};
+);
 
 fn scan_ipc<'local>(
     env: &mut Env<'local>,

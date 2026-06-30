@@ -9,10 +9,19 @@ use crate::internal_jni::handle::{DataFrameHandle, Handle, RowIteratorHandle};
 use crate::internal_jni::utils::get_n_rows;
 use crate::utils::error::ThrowRuntimeException;
 
-const CREATE_ITERATOR_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.row$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long, unsafe RowIteratorHandle => long },
+/// Wraps [`native_method!`] with the `row$` config common to every entry point in this module.
+macro_rules! row_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.row$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe DataFrameHandle => long, unsafe RowIteratorHandle => long },
+            $($tt)*
+        }
+    };
+}
+
+const CREATE_ITERATOR_METHOD: NativeMethod = row_method! {
     extern fn create_iterator(df: DataFrameHandle, n_rows: jlong) -> RowIteratorHandle,
     name = "createIterator",
 };
@@ -28,10 +37,7 @@ fn create_iterator<'local>(
     Ok(RowIteratorHandle::alloc(ri))
 }
 
-const ADVANCE_ITERATOR_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.row$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe RowIteratorHandle => long },
+const ADVANCE_ITERATOR_METHOD: NativeMethod = row_method! {
     extern fn advance_iterator(ri: RowIteratorHandle) -> [java.lang.Object],
     name = "advanceIterator",
 };
@@ -64,10 +70,7 @@ fn advance_iterator<'local>(
     }
 }
 
-const SCHEMA_STRING_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.row$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe RowIteratorHandle => long },
+const SCHEMA_STRING_METHOD: NativeMethod = row_method! {
     extern fn schema_string(ri: RowIteratorHandle) -> JString,
     name = "schemaString",
 };
@@ -85,17 +88,11 @@ fn schema_string<'local>(
     JString::from_str(env, schema_string).context("Failed to build schema string")
 }
 
-const FREE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.row$",
-    error_policy = ThrowRuntimeException,
-    extern fn free(ptr: jlong),
-    name = "free",
-};
-
-fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
-    RowIteratorHandle::free_raw(ptr);
-    Ok(())
-}
+decl_free!(
+    FREE_METHOD,
+    "com.github.chitralverma.polars.internal.jni.row$",
+    RowIteratorHandle
+);
 
 pub struct RowIterator {
     columns: Vec<Column>,

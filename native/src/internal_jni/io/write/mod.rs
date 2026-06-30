@@ -77,12 +77,12 @@ async fn create_cloud_writer(
     Ok(CloudWriterIoTraitWrap::from(cloud_writer))
 }
 
-/// Writes a DataFrame to `filePath`, finalizing (committing) the upload afterwards. The
+/// Writes a DataFrame to `file_path`, finalizing (committing) the upload afterwards. The
 /// `write` closure applies the format-specific writer to the opened cloud writer.
 pub(crate) fn write_dataframe<F>(
     env: &mut Env,
     mut dataframe: DataFrame,
-    filePath: &JString,
+    file_path: &JString,
     overwrite_mode: bool,
     options: PlHashMap<String, String>,
     format: &str,
@@ -91,7 +91,7 @@ pub(crate) fn write_dataframe<F>(
 where
     F: FnOnce(&mut CloudWriterIoTraitWrap, &mut DataFrame) -> PolarsResult<()>,
 {
-    let full_path = get_file_path(env, filePath)?;
+    let full_path = get_file_path(env, file_path)?;
     let uri = PlRefPath::new(full_path);
 
     let cloud_options = parse_cloud_options(uri.scheme(), options)?;

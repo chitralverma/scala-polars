@@ -8,6 +8,18 @@ use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
 use crate::internal_jni::io::{opt_parse, parse_json_to_options};
 use crate::utils::error::ThrowRuntimeException;
 
+/// Wraps [`native_method!`] with the `io.write$` config common to every entry point in this module.
+macro_rules! write_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe DataFrameHandle => long },
+            $($tt)*
+        }
+    };
+}
+
 fn parse_ipc_compression(
     compression: Option<String>,
     compression_level: Option<i32>,
@@ -33,13 +45,10 @@ fn parse_ipc_compression(
     }
 }
 
-const WRITE_IPC_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
+const WRITE_IPC_METHOD: NativeMethod = write_method!(
     extern fn write_ipc(df: DataFrameHandle, file_path: java.lang.String, options: java.lang.String),
     name = "writeIPC",
-};
+);
 
 fn write_ipc<'local>(
     env: &mut Env<'local>,

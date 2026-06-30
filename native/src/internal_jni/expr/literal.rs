@@ -9,25 +9,32 @@ use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::internal_jni::utils::j_string_to_string;
 use crate::utils::error::ThrowRuntimeException;
 
-const NULL_LIT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+/// Wraps [`native_method!`] with the `literal_expr$` config common to every entry point in this
+/// module (owning class, error policy, and the handle `type_map`).
+macro_rules! lit_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe ExprHandle => long },
+            $($tt)*
+        }
+    };
+}
+
+const NULL_LIT_METHOD: NativeMethod = lit_method!(
     extern fn null_lit() -> ExprHandle,
     name = "nullLit",
-};
+);
 
 fn null_lit<'local>(_env: &mut Env<'local>, _this: JObject<'local>) -> anyhow::Result<ExprHandle> {
     Ok(ExprHandle::alloc(NULL.lit()))
 }
 
-const FROM_STRING_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_STRING_METHOD: NativeMethod = lit_method!(
     extern fn from_string(value: java.lang.String) -> ExprHandle,
     name = "fromString",
-};
+);
 
 fn from_string<'local>(
     env: &mut Env<'local>,
@@ -42,13 +49,10 @@ fn from_string<'local>(
     Ok(ExprHandle::alloc(lit(string_value)))
 }
 
-const FROM_BOOL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_BOOL_METHOD: NativeMethod = lit_method!(
     extern fn from_bool(value: jboolean) -> ExprHandle,
     name = "fromBool",
-};
+);
 
 fn from_bool<'local>(
     _env: &mut Env<'local>,
@@ -58,13 +62,10 @@ fn from_bool<'local>(
     Ok(ExprHandle::alloc(lit(value)))
 }
 
-const FROM_INT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_INT_METHOD: NativeMethod = lit_method!(
     extern fn from_int(value: jint) -> ExprHandle,
     name = "fromInt",
-};
+);
 
 fn from_int<'local>(
     _env: &mut Env<'local>,
@@ -74,13 +75,10 @@ fn from_int<'local>(
     Ok(ExprHandle::alloc(lit(value)))
 }
 
-const FROM_LONG_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_LONG_METHOD: NativeMethod = lit_method!(
     extern fn from_long(value: jlong) -> ExprHandle,
     name = "fromLong",
-};
+);
 
 fn from_long<'local>(
     _env: &mut Env<'local>,
@@ -90,13 +88,10 @@ fn from_long<'local>(
     Ok(ExprHandle::alloc(lit(value)))
 }
 
-const FROM_FLOAT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_FLOAT_METHOD: NativeMethod = lit_method!(
     extern fn from_float(value: jfloat) -> ExprHandle,
     name = "fromFloat",
-};
+);
 
 fn from_float<'local>(
     _env: &mut Env<'local>,
@@ -106,13 +101,10 @@ fn from_float<'local>(
     Ok(ExprHandle::alloc(lit(value)))
 }
 
-const FROM_DOUBLE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_DOUBLE_METHOD: NativeMethod = lit_method!(
     extern fn from_double(value: jdouble) -> ExprHandle,
     name = "fromDouble",
-};
+);
 
 fn from_double<'local>(
     _env: &mut Env<'local>,
@@ -122,13 +114,10 @@ fn from_double<'local>(
     Ok(ExprHandle::alloc(lit(value)))
 }
 
-const FROM_DATE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_DATE_METHOD: NativeMethod = lit_method!(
     extern fn from_date(value: java.lang.String) -> ExprHandle,
     name = "fromDate",
-};
+);
 
 fn from_date<'local>(
     env: &mut Env<'local>,
@@ -148,13 +137,10 @@ fn from_date<'local>(
     Ok(ExprHandle::alloc(lit(date)))
 }
 
-const FROM_TIME_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_TIME_METHOD: NativeMethod = lit_method!(
     extern fn from_time(value: java.lang.String) -> ExprHandle,
     name = "fromTime",
-};
+);
 
 fn from_time<'local>(
     env: &mut Env<'local>,
@@ -182,13 +168,10 @@ fn from_time<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const FROM_DATE_TIME_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.literal_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const FROM_DATE_TIME_METHOD: NativeMethod = lit_method!(
     extern fn from_date_time(value: java.lang.String) -> ExprHandle,
     name = "fromDateTime",
-};
+);
 
 fn from_date_time<'local>(
     env: &mut Env<'local>,

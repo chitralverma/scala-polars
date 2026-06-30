@@ -8,6 +8,18 @@ use crate::internal_jni::io::parse_json_to_options;
 use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
 use crate::utils::error::ThrowRuntimeException;
 
+/// Wraps [`native_method!`] with the `io.write$` config common to every entry point in this module.
+macro_rules! write_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe DataFrameHandle => long },
+            $($tt)*
+        }
+    };
+}
+
 fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression> {
     match compression {
         Some(t) => match t.to_lowercase().as_str() {
@@ -25,13 +37,10 @@ fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression
     }
 }
 
-const WRITE_AVRO_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
+const WRITE_AVRO_METHOD: NativeMethod = write_method!(
     extern fn write_avro(df: DataFrameHandle, file_path: java.lang.String, options: java.lang.String),
     name = "writeAvro",
-};
+);
 
 fn write_avro<'local>(
     env: &mut Env<'local>,

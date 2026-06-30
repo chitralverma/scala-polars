@@ -9,15 +9,28 @@ use polars_core::utils::concat_df;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::handle::{DataFrameHandle, Handle, LazyFrameHandle, SeriesHandle};
+use crate::internal_jni::macros::decl_free;
 use crate::utils::error::ThrowRuntimeException;
 
-const SCHEMA_STRING_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn schema_string(df: DataFrameHandle) -> JString,
-    name = "schemaString",
-};
+/// Wraps [`native_method!`] with the `data_frame$` config common to every entry point in this
+/// module (owning class, error policy, and the handle `type_map`).
+macro_rules! df_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
+            error_policy = ThrowRuntimeException,
+            type_map = {
+                unsafe DataFrameHandle => long,
+                unsafe LazyFrameHandle => long,
+                unsafe SeriesHandle => long,
+            },
+            $($tt)*
+        }
+    };
+}
+
+const SCHEMA_STRING_METHOD: NativeMethod =
+    df_method!(extern fn schema_string(df: DataFrameHandle) -> JString, name = "schemaString");
 
 fn schema_string<'local>(
     env: &mut Env<'local>,
@@ -30,12 +43,7 @@ fn schema_string<'local>(
     JString::from_str(env, schema_str).context("Failed to build schema string")
 }
 
-const SHOW_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn show(df: DataFrameHandle),
-};
+const SHOW_METHOD: NativeMethod = df_method!(extern fn show(df: DataFrameHandle));
 
 fn show<'local>(
     _env: &mut Env<'local>,
@@ -47,12 +55,7 @@ fn show<'local>(
     Ok(())
 }
 
-const COUNT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn count(df: DataFrameHandle) -> jlong,
-};
+const COUNT_METHOD: NativeMethod = df_method!(extern fn count(df: DataFrameHandle) -> jlong);
 
 fn count<'local>(
     _env: &mut Env<'local>,
@@ -62,13 +65,7 @@ fn count<'local>(
     Ok(df.get().shape().0 as i64)
 }
 
-const CONCAT_DATA_FRAMES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn concat_data_frames(inputs: [jlong]) -> DataFrameHandle,
-    name = "concatDataFrames",
-};
+const CONCAT_DATA_FRAMES_METHOD: NativeMethod = df_method!(extern fn concat_data_frames(inputs: [jlong]) -> DataFrameHandle, name = "concatDataFrames");
 
 fn concat_data_frames<'local>(
     env: &mut Env<'local>,
@@ -85,13 +82,8 @@ fn concat_data_frames<'local>(
     Ok(DataFrameHandle::alloc(concatenated_df))
 }
 
-const TO_LAZY_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long, unsafe LazyFrameHandle => long },
-    extern fn to_lazy(df: DataFrameHandle) -> LazyFrameHandle,
-    name = "toLazy",
-};
+const TO_LAZY_METHOD: NativeMethod =
+    df_method!(extern fn to_lazy(df: DataFrameHandle) -> LazyFrameHandle, name = "toLazy");
 
 fn to_lazy<'local>(
     _env: &mut Env<'local>,
@@ -101,12 +93,8 @@ fn to_lazy<'local>(
     Ok(LazyFrameHandle::alloc(df.get().lazy()))
 }
 
-const LIMIT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn limit(df: DataFrameHandle, n: jlong) -> DataFrameHandle,
-};
+const LIMIT_METHOD: NativeMethod =
+    df_method!(extern fn limit(df: DataFrameHandle, n: jlong) -> DataFrameHandle);
 
 fn limit<'local>(
     _env: &mut Env<'local>,
@@ -117,12 +105,8 @@ fn limit<'local>(
     Ok(DataFrameHandle::alloc(df.get().head(Some(n as usize))))
 }
 
-const TAIL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn tail(df: DataFrameHandle, n: jlong) -> DataFrameHandle,
-};
+const TAIL_METHOD: NativeMethod =
+    df_method!(extern fn tail(df: DataFrameHandle, n: jlong) -> DataFrameHandle);
 
 fn tail<'local>(
     _env: &mut Env<'local>,
@@ -133,13 +117,8 @@ fn tail<'local>(
     Ok(DataFrameHandle::alloc(df.get().tail(Some(n as usize))))
 }
 
-const FROM_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
-    extern fn from_series(ptrs: [jlong]) -> DataFrameHandle,
-    name = "fromSeries",
-};
+const FROM_SERIES_METHOD: NativeMethod =
+    df_method!(extern fn from_series(ptrs: [jlong]) -> DataFrameHandle, name = "fromSeries");
 
 fn from_series<'local>(
     env: &mut Env<'local>,
@@ -157,16 +136,11 @@ fn from_series<'local>(
     Ok(DataFrameHandle::alloc(df))
 }
 
-const FREE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.data_frame$",
-    error_policy = ThrowRuntimeException,
-    extern fn free(ptr: jlong),
-};
-
-fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
-    DataFrameHandle::free_raw(ptr);
-    Ok(())
-}
+decl_free!(
+    FREE_METHOD,
+    "com.github.chitralverma.polars.internal.jni.data_frame$",
+    DataFrameHandle
+);
 
 /// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[

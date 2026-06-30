@@ -9,8 +9,21 @@ use num_traits::FromPrimitive;
 use polars::prelude::*;
 
 use crate::internal_jni::handle::{ExprHandle, Handle};
+use crate::internal_jni::macros::decl_free;
 use crate::internal_jni::utils::{j_object_ref_to_string, j_string_to_string};
 use crate::utils::error::ThrowRuntimeException;
+
+/// Wraps [`native_method!`] with the `column_expr$` config common to every entry point in this module.
+macro_rules! col_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe ExprHandle => long },
+            $($tt)*
+        }
+    };
+}
 
 #[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
 pub enum BinaryOperator {
@@ -53,13 +66,8 @@ pub enum UnaryOperator {
 macro_rules! decl_unary_expr {
     ($(($const_name:ident, $fn_name:ident, $scala_name:literal, $method:ident)),+ $(,)?) => {
         $(
-            const $const_name: NativeMethod = native_method! {
-                java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-                error_policy = ThrowRuntimeException,
-                type_map = { unsafe ExprHandle => long },
-                extern fn $fn_name(expr: ExprHandle) -> ExprHandle,
-                name = $scala_name,
-            };
+            const $const_name: NativeMethod =
+                col_method!(extern fn $fn_name(expr: ExprHandle) -> ExprHandle, name = $scala_name);
 
             fn $fn_name<'local>(
                 _env: &mut Env<'local>,
@@ -100,13 +108,8 @@ decl_unary_expr! {
     (ARG_MAX_METHOD, arg_max, "argMax", arg_max),
 }
 
-const COLUMN_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn column(value: java.lang.String) -> ExprHandle,
-    name = "column",
-};
+const COLUMN_METHOD: NativeMethod =
+    col_method!(extern fn column(value: java.lang.String) -> ExprHandle, name = "column",);
 
 fn column<'local>(
     env: &mut Env<'local>,
@@ -122,13 +125,7 @@ fn column<'local>(
     Ok(ExprHandle::alloc(col(name.as_str())))
 }
 
-const SORT_COLUMN_BY_NAME_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn sort_column_by_name(value: java.lang.String, descending: bool) -> ExprHandle,
-    name = "sortColumnByName",
-};
+const SORT_COLUMN_BY_NAME_METHOD: NativeMethod = col_method!(extern fn sort_column_by_name(value: java.lang.String, descending: bool) -> ExprHandle, name = "sortColumnByName",);
 
 fn sort_column_by_name<'local>(
     env: &mut Env<'local>,
@@ -153,13 +150,7 @@ fn sort_column_by_name<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const APPLY_UNARY_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn apply_unary(expr: ExprHandle, operator: jint) -> ExprHandle,
-    name = "applyUnary",
-};
+const APPLY_UNARY_METHOD: NativeMethod = col_method!(extern fn apply_unary(expr: ExprHandle, operator: jint) -> ExprHandle, name = "applyUnary",);
 
 fn apply_unary<'local>(
     _env: &mut Env<'local>,
@@ -185,13 +176,7 @@ fn apply_unary<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const CAST_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn cast(expr: ExprHandle, data_type: java.lang.String) -> ExprHandle,
-    name = "cast",
-};
+const CAST_METHOD: NativeMethod = col_method!(extern fn cast(expr: ExprHandle, data_type: java.lang.String) -> ExprHandle, name = "cast",);
 
 fn cast<'local>(
     env: &mut Env<'local>,
@@ -339,13 +324,7 @@ fn jobject_to_expr<'local>(env: &mut Env<'local>, obj: &JObject<'local>) -> anyh
     Ok(expr)
 }
 
-const IS_IN_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn is_in(expr: ExprHandle, values: [java.lang.Object]) -> ExprHandle,
-    name = "isIn",
-};
+const IS_IN_METHOD: NativeMethod = col_method!(extern fn is_in(expr: ExprHandle, values: [java.lang.Object]) -> ExprHandle, name = "isIn",);
 
 fn is_in<'local>(
     env: &mut Env<'local>,
@@ -370,13 +349,7 @@ fn is_in<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const IS_BETWEEN_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn is_between(expr: ExprHandle, lower: java.lang.Object, upper: java.lang.Object) -> ExprHandle,
-    name = "isBetween",
-};
+const IS_BETWEEN_METHOD: NativeMethod = col_method!(extern fn is_between(expr: ExprHandle, lower: java.lang.Object, upper: java.lang.Object) -> ExprHandle, name = "isBetween",);
 
 fn is_between<'local>(
     env: &mut Env<'local>,
@@ -408,13 +381,7 @@ fn escape_regex(s: &str) -> String {
     escaped
 }
 
-const LIKE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn like(expr: ExprHandle, pattern: java.lang.String) -> ExprHandle,
-    name = "like",
-};
+const LIKE_METHOD: NativeMethod = col_method!(extern fn like(expr: ExprHandle, pattern: java.lang.String) -> ExprHandle, name = "like",);
 
 fn like<'local>(
     env: &mut Env<'local>,
@@ -431,13 +398,8 @@ fn like<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const TO_UPPERCASE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn to_uppercase(expr: ExprHandle) -> ExprHandle,
-    name = "toUppercase",
-};
+const TO_UPPERCASE_METHOD: NativeMethod =
+    col_method!(extern fn to_uppercase(expr: ExprHandle) -> ExprHandle, name = "toUppercase",);
 
 fn to_uppercase<'local>(
     _env: &mut Env<'local>,
@@ -447,13 +409,7 @@ fn to_uppercase<'local>(
     Ok(ExprHandle::alloc(expr.get().str().to_uppercase()))
 }
 
-const APPLY_BINARY_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn apply_binary(left: ExprHandle, right: ExprHandle, operator: jint) -> ExprHandle,
-    name = "applyBinary",
-};
+const APPLY_BINARY_METHOD: NativeMethod = col_method!(extern fn apply_binary(left: ExprHandle, right: ExprHandle, operator: jint) -> ExprHandle, name = "applyBinary",);
 
 fn apply_binary<'local>(
     _env: &mut Env<'local>,
@@ -488,13 +444,7 @@ fn apply_binary<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const ALIAS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn alias(expr: ExprHandle, name: java.lang.String) -> ExprHandle,
-    name = "alias",
-};
+const ALIAS_METHOD: NativeMethod = col_method!(extern fn alias(expr: ExprHandle, name: java.lang.String) -> ExprHandle, name = "alias",);
 
 fn alias<'local>(
     env: &mut Env<'local>,
@@ -506,13 +456,8 @@ fn alias<'local>(
     Ok(ExprHandle::alloc(expr.get().alias(s_name)))
 }
 
-const IS_EMPTY_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn is_empty(expr: ExprHandle) -> ExprHandle,
-    name = "isEmpty",
-};
+const IS_EMPTY_METHOD: NativeMethod =
+    col_method!(extern fn is_empty(expr: ExprHandle) -> ExprHandle, name = "isEmpty",);
 
 fn is_empty<'local>(
     _env: &mut Env<'local>,
@@ -522,13 +467,7 @@ fn is_empty<'local>(
     Ok(ExprHandle::alloc(expr.get().is_empty(false)))
 }
 
-const SLICE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn slice(expr: ExprHandle, offset: jlong, length: jlong) -> ExprHandle,
-    name = "slice",
-};
+const SLICE_METHOD: NativeMethod = col_method!(extern fn slice(expr: ExprHandle, offset: jlong, length: jlong) -> ExprHandle, name = "slice",);
 
 fn slice<'local>(
     _env: &mut Env<'local>,
@@ -542,13 +481,8 @@ fn slice<'local>(
     ))
 }
 
-const SHIFT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn shift(expr: ExprHandle, periods: jlong) -> ExprHandle,
-    name = "shift",
-};
+const SHIFT_METHOD: NativeMethod =
+    col_method!(extern fn shift(expr: ExprHandle, periods: jlong) -> ExprHandle, name = "shift",);
 
 fn shift<'local>(
     _env: &mut Env<'local>,
@@ -559,13 +493,7 @@ fn shift<'local>(
     Ok(ExprHandle::alloc(expr.get().shift(lit(periods))))
 }
 
-const GATHER_EVERY_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn gather_every(expr: ExprHandle, n: jlong, offset: jlong) -> ExprHandle,
-    name = "gatherEvery",
-};
+const GATHER_EVERY_METHOD: NativeMethod = col_method!(extern fn gather_every(expr: ExprHandle, n: jlong, offset: jlong) -> ExprHandle, name = "gatherEvery",);
 
 fn gather_every<'local>(
     _env: &mut Env<'local>,
@@ -579,13 +507,7 @@ fn gather_every<'local>(
     ))
 }
 
-const UNIQUE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn unique(expr: ExprHandle, maintain_order: bool) -> ExprHandle,
-    name = "unique",
-};
+const UNIQUE_METHOD: NativeMethod = col_method!(extern fn unique(expr: ExprHandle, maintain_order: bool) -> ExprHandle, name = "unique",);
 
 fn unique<'local>(
     _env: &mut Env<'local>,
@@ -602,13 +524,8 @@ fn unique<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const MODE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn mode(expr: ExprHandle) -> ExprHandle,
-    name = "mode",
-};
+const MODE_METHOD: NativeMethod =
+    col_method!(extern fn mode(expr: ExprHandle) -> ExprHandle, name = "mode",);
 
 fn mode<'local>(
     _env: &mut Env<'local>,
@@ -618,13 +535,8 @@ fn mode<'local>(
     Ok(ExprHandle::alloc(expr.get().mode(false)))
 }
 
-const STD_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn std(expr: ExprHandle, ddof: jint) -> ExprHandle,
-    name = "std",
-};
+const STD_METHOD: NativeMethod =
+    col_method!(extern fn std(expr: ExprHandle, ddof: jint) -> ExprHandle, name = "std",);
 
 fn std<'local>(
     _env: &mut Env<'local>,
@@ -635,13 +547,8 @@ fn std<'local>(
     Ok(ExprHandle::alloc(expr.get().std(ddof as u8)))
 }
 
-const VAR_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn var(expr: ExprHandle, ddof: jint) -> ExprHandle,
-    name = "var",
-};
+const VAR_METHOD: NativeMethod =
+    col_method!(extern fn var(expr: ExprHandle, ddof: jint) -> ExprHandle, name = "var",);
 
 fn var<'local>(
     _env: &mut Env<'local>,
@@ -652,13 +559,7 @@ fn var<'local>(
     Ok(ExprHandle::alloc(expr.get().var(ddof as u8)))
 }
 
-const QUANTILE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn quantile(expr: ExprHandle, q: jdouble, method: java.lang.String) -> ExprHandle,
-    name = "quantile",
-};
+const QUANTILE_METHOD: NativeMethod = col_method!(extern fn quantile(expr: ExprHandle, q: jdouble, method: java.lang.String) -> ExprHandle, name = "quantile",);
 
 fn quantile<'local>(
     env: &mut Env<'local>,
@@ -681,13 +582,7 @@ fn quantile<'local>(
     Ok(ExprHandle::alloc(l_expr.quantile(lit(q), q_method)))
 }
 
-const ARG_SORT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn arg_sort(expr: ExprHandle, descending: bool, nulls_last: bool) -> ExprHandle,
-    name = "argSort",
-};
+const ARG_SORT_METHOD: NativeMethod = col_method!(extern fn arg_sort(expr: ExprHandle, descending: bool, nulls_last: bool) -> ExprHandle, name = "argSort",);
 
 fn arg_sort<'local>(
     _env: &mut Env<'local>,
@@ -701,13 +596,8 @@ fn arg_sort<'local>(
     ))
 }
 
-const SKEW_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn skew(expr: ExprHandle, bias: bool) -> ExprHandle,
-    name = "skew",
-};
+const SKEW_METHOD: NativeMethod =
+    col_method!(extern fn skew(expr: ExprHandle, bias: bool) -> ExprHandle, name = "skew",);
 
 fn skew<'local>(
     _env: &mut Env<'local>,
@@ -718,13 +608,7 @@ fn skew<'local>(
     Ok(ExprHandle::alloc(expr.get().skew(bias)))
 }
 
-const KURTOSIS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn kurtosis(expr: ExprHandle, fisher: bool, bias: bool) -> ExprHandle,
-    name = "kurtosis",
-};
+const KURTOSIS_METHOD: NativeMethod = col_method!(extern fn kurtosis(expr: ExprHandle, fisher: bool, bias: bool) -> ExprHandle, name = "kurtosis",);
 
 fn kurtosis<'local>(
     _env: &mut Env<'local>,
@@ -736,13 +620,8 @@ fn kurtosis<'local>(
     Ok(ExprHandle::alloc(expr.get().kurtosis(fisher, bias)))
 }
 
-const ANY_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn any(expr: ExprHandle, ignore_nulls: bool) -> ExprHandle,
-    name = "any",
-};
+const ANY_METHOD: NativeMethod =
+    col_method!(extern fn any(expr: ExprHandle, ignore_nulls: bool) -> ExprHandle, name = "any",);
 
 fn any<'local>(
     _env: &mut Env<'local>,
@@ -753,13 +632,8 @@ fn any<'local>(
     Ok(ExprHandle::alloc(expr.get().any(ignore_nulls)))
 }
 
-const ALL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn all(expr: ExprHandle, ignore_nulls: bool) -> ExprHandle,
-    name = "all",
-};
+const ALL_METHOD: NativeMethod =
+    col_method!(extern fn all(expr: ExprHandle, ignore_nulls: bool) -> ExprHandle, name = "all",);
 
 fn all<'local>(
     _env: &mut Env<'local>,
@@ -770,13 +644,8 @@ fn all<'local>(
     Ok(ExprHandle::alloc(expr.get().all(ignore_nulls)))
 }
 
-const CUM_SUM_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
-    extern fn cum_sum(expr: ExprHandle, reverse: bool) -> ExprHandle,
-    name = "cumSum",
-};
+const CUM_SUM_METHOD: NativeMethod =
+    col_method!(extern fn cum_sum(expr: ExprHandle, reverse: bool) -> ExprHandle, name = "cumSum",);
 
 fn cum_sum<'local>(
     _env: &mut Env<'local>,
@@ -787,17 +656,11 @@ fn cum_sum<'local>(
     Ok(ExprHandle::alloc(expr.get().cum_sum(reverse)))
 }
 
-const FREE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
-    error_policy = ThrowRuntimeException,
-    extern fn free(ptr: jlong),
-    name = "free",
-};
-
-fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
-    ExprHandle::free_raw(ptr);
-    Ok(())
-}
+decl_free!(
+    FREE_METHOD,
+    "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    ExprHandle
+);
 
 /// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[

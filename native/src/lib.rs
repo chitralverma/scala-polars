@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::expect_fun_call)]
 
@@ -6,26 +5,31 @@ use anyhow::Context;
 use internal_jni::utils::j_object_ref_to_string;
 use jni::objects::{JMap, JObject, JString};
 use jni::sys::{JNI_TRUE, jboolean};
-use jni::{Env, native_method};
+use jni::{Env, NativeMethod, native_method};
 use utils::error::ThrowRuntimeException;
 
 pub mod internal_jni;
 pub mod utils;
 
-#[allow(dead_code)]
-const VERSION_METHOD: jni::NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.common$",
-    error_policy = ThrowRuntimeException,
-    extern fn version() -> JString,
-};
+/// Wraps [`native_method!`] with the `common$` config common to every entry point in this object
+/// (owning class and error policy). This object exposes no native handles, so there is no
+/// `type_map`.
+macro_rules! common_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.common$",
+            error_policy = ThrowRuntimeException,
+            $($tt)*
+        }
+    };
+}
 
-#[allow(dead_code)]
-const SET_CONFIGS_METHOD: jni::NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.common$",
-    error_policy = ThrowRuntimeException,
+const VERSION_METHOD: NativeMethod = common_method!(extern fn version() -> JString);
+
+const SET_CONFIGS_METHOD: NativeMethod = common_method!(
     extern fn set_configs(options: java.util.Map) -> jboolean,
     name = "setConfigs",
-};
+);
 
 fn version<'local>(
     env: &mut Env<'local>,
@@ -79,3 +83,6 @@ fn set_configs<'local>(
     }
     Ok(JNI_TRUE)
 }
+
+/// All native methods exported by the `common` object.
+pub const METHODS: &[NativeMethod] = &[VERSION_METHOD, SET_CONFIGS_METHOD];

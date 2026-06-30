@@ -10,13 +10,23 @@ use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::utils::error::ThrowRuntimeException;
 
-const ANY_HORIZONTAL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+/// Wraps [`native_method!`] with the `functions_expr$` config common to every entry point in this
+/// module (owning class, error policy, and the handle `type_map`).
+macro_rules! fn_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe ExprHandle => long },
+            $($tt)*
+        }
+    };
+}
+
+const ANY_HORIZONTAL_METHOD: NativeMethod = fn_method!(
     extern fn any_horizontal_expr(inputs: [jlong]) -> ExprHandle,
     name = "anyHorizontal",
-};
+);
 
 fn any_horizontal_expr<'local>(
     env: &mut Env<'local>,
@@ -32,13 +42,10 @@ fn any_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const ALL_HORIZONTAL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const ALL_HORIZONTAL_METHOD: NativeMethod = fn_method!(
     extern fn all_horizontal_expr(inputs: [jlong]) -> ExprHandle,
     name = "allHorizontal",
-};
+);
 
 fn all_horizontal_expr<'local>(
     env: &mut Env<'local>,
@@ -54,13 +61,10 @@ fn all_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const MAX_HORIZONTAL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const MAX_HORIZONTAL_METHOD: NativeMethod = fn_method!(
     extern fn max_horizontal_expr(inputs: [jlong]) -> ExprHandle,
     name = "maxHorizontal",
-};
+);
 
 fn max_horizontal_expr<'local>(
     env: &mut Env<'local>,
@@ -76,13 +80,10 @@ fn max_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const MIN_HORIZONTAL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const MIN_HORIZONTAL_METHOD: NativeMethod = fn_method!(
     extern fn min_horizontal_expr(inputs: [jlong]) -> ExprHandle,
     name = "minHorizontal",
-};
+);
 
 fn min_horizontal_expr<'local>(
     env: &mut Env<'local>,
@@ -98,13 +99,10 @@ fn min_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const SUM_HORIZONTAL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const SUM_HORIZONTAL_METHOD: NativeMethod = fn_method!(
     extern fn sum_horizontal_expr(inputs: [jlong], ignore_nulls: bool) -> ExprHandle,
     name = "sumHorizontal",
-};
+);
 
 fn sum_horizontal_expr<'local>(
     env: &mut Env<'local>,
@@ -121,13 +119,10 @@ fn sum_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
-const MEAN_HORIZONTAL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.functions_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const MEAN_HORIZONTAL_METHOD: NativeMethod = fn_method!(
     extern fn mean_horizontal_expr(inputs: [jlong], ignore_nulls: bool) -> ExprHandle,
     name = "meanHorizontal",
-};
+);
 
 fn mean_horizontal_expr<'local>(
     env: &mut Env<'local>,

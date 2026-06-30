@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use anyhow::Context;
 use jni::objects::{JBooleanArray, JLongArray, JMap, JObject, JObjectArray, JString};
 use jni::sys::{JNI_TRUE, jboolean, jint, jlong};
@@ -9,18 +7,30 @@ use polars_plan::plans::AExprSorted;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::handle::{DataFrameHandle, ExprHandle, Handle, LazyFrameHandle};
+use crate::internal_jni::macros::decl_free;
 use crate::internal_jni::utils::{
     j_object_ref_to_string, j_string_array_to_vec, j_string_to_string,
 };
 use crate::utils::error::ThrowRuntimeException;
 
-const SCHEMA_STRING_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn schema_string(ldf: LazyFrameHandle) -> JString,
-    name = "schemaString",
-};
+/// Wraps [`native_method!`] with the `lazy_frame$` config common to every entry point in this module.
+macro_rules! ldf_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
+            error_policy = ThrowRuntimeException,
+            type_map = {
+                unsafe LazyFrameHandle => long,
+                unsafe DataFrameHandle => long,
+                unsafe ExprHandle => long,
+            },
+            $($tt)*
+        }
+    };
+}
+
+const SCHEMA_STRING_METHOD: NativeMethod =
+    ldf_method!(extern fn schema_string(ldf: LazyFrameHandle) -> JString, name = "schemaString",);
 
 fn schema_string<'local>(
     env: &mut Env<'local>,
@@ -36,13 +46,7 @@ fn schema_string<'local>(
     JString::from_str(env, schema_str).context("Failed to build schema string")
 }
 
-const SELECT_FROM_STRINGS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn select_from_strings(ldf: LazyFrameHandle, expr_strs: [java.lang.String]) -> LazyFrameHandle,
-    name = "selectFromStrings",
-};
+const SELECT_FROM_STRINGS_METHOD: NativeMethod = ldf_method!(extern fn select_from_strings(ldf: LazyFrameHandle, expr_strs: [java.lang.String]) -> LazyFrameHandle, name = "selectFromStrings",);
 
 fn select_from_strings<'local>(
     env: &mut Env<'local>,
@@ -62,13 +66,7 @@ fn select_from_strings<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().select(exprs)))
 }
 
-const SELECT_FROM_EXPRS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn select_from_exprs(ldf: LazyFrameHandle, inputs: [jlong]) -> LazyFrameHandle,
-    name = "selectFromExprs",
-};
+const SELECT_FROM_EXPRS_METHOD: NativeMethod = ldf_method!(extern fn select_from_exprs(ldf: LazyFrameHandle, inputs: [jlong]) -> LazyFrameHandle, name = "selectFromExprs",);
 
 fn select_from_exprs<'local>(
     env: &mut Env<'local>,
@@ -84,13 +82,7 @@ fn select_from_exprs<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().select(exprs)))
 }
 
-const FILTER_FROM_EXPRS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long, unsafe ExprHandle => long },
-    extern fn filter_from_exprs(ldf: LazyFrameHandle, expr: ExprHandle) -> LazyFrameHandle,
-    name = "filterFromExprs",
-};
+const FILTER_FROM_EXPRS_METHOD: NativeMethod = ldf_method!(extern fn filter_from_exprs(ldf: LazyFrameHandle, expr: ExprHandle) -> LazyFrameHandle, name = "filterFromExprs",);
 
 fn filter_from_exprs<'local>(
     _env: &mut Env<'local>,
@@ -101,12 +93,8 @@ fn filter_from_exprs<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().filter(expr.get())))
 }
 
-const LIMIT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn limit(ldf: LazyFrameHandle, n: jlong) -> LazyFrameHandle,
-};
+const LIMIT_METHOD: NativeMethod =
+    ldf_method!(extern fn limit(ldf: LazyFrameHandle, n: jlong) -> LazyFrameHandle,);
 
 fn limit<'local>(
     _env: &mut Env<'local>,
@@ -117,12 +105,8 @@ fn limit<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().limit(n as IdxSize)))
 }
 
-const TAIL_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn tail(ldf: LazyFrameHandle, n: jlong) -> LazyFrameHandle,
-};
+const TAIL_METHOD: NativeMethod =
+    ldf_method!(extern fn tail(ldf: LazyFrameHandle, n: jlong) -> LazyFrameHandle,);
 
 fn tail<'local>(
     _env: &mut Env<'local>,
@@ -133,12 +117,7 @@ fn tail<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().tail(n as IdxSize)))
 }
 
-const DROP_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn drop(ldf: LazyFrameHandle, col_names: [java.lang.String]) -> LazyFrameHandle,
-};
+const DROP_METHOD: NativeMethod = ldf_method!(extern fn drop(ldf: LazyFrameHandle, col_names: [java.lang.String]) -> LazyFrameHandle,);
 
 fn drop<'local>(
     env: &mut Env<'local>,
@@ -157,13 +136,7 @@ fn drop<'local>(
     ))
 }
 
-const DROP_NULLS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn drop_nulls(ldf: LazyFrameHandle, subset: [java.lang.String]) -> LazyFrameHandle,
-    name = "dropNulls",
-};
+const DROP_NULLS_METHOD: NativeMethod = ldf_method!(extern fn drop_nulls(ldf: LazyFrameHandle, subset: [java.lang.String]) -> LazyFrameHandle, name = "dropNulls",);
 
 fn drop_nulls<'local>(
     env: &mut Env<'local>,
@@ -189,12 +162,8 @@ fn drop_nulls<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().drop_nulls(subset)))
 }
 
-const RENAME_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn rename(ldf: LazyFrameHandle, options: java.util.Map) -> LazyFrameHandle,
-};
+const RENAME_METHOD: NativeMethod =
+    ldf_method!(extern fn rename(ldf: LazyFrameHandle, options: java.util.Map) -> LazyFrameHandle,);
 
 fn rename<'local>(
     env: &mut Env<'local>,
@@ -236,18 +205,7 @@ fn rename<'local>(
     ))
 }
 
-const SORT_FROM_EXPRS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn sort_from_exprs(
-        ldf: LazyFrameHandle,
-        inputs: [jlong],
-        null_last: [jboolean],
-        maintain_order: jboolean
-    ) -> LazyFrameHandle,
-    name = "sortFromExprs",
-};
+const SORT_FROM_EXPRS_METHOD: NativeMethod = ldf_method!(extern fn sort_from_exprs( ldf: LazyFrameHandle, inputs: [jlong], null_last: [jboolean], maintain_order: jboolean ) -> LazyFrameHandle, name = "sortFromExprs",);
 
 fn sort_from_exprs<'local>(
     env: &mut Env<'local>,
@@ -282,19 +240,7 @@ fn sort_from_exprs<'local>(
     Ok(LazyFrameHandle::alloc(ldf))
 }
 
-const TOP_K_FROM_EXPRS_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn top_k_from_exprs(
-        ldf: LazyFrameHandle,
-        k: jint,
-        inputs: [jlong],
-        null_last: [jboolean],
-        maintain_order: jboolean
-    ) -> LazyFrameHandle,
-    name = "topKFromExprs",
-};
+const TOP_K_FROM_EXPRS_METHOD: NativeMethod = ldf_method!(extern fn top_k_from_exprs( ldf: LazyFrameHandle, k: jint, inputs: [jlong], null_last: [jboolean], maintain_order: jboolean ) -> LazyFrameHandle, name = "topKFromExprs",);
 
 #[allow(clippy::too_many_arguments)]
 fn top_k_from_exprs<'local>(
@@ -332,13 +278,7 @@ fn top_k_from_exprs<'local>(
     Ok(LazyFrameHandle::alloc(ldf))
 }
 
-const WITH_COLUMN_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long, unsafe ExprHandle => long },
-    extern fn with_column(ldf: LazyFrameHandle, col_name: java.lang.String, expr: ExprHandle) -> LazyFrameHandle,
-    name = "withColumn",
-};
+const WITH_COLUMN_METHOD: NativeMethod = ldf_method!(extern fn with_column(ldf: LazyFrameHandle, col_name: java.lang.String, expr: ExprHandle) -> LazyFrameHandle, name = "withColumn",);
 
 fn with_column<'local>(
     env: &mut Env<'local>,
@@ -358,17 +298,7 @@ fn with_column<'local>(
     ))
 }
 
-const UNIQUE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn unique(
-        ldf: LazyFrameHandle,
-        subset: [java.lang.String],
-        keep: java.lang.String,
-        maintain_order: jboolean
-    ) -> LazyFrameHandle,
-};
+const UNIQUE_METHOD: NativeMethod = ldf_method!(extern fn unique( ldf: LazyFrameHandle, subset: [java.lang.String], keep: java.lang.String, maintain_order: jboolean ) -> LazyFrameHandle,);
 
 fn unique<'local>(
     env: &mut Env<'local>,
@@ -415,12 +345,7 @@ fn unique<'local>(
     Ok(LazyFrameHandle::alloc(unique_ldf))
 }
 
-const EXPLAIN_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn explain(ldf: LazyFrameHandle, optimized: jboolean, tree_format: jboolean) -> JString,
-};
+const EXPLAIN_METHOD: NativeMethod = ldf_method!(extern fn explain(ldf: LazyFrameHandle, optimized: jboolean, tree_format: jboolean) -> JString,);
 
 fn explain<'local>(
     env: &mut Env<'local>,
@@ -444,18 +369,7 @@ fn explain<'local>(
     JString::from_str(env, plan_str).context("Failed to build plan string")
 }
 
-const SET_SORTED_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn set_sorted(
-        ldf: LazyFrameHandle,
-        column: java.lang.String,
-        descending: jboolean,
-        nulls_last: jboolean
-    ) -> LazyFrameHandle,
-    name = "setSorted",
-};
+const SET_SORTED_METHOD: NativeMethod = ldf_method!(extern fn set_sorted( ldf: LazyFrameHandle, column: java.lang.String, descending: jboolean, nulls_last: jboolean ) -> LazyFrameHandle, name = "setSorted",);
 
 fn set_sorted<'local>(
     env: &mut Env<'local>,
@@ -480,12 +394,8 @@ fn set_sorted<'local>(
     ))
 }
 
-const CACHE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn cache(ldf: LazyFrameHandle) -> LazyFrameHandle,
-};
+const CACHE_METHOD: NativeMethod =
+    ldf_method!(extern fn cache(ldf: LazyFrameHandle) -> LazyFrameHandle,);
 
 fn cache<'local>(
     _env: &mut Env<'local>,
@@ -495,12 +405,8 @@ fn cache<'local>(
     Ok(LazyFrameHandle::alloc(ldf.get().cache()))
 }
 
-const COLLECT_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long, unsafe DataFrameHandle => long },
-    extern fn collect(ldf: LazyFrameHandle) -> DataFrameHandle,
-};
+const COLLECT_METHOD: NativeMethod =
+    ldf_method!(extern fn collect(ldf: LazyFrameHandle) -> DataFrameHandle,);
 
 fn collect<'local>(
     _env: &mut Env<'local>,
@@ -515,13 +421,7 @@ fn collect<'local>(
     Ok(DataFrameHandle::alloc(df))
 }
 
-const CONCAT_LAZY_FRAMES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn concat_lazy_frames(inputs: [jlong], parallel: jboolean, re_chunk: jboolean) -> LazyFrameHandle,
-    name = "concatLazyFrames",
-};
+const CONCAT_LAZY_FRAMES_METHOD: NativeMethod = ldf_method!(extern fn concat_lazy_frames(inputs: [jlong], parallel: jboolean, re_chunk: jboolean) -> LazyFrameHandle, name = "concatLazyFrames",);
 
 fn concat_lazy_frames<'local>(
     env: &mut Env<'local>,
@@ -548,23 +448,7 @@ fn concat_lazy_frames<'local>(
     Ok(LazyFrameHandle::alloc(concatenated_ldf))
 }
 
-const OPTIMIZATION_TOGGLE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe LazyFrameHandle => long },
-    extern fn optimization_toggle(
-        ldf: LazyFrameHandle,
-        type_coercion: jboolean,
-        predicate_pushdown: jboolean,
-        projection_pushdown: jboolean,
-        simplify_expr: jboolean,
-        slice_pushdown: jboolean,
-        comm_subplan_elim: jboolean,
-        comm_subexpr_elim: jboolean,
-        streaming: jboolean
-    ) -> LazyFrameHandle,
-    name = "optimizationToggle",
-};
+const OPTIMIZATION_TOGGLE_METHOD: NativeMethod = ldf_method!(extern fn optimization_toggle( ldf: LazyFrameHandle, type_coercion: jboolean, predicate_pushdown: jboolean, projection_pushdown: jboolean, simplify_expr: jboolean, slice_pushdown: jboolean, comm_subplan_elim: jboolean, comm_subexpr_elim: jboolean, streaming: jboolean ) -> LazyFrameHandle, name = "optimizationToggle",);
 
 #[allow(clippy::too_many_arguments)]
 fn optimization_toggle<'local>(
@@ -594,16 +478,11 @@ fn optimization_toggle<'local>(
     Ok(LazyFrameHandle::alloc(ldf))
 }
 
-const FREE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.lazy_frame$",
-    error_policy = ThrowRuntimeException,
-    extern fn free(ptr: jlong),
-};
-
-fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
-    LazyFrameHandle::free_raw(ptr);
-    Ok(())
-}
+decl_free!(
+    FREE_METHOD,
+    "com.github.chitralverma.polars.internal.jni.lazy_frame$",
+    LazyFrameHandle
+);
 
 // Helper function to extract non-sort expressions and directions
 fn extract_expr_and_direction(expr: &Expr, default_direction: bool) -> (Expr, bool) {

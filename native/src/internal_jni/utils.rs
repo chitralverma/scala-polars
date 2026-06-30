@@ -57,22 +57,6 @@ where
     j_string_to_string(env, &s, msg)
 }
 
-/// Reads a raw `jobject` known to be a `java.lang.String` into an owned Rust `String`.
-///
-/// # Safety
-/// `o` must be a valid local reference to a `java.lang.String` (or null).
-pub unsafe fn j_object_to_string<T>(
-    env: &mut Env,
-    o: jobject,
-    msg: Option<T>,
-) -> anyhow::Result<String>
-where
-    T: AsRef<str> + Send + Sync + std::fmt::Display + 'static,
-{
-    let jo = unsafe { JObject::from_raw(env, o) };
-    j_object_ref_to_string(env, &jo, msg)
-}
-
 pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
     if n_rows.is_positive() {
         Some(n_rows as usize)

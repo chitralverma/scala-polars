@@ -7,13 +7,22 @@ use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
 use crate::internal_jni::io::{opt_parse, parse_json_to_options};
 use crate::utils::error::ThrowRuntimeException;
 
-const WRITE_CSV_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe DataFrameHandle => long },
+/// Wraps [`native_method!`] with the `io.write$` config common to every entry point in this module.
+macro_rules! write_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe DataFrameHandle => long },
+            $($tt)*
+        }
+    };
+}
+
+const WRITE_CSV_METHOD: NativeMethod = write_method!(
     extern fn write_csv(df: DataFrameHandle, file_path: java.lang.String, options: java.lang.String),
     name = "writeCSV",
-};
+);
 
 fn write_csv<'local>(
     env: &mut Env<'local>,

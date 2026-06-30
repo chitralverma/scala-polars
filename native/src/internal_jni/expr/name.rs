@@ -5,13 +5,23 @@ use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::internal_jni::utils::j_string_to_string;
 use crate::utils::error::ThrowRuntimeException;
 
-const KEEP_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+/// Wraps [`native_method!`] with the `name_expr$` config common to every entry point in this
+/// module (owning class, error policy, and the handle `type_map`).
+macro_rules! name_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe ExprHandle => long },
+            $($tt)*
+        }
+    };
+}
+
+const KEEP_METHOD: NativeMethod = name_method!(
     extern fn keep(expr: ExprHandle) -> ExprHandle,
     name = "keep",
-};
+);
 
 fn keep<'local>(
     _env: &mut Env<'local>,
@@ -21,13 +31,10 @@ fn keep<'local>(
     Ok(ExprHandle::alloc(expr.get().name().keep()))
 }
 
-const PREFIX_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const PREFIX_METHOD: NativeMethod = name_method!(
     extern fn prefix(expr: ExprHandle, value: java.lang.String) -> ExprHandle,
     name = "prefix",
-};
+);
 
 fn prefix<'local>(
     env: &mut Env<'local>,
@@ -39,13 +46,10 @@ fn prefix<'local>(
     Ok(ExprHandle::alloc(expr.get().name().prefix(&s_prefix)))
 }
 
-const SUFFIX_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const SUFFIX_METHOD: NativeMethod = name_method!(
     extern fn suffix(expr: ExprHandle, value: java.lang.String) -> ExprHandle,
     name = "suffix",
-};
+);
 
 fn suffix<'local>(
     env: &mut Env<'local>,
@@ -57,13 +61,10 @@ fn suffix<'local>(
     Ok(ExprHandle::alloc(expr.get().name().suffix(&s_suffix)))
 }
 
-const TO_UPPERCASE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const TO_UPPERCASE_METHOD: NativeMethod = name_method!(
     extern fn to_uppercase(expr: ExprHandle) -> ExprHandle,
     name = "toUppercase",
-};
+);
 
 fn to_uppercase<'local>(
     _env: &mut Env<'local>,
@@ -73,13 +74,10 @@ fn to_uppercase<'local>(
     Ok(ExprHandle::alloc(expr.get().name().to_uppercase()))
 }
 
-const TO_LOWERCASE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe ExprHandle => long },
+const TO_LOWERCASE_METHOD: NativeMethod = name_method!(
     extern fn to_lowercase(expr: ExprHandle) -> ExprHandle,
     name = "toLowercase",
-};
+);
 
 fn to_lowercase<'local>(
     _env: &mut Env<'local>,

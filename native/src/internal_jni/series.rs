@@ -3,7 +3,6 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use jni::objects::{
     JBooleanArray, JDoubleArray, JFloatArray, JIntArray, JLongArray, JObject, JObjectArray, JString,
 };
-use jni::sys::jlong;
 use jni::{Env, NativeMethod, native_method};
 use polars::prelude::*;
 
@@ -11,6 +10,18 @@ use crate::internal_jni::conversion::JavaArrayToVec;
 use crate::internal_jni::handle::{Handle, SeriesHandle};
 use crate::internal_jni::utils::{j_string_array_to_vec, j_string_to_string};
 use crate::utils::error::ThrowRuntimeException;
+
+/// Wraps [`native_method!`] with the `series$` config common to every entry point in this module.
+macro_rules! series_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.series$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe SeriesHandle => long },
+            $($tt)*
+        }
+    };
+}
 
 /// Generates a `native_method!` entry point that builds a [`Series`] from a Java primitive array.
 ///
@@ -20,10 +31,7 @@ use crate::utils::error::ThrowRuntimeException;
 /// and the matching Rust array type so the generated symbol stays byte-stable with the Scala side.
 macro_rules! impl_new_series {
     ($const_name:ident, $fn_name:ident, $scala_name:literal, [$sig_elem:tt], $java_array:ty) => {
-        const $const_name: NativeMethod = native_method! {
-            java_type = "com.github.chitralverma.polars.internal.jni.series$",
-            error_policy = ThrowRuntimeException,
-            type_map = { unsafe SeriesHandle => long },
+        const $const_name: NativeMethod = series_method! {
             extern fn $fn_name(name: java.lang.String, values: [$sig_elem]) -> SeriesHandle,
             name = $scala_name,
         };
@@ -86,10 +94,7 @@ impl_new_series!(
     JBooleanArray<'local>
 );
 
-const NEW_STR_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const NEW_STR_SERIES_METHOD: NativeMethod = series_method! {
     extern fn new_str_series(name: java.lang.String, values: [java.lang.String]) -> SeriesHandle,
     name = "newStrSeries",
 };
@@ -118,10 +123,7 @@ fn new_str_series<'local>(
     )))
 }
 
-const NEW_DATE_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const NEW_DATE_SERIES_METHOD: NativeMethod = series_method! {
     extern fn new_date_series(name: java.lang.String, values: [java.lang.String]) -> SeriesHandle,
     name = "newDateSeries",
 };
@@ -158,10 +160,7 @@ fn new_date_series<'local>(
     )))
 }
 
-const NEW_TIME_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const NEW_TIME_SERIES_METHOD: NativeMethod = series_method! {
     extern fn new_time_series(name: java.lang.String, values: [java.lang.String]) -> SeriesHandle,
     name = "newTimeSeries",
 };
@@ -198,10 +197,7 @@ fn new_time_series<'local>(
     )))
 }
 
-const NEW_DATETIME_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const NEW_DATETIME_SERIES_METHOD: NativeMethod = series_method! {
     extern fn new_datetime_series(name: java.lang.String, values: [java.lang.String]) -> SeriesHandle,
     name = "newDatetimeSeries",
 };
@@ -238,10 +234,7 @@ fn new_datetime_series<'local>(
     )))
 }
 
-const NEW_LIST_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const NEW_LIST_SERIES_METHOD: NativeMethod = series_method! {
     extern fn new_list_series(name: java.lang.String, values: [jlong]) -> SeriesHandle,
     name = "newListSeries",
 };
@@ -269,10 +262,7 @@ fn new_list_series<'local>(
     )))
 }
 
-const NEW_STRUCT_SERIES_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const NEW_STRUCT_SERIES_METHOD: NativeMethod = series_method! {
     extern fn new_struct_series(name: java.lang.String, values: [jlong]) -> SeriesHandle,
     name = "newStructSeries",
 };
@@ -305,10 +295,7 @@ fn new_struct_series<'local>(
     Ok(SeriesHandle::alloc(series))
 }
 
-const SHOW_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    type_map = { unsafe SeriesHandle => long },
+const SHOW_METHOD: NativeMethod = series_method! {
     extern fn show(series_ptr: SeriesHandle),
     name = "show",
 };
@@ -323,17 +310,11 @@ fn show<'local>(
     Ok(())
 }
 
-const FREE_METHOD: NativeMethod = native_method! {
-    java_type = "com.github.chitralverma.polars.internal.jni.series$",
-    error_policy = ThrowRuntimeException,
-    extern fn free(ptr: jlong),
-    name = "free",
-};
-
-fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
-    SeriesHandle::free_raw(ptr);
-    Ok(())
-}
+decl_free!(
+    FREE_METHOD,
+    "com.github.chitralverma.polars.internal.jni.series$",
+    SeriesHandle
+);
 
 /// All native methods exported by this module.
 pub const METHODS: &[NativeMethod] = &[
