@@ -3,7 +3,7 @@
 #![allow(clippy::expect_fun_call)]
 
 use anyhow::Context;
-use internal_jni::utils::{j_string_to_string, string_to_j_string};
+use internal_jni::utils::{string_to_j_string, try_j_string_to_string};
 use jni::JNIEnv;
 use jni::objects::{JObject, JString};
 use jni::sys::{JNI_FALSE, JNI_TRUE, jboolean, jstring};
@@ -50,17 +50,17 @@ fn setConfigs_inner(env: &mut JNIEnv, options: &JObject) -> anyhow::Result<()> {
         .next(env)
         .context("Failed to read next entry while setting configs")?
     {
-        let key_str = j_string_to_string(
+        let key_str = try_j_string_to_string(
             env,
             &JString::from(key),
             Some("Failed to parse the provided config key as string"),
-        );
+        )?;
 
-        let value_str = j_string_to_string(
+        let value_str = try_j_string_to_string(
             env,
             &JString::from(value),
             Some("Failed to parse the provided config value as string"),
-        );
+        )?;
 
         unsafe { std::env::set_var(key_str, value_str) };
     }

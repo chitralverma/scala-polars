@@ -19,15 +19,23 @@ fn format_nested_error(error: &Error) -> String {
 /// Throws `err` as a Java `RuntimeException`, unless an exception is already pending
 /// (re-throwing over one fails and hides the original).
 pub fn throw_java_exception(env: &mut JNIEnv, err: Error) {
-    if env.exception_check().unwrap_or(false) {
-        return;
+    match env.exception_check() {
+        Ok(true) => return,
+        Ok(false) => {},
+        Err(check_err) => {
+            // The JNI state is already broken; issuing more calls would compound it.
+            eprintln!("Fatal: JNI exception_check failed: {check_err}");
+            return;
+        },
     }
 
     // Resolved directly (not via find_java_class) to avoid recursion.
     let throw_res = env
         .find_class("java/lang/RuntimeException")
         .and_then(|class| env.throw_new(class, format_nested_error(&err)));
-    let _ = throw_res;
+    if let Err(throw_err) = throw_res {
+        eprintln!("Fatal: failed to raise Java exception for `{err}`: {throw_err}");
+    }
 }
 
 /// Trait to unwrap `Result` or throw an exception.

@@ -148,16 +148,19 @@ impl<'a> IntoJava<'a> for &StructArray {
                     "Failed to retrieve series for struct field `{name}`"
                 ))?;
 
-                let key = unsafe {
+                let key_obj = unsafe {
                     JObject::from_raw(string_to_j_string(
                         env,
                         &name,
                         Some(format!("Failed to parse value `{name}` as a series name")),
                     ))
                 };
+                let key = env.auto_local(key_obj);
 
                 // Get first value only as series was sliced beforehand
-                let value = AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
+                let value_obj =
+                    AnyValueWrapper(series.first().value().as_borrowed()).into_java(env);
+                let value = env.auto_local(value_obj);
 
                 j_map
                     .put(env, &key, &value)
@@ -200,7 +203,10 @@ impl<'a> IntoJava<'a> for Series {
 
             for any_value in self.iter() {
                 let wrapped = AnyValueWrapper(any_value.clone());
-                let element = wrapped.into_java(env);
+                // Auto-delete the per-element local ref so a large series does not
+                // overflow the JVM local-reference table before the method returns.
+                let element_obj = wrapped.into_java(env);
+                let element = env.auto_local(element_obj);
                 j_list
                     .add(env, &element)
                     .context(format!("Failed to set value `{any_value}` from series"))?;

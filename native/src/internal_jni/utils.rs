@@ -35,6 +35,25 @@ where
     str_res.map(|java_str| java_str.into()).unwrap_or_throw(env)
 }
 
+/// Fallible variant of [`j_string_to_string`] that propagates the error instead of
+/// throwing and returning an empty-string sentinel. Use inside fallible helpers.
+pub fn try_j_string_to_string<T>(
+    env: &mut JNIEnv,
+    s: &JString,
+    msg: Option<T>,
+) -> anyhow::Result<String>
+where
+    T: AsRef<str> + Send + Sync + Display + 'static,
+{
+    let str_res = if let Some(c) = msg {
+        env.get_string(s).context(c)
+    } else {
+        env.get_string(s)
+            .context("Error converting JString to Rust String")
+    };
+    Ok(str_res?.into())
+}
+
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn j_object_to_string<T>(env: &mut JNIEnv, o: jobject, msg: Option<T>) -> String
 where

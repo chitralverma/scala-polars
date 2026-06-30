@@ -296,17 +296,17 @@ fn rename_inner(
         .next(env)
         .context("Failed to read next entry while renaming columns")?
     {
-        let key_str = j_string_to_string(
+        let key_str = try_j_string_to_string(
             env,
             &JString::from(new),
             Some("Failed to parse the provided existing column name as string"),
-        );
+        )?;
 
-        let value_str = j_string_to_string(
+        let value_str = try_j_string_to_string(
             env,
             &JString::from(old),
             Some("Failed to parse the provided new column name as string"),
-        );
+        )?;
 
         old_vec.push(key_str);
         new_vec.push(value_str);
