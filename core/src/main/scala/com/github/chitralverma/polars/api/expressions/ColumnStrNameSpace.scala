@@ -13,6 +13,6 @@ class ColumnStrNameSpace private[polars] (private val parent: Expression) {
   /** Modify strings to their uppercase equivalent. */
   def toUppercase: Column = {
     parent.checkClosed()
-    Column.withPtr(column_expr.to_uppercase(parent.ptr))
+    Column.withPtr(column_expr.toUppercase(parent.ptr))
   }
 }

@@ -1,5 +1,5 @@
 use anyhow::Context;
-use jni::JNIEnv;
+use jni::Env;
 use jni::objects::JString;
 use jni::sys::jint;
 use polars::io::RowIndex;
@@ -7,13 +7,22 @@ use polars::io::cloud::CloudOptions;
 use polars::prelude::{CloudScheme, IdxSize, PlHashMap};
 
 use super::utils::j_string_to_string;
-use crate::utils::error::ResultExt;
 
 pub mod scan;
 pub mod write;
 
-pub fn get_file_path(env: &mut JNIEnv, file_path: JString) -> String {
-    j_string_to_string(env, &file_path, Some("Failed to get provided path"))
+/// Removes `key` from `options` and parses its value into `T`, yielding `None` when the key is
+/// absent or the value fails to parse. A faithful equivalent of the
+/// `options.remove(key).and_then(|s| s.parse::<T>().ok())` idiom used throughout the IO modules.
+pub(crate) fn opt_parse<T>(options: &mut PlHashMap<String, String>, key: &str) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    options.remove(key).and_then(|s| s.parse::<T>().ok())
+}
+
+pub fn get_file_path(env: &mut Env, file_path: &JString) -> anyhow::Result<String> {
+    j_string_to_string(env, file_path, Some("Failed to get provided path"))
 }
 
 /// Parses untyped cloud options, propagating a parse failure as an error instead of
@@ -31,37 +40,38 @@ where
         .context("Failed to parse the provided cloud options")
 }
 
-fn parse_json_to_options(env: &mut JNIEnv, options: JString) -> PlHashMap<String, String> {
-    Ok(j_string_to_string(
+fn parse_json_to_options(
+    env: &mut Env,
+    options: &JString,
+) -> anyhow::Result<PlHashMap<String, String>> {
+    let s = j_string_to_string(
         env,
-        &options,
+        options,
         Some("Failed to deserialize the provided options"),
-    ))
-    .and_then(|s| serde_json::from_str(&s))
-    .context("Failed to parse the provided options")
-    .unwrap_or_throw(env)
+    )?;
+    serde_json::from_str(&s).context("Failed to parse the provided options")
 }
 
 pub fn get_row_index(
-    env: &mut JNIEnv,
-    row_count_col_name: JString,
+    env: &mut Env,
+    row_count_col_name: &JString,
     row_count_col_offset: jint,
-) -> Option<RowIndex> {
+) -> anyhow::Result<Option<RowIndex>> {
     if !row_count_col_name.is_null() {
-        Some(RowIndex {
+        Ok(Some(RowIndex {
             name: j_string_to_string(
                 env,
-                &row_count_col_name,
+                row_count_col_name,
                 Some("Failed to get the provided row column name"),
-            )
+            )?
             .into(),
             offset: if row_count_col_offset.is_positive() {
                 row_count_col_offset as IdxSize
             } else {
                 0
             },
-        })
+        }))
     } else {
-        None
+        Ok(None)
     }
 }

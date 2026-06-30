@@ -18,7 +18,7 @@ private[polars] object lazy_frame extends Natively {
 
   @native def drop(ptr: Long, cols: Array[String]): Long
 
-  @native def drop_nulls(ptr: Long, subset: Array[String]): Long
+  @native def dropNulls(ptr: Long, subset: Array[String]): Long
 
   @native def rename(ptr: Long, mapping: java.util.Map[String, String]): Long
 
@@ -43,7 +43,7 @@ private[polars] object lazy_frame extends Natively {
 
   @native def explain(ptr: Long, optimized: Boolean, tree_format: Boolean): String
 
-  @native def set_sorted(
+  @native def setSorted(
       ptr: Long,
       column: String,
       descending: Boolean,
@@ -54,7 +54,7 @@ private[polars] object lazy_frame extends Natively {
 
   @native def collect(ptr: Long): Long
 
-  @native def optimization_toggle(
+  @native def optimizationToggle(
       ptr: Long,
       typeCoercion: Boolean,
       predicatePushdown: Boolean,

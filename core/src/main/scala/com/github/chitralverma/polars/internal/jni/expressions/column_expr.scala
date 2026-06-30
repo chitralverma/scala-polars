@@ -6,7 +6,7 @@ private[polars] object column_expr extends Natively {
 
   @native def column(name: String): Long
 
-  @native def sort_column_by_name(name: String, descending: Boolean): Long
+  @native def sortColumnByName(name: String, descending: Boolean): Long
 
   @native def applyUnary(ptr: Long, op: Int): Long
 
@@ -20,19 +20,19 @@ private[polars] object column_expr extends Natively {
 
   @native def like(ptr: Long, pattern: String): Long
 
-  @native def to_uppercase(ptr: Long): Long
+  @native def toUppercase(ptr: Long): Long
 
   @native def alias(ptr: Long, name: String): Long
 
-  @native def is_finite(ptr: Long): Long
+  @native def isFinite(ptr: Long): Long
 
-  @native def is_infinite(ptr: Long): Long
+  @native def isInfinite(ptr: Long): Long
 
-  @native def is_empty(ptr: Long): Long
+  @native def isEmpty(ptr: Long): Long
 
-  @native def drop_nulls(ptr: Long): Long
+  @native def dropNulls(ptr: Long): Long
 
-  @native def drop_nans(ptr: Long): Long
+  @native def dropNans(ptr: Long): Long
 
   @native def reverse(ptr: Long): Long
 
@@ -40,21 +40,21 @@ private[polars] object column_expr extends Natively {
 
   @native def shift(ptr: Long, periods: Long): Long
 
-  @native def gather_every(ptr: Long, n: Long, offset: Long): Long
+  @native def gatherEvery(ptr: Long, n: Long, offset: Long): Long
 
   @native def unique(ptr: Long, maintainOrder: Boolean): Long
 
-  @native def is_unique(ptr: Long): Long
+  @native def isUnique(ptr: Long): Long
 
-  @native def is_duplicated(ptr: Long): Long
+  @native def isDuplicated(ptr: Long): Long
 
-  @native def is_first_distinct(ptr: Long): Long
+  @native def isFirstDistinct(ptr: Long): Long
 
-  @native def is_last_distinct(ptr: Long): Long
+  @native def isLastDistinct(ptr: Long): Long
 
   @native def mode(ptr: Long): Long
 
-  @native def unique_counts(ptr: Long): Long
+  @native def uniqueCounts(ptr: Long): Long
 
   @native def sum(ptr: Long): Long
 
@@ -76,11 +76,11 @@ private[polars] object column_expr extends Natively {
 
   @native def len(ptr: Long): Long
 
-  @native def n_unique(ptr: Long): Long
+  @native def nUnique(ptr: Long): Long
 
-  @native def approx_n_unique(ptr: Long): Long
+  @native def approxNUnique(ptr: Long): Long
 
-  @native def null_count(ptr: Long): Long
+  @native def nullCount(ptr: Long): Long
 
   @native def first(ptr: Long): Long
 
@@ -88,11 +88,11 @@ private[polars] object column_expr extends Natively {
 
   @native def quantile(ptr: Long, q: Double, method: String): Long
 
-  @native def arg_min(ptr: Long): Long
+  @native def argMin(ptr: Long): Long
 
-  @native def arg_max(ptr: Long): Long
+  @native def argMax(ptr: Long): Long
 
-  @native def arg_sort(ptr: Long, descending: Boolean, nullsLast: Boolean): Long
+  @native def argSort(ptr: Long, descending: Boolean, nullsLast: Boolean): Long
 
   @native def skew(ptr: Long, bias: Boolean): Long
 
@@ -102,7 +102,7 @@ private[polars] object column_expr extends Natively {
 
   @native def all(ptr: Long, ignoreNulls: Boolean): Long
 
-  @native def cum_sum(ptr: Long, reverse: Boolean): Long
+  @native def cumSum(ptr: Long, reverse: Boolean): Long
 
   @native def free(ptr: Long): Unit
 

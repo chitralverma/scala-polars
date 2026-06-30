@@ -72,7 +72,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
     )
 
     val exprs = cols.zip(descending).map { case (column, bool) =>
-      Expression.withPtr(column_expr.sort_column_by_name(column, bool))
+      Expression.withPtr(column_expr.sortColumnByName(column, bool))
     }
 
     sort(exprs, nullLast, maintainOrder = maintainOrder)
@@ -111,7 +111,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       descending: Boolean = false,
       nullsLast: Boolean = false
   ): LazyFrame = {
-    val ldfPtr = lazy_frame.set_sorted(ptr, column, descending, nullsLast)
+    val ldfPtr = lazy_frame.setSorted(ptr, column, descending, nullsLast)
 
     LazyFrame.withPtr(ldfPtr)
   }
@@ -150,7 +150,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
     )
 
     val exprs = cols.zip(descending).map { case (column, bool) =>
-      Expression.withPtr(column_expr.sort_column_by_name(column, bool))
+      Expression.withPtr(column_expr.sortColumnByName(column, bool))
     }
 
     topK(k, exprs, nullLast = nullLast, maintainOrder = maintainOrder)
@@ -218,7 +218,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
   def dropNulls(
       subset: Array[String] = Array.empty
   ): LazyFrame = {
-    val ldfPtr = lazy_frame.drop_nulls(ptr, subset)
+    val ldfPtr = lazy_frame.dropNulls(ptr, subset)
 
     LazyFrame.withPtr(ldfPtr)
   }
@@ -239,7 +239,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
   ): Unit = {
     val planStr = if (optimized) {
       lazy_frame.explain(
-        lazy_frame.optimization_toggle(
+        lazy_frame.optimizationToggle(
           ptr,
           typeCoercion = typeCoercion,
           predicatePushdown = predicatePushdown,
@@ -278,7 +278,7 @@ class LazyFrame private (private[polars] val _ptr: Long) extends AutoCloseable {
       streaming: Boolean = false
   ): DataFrame = {
     val ldf = LazyFrame.withPtr(
-      lazy_frame.optimization_toggle(
+      lazy_frame.optimizationToggle(
         ptr,
         typeCoercion = typeCoercion,
         predicatePushdown = if (noOptimization) false else predicatePushdown,

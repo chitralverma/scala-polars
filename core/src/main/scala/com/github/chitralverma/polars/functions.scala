@@ -37,12 +37,12 @@ object functions {
   }
 
   def desc(col_name: String): Expression = {
-    val ptr = column_expr.sort_column_by_name(col_name, descending = true)
+    val ptr = column_expr.sortColumnByName(col_name, descending = true)
     Expression.withPtr(ptr)
   }
 
   def asc(col_name: String): Expression = {
-    val ptr = column_expr.sort_column_by_name(col_name, descending = false)
+    val ptr = column_expr.sortColumnByName(col_name, descending = false)
     Expression.withPtr(ptr)
   }
 
@@ -127,34 +127,34 @@ object functions {
 
   @annotation.varargs
   def anyHorizontal(cols: Expression*): Column =
-    Column.withPtr(functions_expr.any_horizontal(cols.map(_.ptr).toArray))
+    Column.withPtr(functions_expr.anyHorizontal(cols.map(_.ptr).toArray))
 
   @annotation.varargs
   def allHorizontal(cols: Expression*): Column =
-    Column.withPtr(functions_expr.all_horizontal(cols.map(_.ptr).toArray))
+    Column.withPtr(functions_expr.allHorizontal(cols.map(_.ptr).toArray))
 
   @annotation.varargs
   def maxHorizontal(cols: Expression*): Column =
-    Column.withPtr(functions_expr.max_horizontal(cols.map(_.ptr).toArray))
+    Column.withPtr(functions_expr.maxHorizontal(cols.map(_.ptr).toArray))
 
   @annotation.varargs
   def minHorizontal(cols: Expression*): Column =
-    Column.withPtr(functions_expr.min_horizontal(cols.map(_.ptr).toArray))
+    Column.withPtr(functions_expr.minHorizontal(cols.map(_.ptr).toArray))
 
   @annotation.varargs
   def sumHorizontal(cols: Expression*): Column =
-    Column.withPtr(functions_expr.sum_horizontal(cols.map(_.ptr).toArray, true))
+    Column.withPtr(functions_expr.sumHorizontal(cols.map(_.ptr).toArray, true))
 
   @annotation.varargs
   def sumHorizontal(ignoreNulls: Boolean, cols: Expression*): Column =
-    Column.withPtr(functions_expr.sum_horizontal(cols.map(_.ptr).toArray, ignoreNulls))
+    Column.withPtr(functions_expr.sumHorizontal(cols.map(_.ptr).toArray, ignoreNulls))
 
   @annotation.varargs
   def meanHorizontal(cols: Expression*): Column =
-    Column.withPtr(functions_expr.mean_horizontal(cols.map(_.ptr).toArray, true))
+    Column.withPtr(functions_expr.meanHorizontal(cols.map(_.ptr).toArray, true))
 
   @annotation.varargs
   def meanHorizontal(ignoreNulls: Boolean, cols: Expression*): Column =
-    Column.withPtr(functions_expr.mean_horizontal(cols.map(_.ptr).toArray, ignoreNulls))
+    Column.withPtr(functions_expr.meanHorizontal(cols.map(_.ptr).toArray, ignoreNulls))
 
 }

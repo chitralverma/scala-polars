@@ -86,13 +86,13 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Check if the values in this expression are finite. */
   def isFinite: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_finite(ptr))
+    Column.withPtr(column_expr.isFinite(ptr))
   }
 
   /** Check if the values in this expression are infinite. */
   def isInfinite: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_infinite(ptr))
+    Column.withPtr(column_expr.isInfinite(ptr))
   }
 
   /** Check if the expression is empty.
@@ -102,19 +102,19 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
     */
   def isEmpty: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_empty(ptr))
+    Column.withPtr(column_expr.isEmpty(ptr))
   }
 
   /** Drop null values from this expression. */
   def dropNulls(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.drop_nulls(ptr))
+    Column.withPtr(column_expr.dropNulls(ptr))
   }
 
   /** Drop NaN values from this expression. */
   def dropNans(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.drop_nans(ptr))
+    Column.withPtr(column_expr.dropNans(ptr))
   }
 
   /** Reverse the order of elements in this expression. */
@@ -182,7 +182,7 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
     checkClosed()
     require(n >= 1, s"gatherEvery: step size 'n' must be >= 1, but got $n")
     require(offset >= 0, s"gatherEvery: 'offset' must be >= 0, but got $offset")
-    Column.withPtr(column_expr.gather_every(ptr, n, offset))
+    Column.withPtr(column_expr.gatherEvery(ptr, n, offset))
   }
 
   /** Gather every nth element.
@@ -221,25 +221,25 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Mask indicating unique values in this expression. */
   def isUnique: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_unique(ptr))
+    Column.withPtr(column_expr.isUnique(ptr))
   }
 
   /** Mask indicating duplicated values in this expression. */
   def isDuplicated: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_duplicated(ptr))
+    Column.withPtr(column_expr.isDuplicated(ptr))
   }
 
   /** Mask indicating the first occurrence of distinct values in this expression. */
   def isFirstDistinct: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_first_distinct(ptr))
+    Column.withPtr(column_expr.isFirstDistinct(ptr))
   }
 
   /** Mask indicating the last occurrence of distinct values in this expression. */
   def isLastDistinct: Column = {
     checkClosed()
-    Column.withPtr(column_expr.is_last_distinct(ptr))
+    Column.withPtr(column_expr.isLastDistinct(ptr))
   }
 
   /** Return the most frequent values in this expression. */
@@ -251,7 +251,7 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Return the counts of unique values in this expression. */
   def uniqueCounts(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.unique_counts(ptr))
+    Column.withPtr(column_expr.uniqueCounts(ptr))
   }
 
   /** Reduce groups to the sum of all the values. */
@@ -343,19 +343,19 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Return the number of unique values. */
   def nUnique(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.n_unique(ptr))
+    Column.withPtr(column_expr.nUnique(ptr))
   }
 
   /** Return the approximate number of unique values. */
   def approxNUnique(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.approx_n_unique(ptr))
+    Column.withPtr(column_expr.approxNUnique(ptr))
   }
 
   /** Return the number of null values. */
   def nullCount(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.null_count(ptr))
+    Column.withPtr(column_expr.nullCount(ptr))
   }
 
   /** Reduce groups to the first value. */
@@ -393,13 +393,13 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Return the index of the minimal value. */
   def argMin(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.arg_min(ptr))
+    Column.withPtr(column_expr.argMin(ptr))
   }
 
   /** Return the index of the maximum value. */
   def argMax(): Column = {
     checkClosed()
-    Column.withPtr(column_expr.arg_max(ptr))
+    Column.withPtr(column_expr.argMax(ptr))
   }
 
   /** Return the indices that would sort the values.
@@ -411,7 +411,7 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
     */
   def argSort(descending: Boolean, nullsLast: Boolean): Column = {
     checkClosed()
-    Column.withPtr(column_expr.arg_sort(ptr, descending, nullsLast))
+    Column.withPtr(column_expr.argSort(ptr, descending, nullsLast))
   }
 
   /** Return the indices that would sort the values ascending. */
@@ -478,7 +478,7 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
     */
   def cumSum(reverse: Boolean): Column = {
     checkClosed()
-    Column.withPtr(column_expr.cum_sum(ptr, reverse))
+    Column.withPtr(column_expr.cumSum(ptr, reverse))
   }
 
   /** Compute the cumulative sum of the values. */

@@ -68,6 +68,6 @@ class JSeries {
         }
 
         long[] ptrs = sList.stream().map(Series::ptr).mapToLong(Long::longValue).toArray();
-        return Series.withPtr(series.new_list_series(name, ptrs));
+        return Series.withPtr(series.newListSeries(name, ptrs));
     }
 }

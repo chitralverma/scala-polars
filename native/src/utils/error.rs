@@ -1,7 +1,9 @@
 use anyhow::Error;
-use jni::{JNIEnv, sys};
-use polars::prelude::{DataFrame, DataType, Expr, LazyFrame, PlHashMap, Series};
+use jni::Env;
+use jni::errors::ErrorPolicy;
 
+/// Formats an [`anyhow::Error`] with its full `Caused by:` chain so the context attached at each
+/// JNI boundary survives to the JVM.
 fn format_nested_error(error: &Error) -> String {
     let mut formatted = String::new();
 
@@ -16,119 +18,47 @@ fn format_nested_error(error: &Error) -> String {
     formatted.trim_end().to_string()
 }
 
-/// Throws `err` as a Java `RuntimeException`, unless an exception is already pending
-/// (re-throwing over one fails and hides the original).
-pub fn throw_java_exception(env: &mut JNIEnv, err: Error) {
-    match env.exception_check() {
-        Ok(true) => return,
-        Ok(false) => {},
-        Err(check_err) => {
-            // A failing exception_check means the JNI state is unreliable; returning a
-            // sentinel with no pending exception would silently corrupt error reporting,
-            // so abort rather than continue.
-            eprintln!("Fatal: JNI exception_check failed: {check_err}");
-            std::process::abort();
-        },
+/// Throws the closure error as a Java `RuntimeException` carrying the full [`anyhow`] cause chain,
+/// returning the type's default sentinel.
+///
+/// A project-specific counterpart to [`jni::errors::ThrowRuntimeExAndDefault`], needed because that
+/// policy is bounded on `std::error::Error` (which [`anyhow::Error`] does not implement) and emits a
+/// single flat line rather than the cause chain. A pending exception takes precedence over a new throw.
+#[derive(Debug, Default)]
+pub struct ThrowRuntimeException;
+
+impl<T: Default> ErrorPolicy<T, Error> for ThrowRuntimeException {
+    type Captures<'unowned_env_local: 'native_method, 'native_method> = ();
+
+    fn on_error<'unowned_env_local: 'native_method, 'native_method>(
+        env: &mut Env<'unowned_env_local>,
+        _cap: &mut Self::Captures<'unowned_env_local, 'native_method>,
+        err: Error,
+    ) -> jni::errors::Result<T> {
+        if env.exception_check() {
+            return Ok(T::default());
+        }
+        // `throw` returns `Err(JavaException)` after raising; discard it and let the exception fly.
+        let _ = env.throw(format_nested_error(&err));
+        Ok(T::default())
     }
 
-    // Resolved directly (not via find_java_class) to avoid recursion.
-    let throw_res = env
-        .find_class("java/lang/RuntimeException")
-        .and_then(|class| env.throw_new(class, format_nested_error(&err)));
-    if let Err(throw_err) = throw_res {
-        eprintln!("Fatal: failed to raise Java exception for `{err}`: {throw_err}");
-    }
-}
-
-/// Trait to unwrap `Result` or throw an exception.
-pub trait ResultExt<T> {
-    fn unwrap_or_throw(self, env: &mut JNIEnv) -> T;
-}
-
-// Throws the error, then returns the default sentinel for the JNI boundary.
-macro_rules! impl_result_ext {
-    ($t:ty, $def:expr) => {
-        impl ResultExt<$t> for Result<$t, Error> {
-            fn unwrap_or_throw(self, env: &mut JNIEnv) -> $t {
-                match self {
-                    Ok(val) => val,
-                    Err(err) => {
-                        throw_java_exception(env, err);
-                        $def
-                    },
-                }
-            }
+    fn on_panic<'unowned_env_local: 'native_method, 'native_method>(
+        env: &mut Env<'unowned_env_local>,
+        _cap: &mut Self::Captures<'unowned_env_local, 'native_method>,
+        payload: Box<dyn std::any::Any + Send + 'static>,
+    ) -> jni::errors::Result<T> {
+        if env.exception_check() {
+            return Ok(T::default());
         }
-    };
-}
-
-// Same as `impl_result_ext`, but for types carrying a `'local` lifetime.
-macro_rules! impl_result_ext_local {
-    ($t:ty, $def:expr) => {
-        impl<'local> ResultExt<$t> for Result<$t, Error> {
-            fn unwrap_or_throw(self, env: &mut JNIEnv) -> $t {
-                match self {
-                    Ok(val) => val,
-                    Err(err) => {
-                        throw_java_exception(env, err);
-                        $def
-                    },
-                }
-            }
-        }
-    };
-}
-
-impl_result_ext!(i64, 0);
-impl_result_ext!(i32, 0);
-impl_result_ext!(u8, 0);
-impl_result_ext!((), ());
-impl_result_ext!(f64, 0.0);
-impl_result_ext!(f32, 0.0);
-impl_result_ext!(bool, false);
-impl_result_ext!(sys::jobject, std::ptr::null_mut());
-impl_result_ext!(DataFrame, DataFrame::default());
-impl_result_ext!(LazyFrame, LazyFrame::default());
-impl_result_ext!(Series, Series::default());
-impl_result_ext!(Expr, Expr::default());
-impl_result_ext!(DataType, DataType::Null);
-impl_result_ext!(PlHashMap<String, String>, PlHashMap::default());
-impl_result_ext!(String, String::default());
-impl_result_ext!(chrono::NaiveDate, chrono::NaiveDate::default());
-impl_result_ext!(chrono::NaiveTime, chrono::NaiveTime::default());
-impl_result_ext!(chrono::NaiveDateTime, chrono::NaiveDateTime::default());
-impl_result_ext!(Vec<chrono::NaiveDate>, Vec::new());
-impl_result_ext!(Vec<chrono::NaiveTime>, Vec::new());
-impl_result_ext!(Vec<chrono::NaiveDateTime>, Vec::new());
-
-impl_result_ext_local!(jni::objects::JObject<'local>, jni::objects::JObject::null());
-impl_result_ext_local!(
-    jni::objects::JString<'local>,
-    jni::objects::JString::from(jni::objects::JObject::null())
-);
-impl_result_ext_local!(
-    jni::objects::JClass<'local>,
-    jni::objects::JClass::from(jni::objects::JObject::null())
-);
-impl_result_ext_local!(
-    jni::objects::JObjectArray<'local>,
-    jni::objects::JObjectArray::from(jni::objects::JObject::null())
-);
-impl_result_ext_local!(
-    jni::objects::JValueGen<jni::objects::JObject<'local>>,
-    jni::objects::JValueGen::Void
-);
-
-impl<'local, T: jni::objects::TypeArray> ResultExt<jni::objects::JPrimitiveArray<'local, T>>
-    for Result<jni::objects::JPrimitiveArray<'local, T>, Error>
-{
-    fn unwrap_or_throw(self, env: &mut JNIEnv) -> jni::objects::JPrimitiveArray<'local, T> {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                throw_java_exception(env, err);
-                jni::objects::JPrimitiveArray::from(jni::objects::JObject::null())
+        let msg = match payload.downcast::<&'static str>() {
+            Ok(s) => (*s).to_string(),
+            Err(payload) => match payload.downcast::<String>() {
+                Ok(s) => *s,
+                Err(_) => "native code panicked".to_string(),
             },
-        }
+        };
+        let _ = env.throw(format!("native code panicked: {msg}"));
+        Ok(T::default())
     }
 }

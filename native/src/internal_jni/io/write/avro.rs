@@ -1,14 +1,24 @@
-#![allow(non_snake_case)]
-
-use jni::JNIEnv;
 use jni::objects::{JObject, JString};
-use jni_fn::jni_fn;
+use jni::{Env, NativeMethod, native_method};
 use polars::io::avro::{AvroCompression, AvroWriter};
 use polars::prelude::*;
 
+use crate::internal_jni::handle::{DataFrameHandle, Handle};
 use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::write_dataframe;
-use crate::internal_jni::utils::from_ptr;
+use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
+use crate::utils::error::ThrowRuntimeException;
+
+/// Injects the shared `io.write$` config into [`native_method!`].
+macro_rules! write_method {
+    ($($tt:tt)*) => {
+        native_method! {
+            java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
+            error_policy = ThrowRuntimeException,
+            type_map = { unsafe DataFrameHandle => long },
+            $($tt)*
+        }
+    };
+}
 
 fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression> {
     match compression {
@@ -27,29 +37,30 @@ fn parse_avro_compression(compression: Option<String>) -> Option<AvroCompression
     }
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
-pub fn writeAvro(
-    mut env: JNIEnv,
-    _object: JObject,
-    df_ptr: *mut DataFrame,
-    filePath: JString,
-    options: JString,
-) {
-    let mut options = parse_json_to_options(&mut env, options);
+const WRITE_AVRO_METHOD: NativeMethod = write_method!(
+    extern fn write_avro(df: DataFrameHandle, file_path: java.lang.String, options: java.lang.String),
+    name = "writeAvro",
+);
+
+fn write_avro<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    df: DataFrameHandle,
+    file_path: JString<'local>,
+    options: JString<'local>,
+) -> anyhow::Result<()> {
+    let mut options = parse_json_to_options(env, &options)?;
 
     let record_name = options.remove("write_avro_record_name");
 
-    let overwrite_mode = options
-        .remove("write_mode")
-        .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
-        .unwrap_or(false);
+    let overwrite_mode = parse_overwrite_mode(&mut options);
 
     let compression = options.remove("write_compression");
 
     write_dataframe(
-        &mut env,
-        from_ptr(df_ptr),
-        filePath,
+        env,
+        df.get(),
+        &file_path,
         overwrite_mode,
         options,
         "Avro",
@@ -64,5 +75,9 @@ pub fn writeAvro(
 
             avro_writer.finish(dataframe)
         },
-    );
+    )?;
+
+    Ok(())
 }
+
+pub const METHODS: &[NativeMethod] = &[WRITE_AVRO_METHOD];

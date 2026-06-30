@@ -43,7 +43,7 @@ object Series {
     *   type.
     */
   def ofInt(name: String, values: Array[Int]): Series =
-    Series.withPtr(series.new_int_series(name, values))
+    Series.withPtr(series.newIntSeries(name, values))
 
   /** Initialize new series by name and values of type [[scala.Int]].
     *
@@ -98,7 +98,7 @@ object Series {
     *   type.
     */
   def ofLong(name: String, values: Array[Long]): Series =
-    Series.withPtr(series.new_long_series(name, values))
+    Series.withPtr(series.newLongSeries(name, values))
 
   /** Initialize new series by name and values of type [[scala.Long]].
     *
@@ -153,7 +153,7 @@ object Series {
     *   type.
     */
   def ofFloat(name: String, values: Array[Float]): Series =
-    Series.withPtr(series.new_float_series(name, values))
+    Series.withPtr(series.newFloatSeries(name, values))
 
   /** Initialize new series by name and values of type [[scala.Float]].
     *
@@ -209,7 +209,7 @@ object Series {
     *   type.
     */
   def ofDouble(name: String, values: Array[Double]): Series =
-    Series.withPtr(series.new_double_series(name, values))
+    Series.withPtr(series.newDoubleSeries(name, values))
 
   /** Initialize new series by name and values of type [[scala.Double]].
     *
@@ -265,7 +265,7 @@ object Series {
     *   type.
     */
   def ofBoolean(name: String, values: Array[Boolean]): Series =
-    Series.withPtr(series.new_boolean_series(name, values))
+    Series.withPtr(series.newBooleanSeries(name, values))
 
   /** Initialize new series by name and values of type [[scala.Boolean]].
     *
@@ -321,7 +321,7 @@ object Series {
     *   retaining type.
     */
   def ofString(name: String, values: Array[String]): Series =
-    Series.withPtr(series.new_str_series(name, values))
+    Series.withPtr(series.newStrSeries(name, values))
 
   /** Initialize new series by name and values of type [[java.lang.String]].
     *
@@ -364,7 +364,7 @@ object Series {
     */
   def ofTime(name: String, values: Array[java.time.LocalTime]): Series =
     Series.withPtr(
-      series.new_time_series(
+      series.newTimeSeries(
         name,
         values.map(v => java.time.format.DateTimeFormatter.ISO_LOCAL_TIME.format(v))
       )
@@ -411,7 +411,7 @@ object Series {
     */
   def ofDate(name: String, values: Array[java.time.LocalDate]): Series =
     Series.withPtr(
-      series.new_date_series(
+      series.newDateSeries(
         name,
         values.map(v => java.time.format.DateTimeFormatter.ISO_LOCAL_DATE.format(v))
       )
@@ -458,7 +458,7 @@ object Series {
     */
   def ofDateTime(name: String, values: Array[java.time.ZonedDateTime]): Series =
     Series.withPtr(
-      series.new_datetime_series(
+      series.newDatetimeSeries(
         name,
         values.map(v => java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(v))
       )
@@ -503,7 +503,7 @@ object Series {
     *   Series of type [[Series]]. If `values` is empty, empty series is returned retaining type.
     */
   def ofSeries(name: String, values: Array[Series]): Series =
-    Series.withPtr(series.new_struct_series(name, values.map(_.ptr)))
+    Series.withPtr(series.newStructSeries(name, values.map(_.ptr)))
 
   /** Initialize new series (struct) by name and values of type [[Series]].
     *
