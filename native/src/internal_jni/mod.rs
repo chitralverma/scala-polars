@@ -1,6 +1,7 @@
 pub mod conversion;
 pub mod expr;
 pub mod frame;
+pub mod handle;
 pub mod io;
 pub mod lazy;
 pub mod row;

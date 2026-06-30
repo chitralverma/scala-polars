@@ -147,8 +147,7 @@ default = ["full"]
 [dependencies]
 anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
-jni = "0.21.1"
-jni_fn = "0.1"
+jni = "0.22.4"
 num-derive = "0.4"
 num-traits = "0.2"
 object_store = { version = "0.13", features = ["aws", "azure", "gcp", "http"] }

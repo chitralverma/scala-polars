@@ -1,15 +1,13 @@
-#![allow(non_snake_case)]
-
-use jni::JNIEnv;
 use jni::objects::{JObject, JString};
-use jni_fn::jni_fn;
+use jni::{Env, NativeMethod, native_method};
 use num_traits::ToPrimitive;
 use polars::prelude::*;
 use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
 
-use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::write_dataframe;
-use crate::internal_jni::utils::from_ptr;
+use crate::internal_jni::handle::{DataFrameHandle, Handle};
+use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
+use crate::internal_jni::io::{opt_parse, parse_json_to_options};
+use crate::utils::error::ThrowRuntimeException;
 
 fn parse_parquet_compression(
     compression: Option<String>,
@@ -43,37 +41,33 @@ fn parse_parquet_compression(
     }
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
-pub fn writeParquet(
-    mut env: JNIEnv,
-    _object: JObject,
-    df_ptr: *mut DataFrame,
-    filePath: JString,
-    options: JString,
-) {
-    let mut options = parse_json_to_options(&mut env, options);
+const WRITE_PARQUET_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe DataFrameHandle => long },
+    extern fn write_parquet(df: DataFrameHandle, file_path: java.lang.String, options: java.lang.String),
+    name = "writeParquet",
+};
 
-    let is_parallel = options
-        .remove("write_parquet_parallel")
-        .and_then(|s| s.parse::<bool>().ok());
+fn write_parquet<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    df: DataFrameHandle,
+    file_path: JString<'local>,
+    options: JString<'local>,
+) -> anyhow::Result<()> {
+    let mut options = parse_json_to_options(env, &options)?;
 
-    let data_page_size = options
-        .remove("write_parquet_data_page_size")
-        .and_then(|s| s.parse::<usize>().ok());
+    let is_parallel = opt_parse::<bool>(&mut options, "write_parquet_parallel");
 
-    let row_group_size = options
-        .remove("write_parquet_row_group_size")
-        .and_then(|s| s.parse::<usize>().ok());
+    let data_page_size = opt_parse::<usize>(&mut options, "write_parquet_data_page_size");
 
-    let overwrite_mode = options
-        .remove("write_mode")
-        .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
-        .unwrap_or(false);
+    let row_group_size = opt_parse::<usize>(&mut options, "write_parquet_row_group_size");
+
+    let overwrite_mode = parse_overwrite_mode(&mut options);
 
     let compression = options.remove("write_compression");
-    let compression_level = options
-        .remove("write_compression_level")
-        .and_then(|s| s.parse::<i32>().ok());
+    let compression_level = opt_parse::<i32>(&mut options, "write_compression_level");
 
     let write_stats = options
         .remove("write_parquet_stats")
@@ -84,9 +78,9 @@ pub fn writeParquet(
         });
 
     write_dataframe(
-        &mut env,
-        from_ptr(df_ptr),
-        filePath,
+        env,
+        df.get(),
+        &file_path,
         overwrite_mode,
         options,
         "Parquet",
@@ -111,5 +105,10 @@ pub fn writeParquet(
 
             parquet_writer.finish(dataframe).map(|_| ())
         },
-    );
+    )?;
+
+    Ok(())
 }
+
+/// All native methods exported by this module.
+pub const METHODS: &[NativeMethod] = &[WRITE_PARQUET_METHOD];

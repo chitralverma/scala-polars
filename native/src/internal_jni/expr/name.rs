@@ -1,44 +1,99 @@
-use jni::JNIEnv;
-use jni::objects::{JClass, JString};
-use jni::sys::jlong;
-use jni_fn::jni_fn;
-use polars::prelude::*;
+use jni::objects::{JObject, JString};
+use jni::{Env, NativeMethod, native_method};
 
-use crate::internal_jni::utils::{from_ptr, j_string_to_string, to_ptr};
+use crate::internal_jni::handle::{ExprHandle, Handle};
+use crate::internal_jni::utils::j_string_to_string;
+use crate::utils::error::ThrowRuntimeException;
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.name_expr$")]
-pub fn keep(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let expr = l_expr.name().keep();
-    to_ptr(expr)
+const KEEP_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn keep(expr: ExprHandle) -> ExprHandle,
+    name = "keep",
+};
+
+fn keep<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().name().keep()))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.name_expr$")]
-pub fn prefix(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, prefix: JString) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let s_prefix = j_string_to_string(&mut env, &prefix, Some("Failed to parse prefix"));
-    let expr = l_expr.name().prefix(&s_prefix);
-    to_ptr(expr)
+const PREFIX_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn prefix(expr: ExprHandle, value: java.lang.String) -> ExprHandle,
+    name = "prefix",
+};
+
+fn prefix<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    value: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let s_prefix = j_string_to_string(env, &value, Some("Failed to parse prefix"))?;
+    Ok(ExprHandle::alloc(expr.get().name().prefix(&s_prefix)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.name_expr$")]
-pub fn suffix(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, suffix: JString) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let s_suffix = j_string_to_string(&mut env, &suffix, Some("Failed to parse suffix"));
-    let expr = l_expr.name().suffix(&s_suffix);
-    to_ptr(expr)
+const SUFFIX_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn suffix(expr: ExprHandle, value: java.lang.String) -> ExprHandle,
+    name = "suffix",
+};
+
+fn suffix<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    value: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let s_suffix = j_string_to_string(env, &value, Some("Failed to parse suffix"))?;
+    Ok(ExprHandle::alloc(expr.get().name().suffix(&s_suffix)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.name_expr$")]
-pub fn to_uppercase(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let expr = l_expr.name().to_uppercase();
-    to_ptr(expr)
+const TO_UPPERCASE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn to_uppercase(expr: ExprHandle) -> ExprHandle,
+    name = "toUppercase",
+};
+
+fn to_uppercase<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().name().to_uppercase()))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.name_expr$")]
-pub fn to_lowercase(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let expr = l_expr.name().to_lowercase();
-    to_ptr(expr)
+const TO_LOWERCASE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.name_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn to_lowercase(expr: ExprHandle) -> ExprHandle,
+    name = "toLowercase",
+};
+
+fn to_lowercase<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().name().to_lowercase()))
 }
+
+/// All native methods exported by this module.
+pub const METHODS: &[NativeMethod] = &[
+    KEEP_METHOD,
+    PREFIX_METHOD,
+    SUFFIX_METHOD,
+    TO_UPPERCASE_METHOD,
+    TO_LOWERCASE_METHOD,
+];

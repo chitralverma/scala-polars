@@ -1,16 +1,16 @@
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 use anyhow::Context;
-use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JObjectArray, JString};
+use jni::objects::{JObject, JObjectArray, JString};
 use jni::sys::{jdouble, jint, jlong};
-use jni_fn::jni_fn;
+use jni::{Env, NativeMethod, jni_sig, jni_str, native_method};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use polars::prelude::*;
 
-use crate::internal_jni::utils::{free_ptr, from_ptr, j_string_to_string, to_ptr};
-use crate::utils::error::ResultExt;
+use crate::internal_jni::handle::{ExprHandle, Handle};
+use crate::internal_jni::utils::{j_object_ref_to_string, j_string_to_string};
+use crate::utils::error::ThrowRuntimeException;
 
 #[derive(Clone, PartialEq, Eq, Debug, FromPrimitive)]
 pub enum BinaryOperator {
@@ -42,25 +42,105 @@ pub enum UnaryOperator {
     Cast = 8,
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn column(mut env: JNIEnv, _: JClass, value: JString) -> jlong {
-    let name = j_string_to_string(
-        &mut env,
-        &value,
-        Some("Failed to parse provided column name as string"),
-    );
+/// Generates a [`NativeMethod`] entry point for a unary `Expr -> Expr` transform that takes no
+/// extra arguments: it reads the [`ExprHandle`], applies the polars method, and returns a new
+/// handle.
+///
+/// Each invocation emits both the `NativeMethod` constant and the implementation function for a
+/// single transform. The caller passes the constant ident, the function ident, the exact Scala
+/// `@native` name, and the polars method to invoke, so the generated symbol stays byte-stable with
+/// the Scala side.
+macro_rules! decl_unary_expr {
+    ($(($const_name:ident, $fn_name:ident, $scala_name:literal, $method:ident)),+ $(,)?) => {
+        $(
+            const $const_name: NativeMethod = native_method! {
+                java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+                error_policy = ThrowRuntimeException,
+                type_map = { unsafe ExprHandle => long },
+                extern fn $fn_name(expr: ExprHandle) -> ExprHandle,
+                name = $scala_name,
+            };
 
-    let expr = col(name.as_str());
-    to_ptr(expr)
+            fn $fn_name<'local>(
+                _env: &mut Env<'local>,
+                _this: JObject<'local>,
+                expr: ExprHandle,
+            ) -> anyhow::Result<ExprHandle> {
+                Ok(ExprHandle::alloc(expr.get().$method()))
+            }
+        )+
+    };
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn sort_column_by_name(mut env: JNIEnv, _: JClass, value: JString, descending: bool) -> jlong {
+decl_unary_expr! {
+    (IS_FINITE_METHOD, is_finite, "isFinite", is_finite),
+    (IS_INFINITE_METHOD, is_infinite, "isInfinite", is_infinite),
+    (DROP_NULLS_METHOD, drop_nulls, "dropNulls", drop_nulls),
+    (DROP_NANS_METHOD, drop_nans, "dropNans", drop_nans),
+    (REVERSE_METHOD, reverse, "reverse", reverse),
+    (IS_UNIQUE_METHOD, is_unique, "isUnique", is_unique),
+    (IS_DUPLICATED_METHOD, is_duplicated, "isDuplicated", is_duplicated),
+    (IS_FIRST_DISTINCT_METHOD, is_first_distinct, "isFirstDistinct", is_first_distinct),
+    (IS_LAST_DISTINCT_METHOD, is_last_distinct, "isLastDistinct", is_last_distinct),
+    (UNIQUE_COUNTS_METHOD, unique_counts, "uniqueCounts", unique_counts),
+    (SUM_METHOD, sum, "sum", sum),
+    (MIN_METHOD, min, "min", min),
+    (MAX_METHOD, max, "max", max),
+    (MEAN_METHOD, mean, "mean", mean),
+    (MEDIAN_METHOD, median, "median", median),
+    (PRODUCT_METHOD, product, "product", product),
+    (COUNT_METHOD, count, "count", count),
+    (LEN_METHOD, len, "len", len),
+    (N_UNIQUE_METHOD, n_unique, "nUnique", n_unique),
+    (APPROX_N_UNIQUE_METHOD, approx_n_unique, "approxNUnique", approx_n_unique),
+    (NULL_COUNT_METHOD, null_count, "nullCount", null_count),
+    (FIRST_METHOD, first, "first", first),
+    (LAST_METHOD, last, "last", last),
+    (ARG_MIN_METHOD, arg_min, "argMin", arg_min),
+    (ARG_MAX_METHOD, arg_max, "argMax", arg_max),
+}
+
+const COLUMN_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn column(value: java.lang.String) -> ExprHandle,
+    name = "column",
+};
+
+fn column<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    value: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
     let name = j_string_to_string(
-        &mut env,
+        env,
         &value,
         Some("Failed to parse provided column name as string"),
-    );
+    )?;
+
+    Ok(ExprHandle::alloc(col(name.as_str())))
+}
+
+const SORT_COLUMN_BY_NAME_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn sort_column_by_name(value: java.lang.String, descending: bool) -> ExprHandle,
+    name = "sortColumnByName",
+};
+
+fn sort_column_by_name<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    value: JString<'local>,
+    descending: bool,
+) -> anyhow::Result<ExprHandle> {
+    let name = j_string_to_string(
+        env,
+        &value,
+        Some("Failed to parse provided column name as string"),
+    )?;
 
     let expr = Expr::Sort {
         expr: Arc::new(col(name.as_str())),
@@ -70,12 +150,24 @@ pub fn sort_column_by_name(mut env: JNIEnv, _: JClass, value: JString, descendin
         },
     };
 
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jint) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
+const APPLY_UNARY_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn apply_unary(expr: ExprHandle, operator: jint) -> ExprHandle,
+    name = "applyUnary",
+};
+
+fn apply_unary<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    operator: jint,
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
 
     let expr = UnaryOperator::from_i32(operator)
         .and_then(|option| match option {
@@ -88,25 +180,35 @@ pub fn applyUnary(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, operator: jin
         })
         .context(format!(
             "Failed to parse provided ID `{operator}` as unary operator."
-        ))
-        .unwrap_or_throw(&mut env);
+        ))?;
 
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn cast(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, dataType: JString) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
+const CAST_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn cast(expr: ExprHandle, data_type: java.lang.String) -> ExprHandle,
+    name = "cast",
+};
+
+fn cast<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    data_type: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
     let dt_str = j_string_to_string(
-        &mut env,
-        &dataType,
+        env,
+        &data_type,
         Some("Failed to parse provided DataType as string"),
-    );
+    )?;
 
     let dtype: DataType = if dt_str.starts_with('{') {
         serde_json::from_str(&dt_str)
-            .context(format!("Failed to deserialize DataType JSON: {dt_str}"))
-            .unwrap_or_throw(&mut env)
+            .context(format!("Failed to deserialize DataType JSON: {dt_str}"))?
     } else {
         // Fallback to basic type name parsing
         match dt_str.to_lowercase().as_str() {
@@ -128,206 +230,168 @@ pub fn cast(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, dataType: JString) 
             _ => {
                 // Try serde_json with quoted string
                 serde_json::from_str(&format!("\"{dt_str}\""))
-                    .context(format!("Failed to parse DataType: {dt_str}"))
-                    .unwrap_or_throw(&mut env)
+                    .context(format!("Failed to parse DataType: {dt_str}"))?
             },
         }
     };
 
-    let expr = l_expr.cast(dtype);
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(l_expr.cast(dtype)))
+}
+
+/// Decodes a boxed Java number/boolean into an [`AnyValue`] by checking its wrapper
+/// type and unboxing via the matching accessor. Tries each `($class, $method, $sig,
+/// $accessor, $default, $variant)` in order; falls through to the trailing logic.
+macro_rules! unbox_java_value {
+    ($env:expr, $obj:expr, $( ($class:literal, $method:literal, $sig:literal, $acc:ident, $default:expr, $variant:path) ),+ $(,)?) => {
+        $(
+            if $env.is_instance_of($obj, jni_str!($class)).unwrap_or(false) {
+                let val = $env
+                    .call_method($obj, jni_str!($method), jni_sig!($sig), &[])
+                    .context(concat!("Failed to call ", $method))?
+                    .$acc()
+                    .unwrap_or($default);
+                return Ok($variant(val));
+            }
+        )+
+    };
 }
 
 fn jobject_to_any_value<'local>(
-    env: &mut JNIEnv<'local>,
+    env: &mut Env<'local>,
     obj: &JObject<'local>,
-) -> AnyValue<'local> {
+) -> anyhow::Result<AnyValue<'local>> {
     if obj.is_null() {
-        AnyValue::Null
-    } else if env
-        .is_instance_of(obj, "java/lang/Integer")
-        .unwrap_or(false)
-    {
-        let val = env
-            .call_method(obj, "intValue", "()I", &[])
-            .context("Failed to call intValue")
-            .unwrap_or_throw(env)
-            .i()
-            .unwrap_or(0);
-        AnyValue::Int32(val)
-    } else if env.is_instance_of(obj, "java/lang/Long").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "longValue", "()J", &[])
-            .context("Failed to call longValue")
-            .unwrap_or_throw(env)
-            .j()
-            .unwrap_or(0);
-        AnyValue::Int64(val)
-    } else if env.is_instance_of(obj, "java/lang/Byte").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "byteValue", "()B", &[])
-            .context("Failed to call byteValue")
-            .unwrap_or_throw(env)
-            .b()
-            .unwrap_or(0);
-        AnyValue::Int8(val)
-    } else if env.is_instance_of(obj, "java/lang/Short").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "shortValue", "()S", &[])
-            .context("Failed to call shortValue")
-            .unwrap_or_throw(env)
-            .s()
-            .unwrap_or(0);
-        AnyValue::Int16(val)
-    } else if env.is_instance_of(obj, "java/lang/String").unwrap_or(false) {
-        let jstr: &JString = obj.into();
-        let s = j_string_to_string(env, jstr, Some("Invalid String"));
-        AnyValue::StringOwned(s.into())
-    } else if env
-        .is_instance_of(obj, "java/lang/Boolean")
-        .unwrap_or(false)
-    {
-        let val = env
-            .call_method(obj, "booleanValue", "()Z", &[])
-            .context("Failed to call booleanValue")
-            .unwrap_or_throw(env)
-            .z()
-            .unwrap_or(false);
-        AnyValue::Boolean(val)
-    } else if env.is_instance_of(obj, "java/lang/Double").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "doubleValue", "()D", &[])
-            .context("Failed to call doubleValue")
-            .unwrap_or_throw(env)
-            .d()
-            .unwrap_or(0.0);
-        AnyValue::Float64(val)
-    } else if env.is_instance_of(obj, "java/lang/Float").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "floatValue", "()F", &[])
-            .context("Failed to call floatValue")
-            .unwrap_or_throw(env)
-            .f()
-            .unwrap_or(0.0);
-        AnyValue::Float32(val)
-    } else {
-        AnyValue::Null
+        return Ok(AnyValue::Null);
     }
+
+    unbox_java_value!(
+        env,
+        obj,
+        (
+            "java/lang/Integer",
+            "intValue",
+            "()I",
+            i,
+            0,
+            AnyValue::Int32
+        ),
+        ("java/lang/Long", "longValue", "()J", j, 0, AnyValue::Int64),
+        ("java/lang/Byte", "byteValue", "()B", b, 0, AnyValue::Int8),
+        (
+            "java/lang/Short",
+            "shortValue",
+            "()S",
+            s,
+            0,
+            AnyValue::Int16
+        ),
+        (
+            "java/lang/Boolean",
+            "booleanValue",
+            "()Z",
+            z,
+            false,
+            AnyValue::Boolean
+        ),
+        (
+            "java/lang/Double",
+            "doubleValue",
+            "()D",
+            d,
+            0.0,
+            AnyValue::Float64
+        ),
+        (
+            "java/lang/Float",
+            "floatValue",
+            "()F",
+            f,
+            0.0,
+            AnyValue::Float32
+        ),
+    );
+
+    if env
+        .is_instance_of(obj, jni_str!("java/lang/String"))
+        .unwrap_or(false)
+    {
+        let s = j_object_ref_to_string(env, obj, Some("Invalid String"))?;
+        return Ok(AnyValue::StringOwned(s.into()));
+    }
+
+    Ok(AnyValue::Null)
 }
 
-fn jobject_to_expr<'local>(env: &mut JNIEnv<'local>, obj: &JObject<'local>) -> Expr {
-    if obj.is_null() {
-        NULL.lit()
-    } else if env
-        .is_instance_of(obj, "java/lang/Integer")
-        .unwrap_or(false)
-    {
-        let val = env
-            .call_method(obj, "intValue", "()I", &[])
-            .context("Failed to call intValue")
-            .unwrap_or_throw(env)
-            .i()
-            .unwrap_or(0);
-        lit(val)
-    } else if env.is_instance_of(obj, "java/lang/Long").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "longValue", "()J", &[])
-            .context("Failed to call longValue")
-            .unwrap_or_throw(env)
-            .j()
-            .unwrap_or(0);
-        lit(val)
-    } else if env.is_instance_of(obj, "java/lang/Byte").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "byteValue", "()B", &[])
-            .context("Failed to call byteValue")
-            .unwrap_or_throw(env)
-            .b()
-            .unwrap_or(0);
-        lit(val)
-    } else if env.is_instance_of(obj, "java/lang/Short").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "shortValue", "()S", &[])
-            .context("Failed to call shortValue")
-            .unwrap_or_throw(env)
-            .s()
-            .unwrap_or(0);
-        lit(val)
-    } else if env.is_instance_of(obj, "java/lang/String").unwrap_or(false) {
-        let jstr: &JString = obj.into();
-        let s = j_string_to_string(env, jstr, Some("Invalid String"));
-        lit(s)
-    } else if env
-        .is_instance_of(obj, "java/lang/Boolean")
-        .unwrap_or(false)
-    {
-        let val = env
-            .call_method(obj, "booleanValue", "()Z", &[])
-            .context("Failed to call booleanValue")
-            .unwrap_or_throw(env)
-            .z()
-            .unwrap_or(false);
-        lit(val)
-    } else if env.is_instance_of(obj, "java/lang/Double").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "doubleValue", "()D", &[])
-            .context("Failed to call doubleValue")
-            .unwrap_or_throw(env)
-            .d()
-            .unwrap_or(0.0);
-        lit(val)
-    } else if env.is_instance_of(obj, "java/lang/Float").unwrap_or(false) {
-        let val = env
-            .call_method(obj, "floatValue", "()F", &[])
-            .context("Failed to call floatValue")
-            .unwrap_or_throw(env)
-            .f()
-            .unwrap_or(0.0);
-        lit(val)
-    } else {
-        NULL.lit()
-    }
+fn jobject_to_expr<'local>(env: &mut Env<'local>, obj: &JObject<'local>) -> anyhow::Result<Expr> {
+    // Reuse the single boxed-value decoder, then lift the AnyValue into a literal
+    // Expr. This keeps the Java type-dispatch ladder in one place.
+    let expr = match jobject_to_any_value(env, obj)? {
+        AnyValue::Int8(v) => lit(v),
+        AnyValue::Int16(v) => lit(v),
+        AnyValue::Int32(v) => lit(v),
+        AnyValue::Int64(v) => lit(v),
+        AnyValue::Float32(v) => lit(v),
+        AnyValue::Float64(v) => lit(v),
+        AnyValue::Boolean(v) => lit(v),
+        AnyValue::StringOwned(s) => lit(s.to_string()),
+        _ => NULL.lit(),
+    };
+    Ok(expr)
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn isIn(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, values: JObjectArray) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let len = env
-        .get_array_length(&values)
-        .context("Failed to get array length")
-        .unwrap_or_throw(&mut env);
-    let mut s_vec = Vec::with_capacity(len as usize);
+const IS_IN_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn is_in(expr: ExprHandle, values: [java.lang.Object]) -> ExprHandle,
+    name = "isIn",
+};
+
+fn is_in<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    values: JObjectArray<'local, JObject<'local>>,
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
+    let len = values.len(env).context("Failed to get array length")?;
+    let mut s_vec = Vec::with_capacity(len);
 
     for i in 0..len {
-        let obj = env
-            .get_object_array_element(&values, i)
-            .context("Failed to get array element")
-            .unwrap_or_throw(&mut env);
-        s_vec.push(jobject_to_any_value(&mut env, &obj));
+        let obj = values
+            .get_element(env, i)
+            .context("Failed to get array element")?;
+        s_vec.push(jobject_to_any_value(env, &obj)?);
     }
 
     let s = Series::from_any_values("values".into(), &s_vec, false)
-        .context("Failed to build series from any values")
-        .unwrap_or_throw(&mut env);
+        .context("Failed to build series from any values")?;
     let expr = l_expr.is_in(lit(s).implode(false), true);
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn isBetween<'local>(
-    mut env: JNIEnv<'local>,
-    _: JClass,
-    expr_ptr: *mut Expr,
+const IS_BETWEEN_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn is_between(expr: ExprHandle, lower: java.lang.Object, upper: java.lang.Object) -> ExprHandle,
+    name = "isBetween",
+};
+
+fn is_between<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
     lower: JObject<'local>,
     upper: JObject<'local>,
-) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
 
-    let l_lit = jobject_to_expr(&mut env, &lower);
-    let u_lit = jobject_to_expr(&mut env, &upper);
+    let l_lit = jobject_to_expr(env, &lower)?;
+    let u_lit = jobject_to_expr(env, &upper)?;
 
     let expr = l_expr.is_between(l_lit, u_lit, ClosedInterval::Both);
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
 fn escape_regex(s: &str) -> String {
@@ -344,38 +408,62 @@ fn escape_regex(s: &str) -> String {
     escaped
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn like(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, pattern: JString) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let pat = j_string_to_string(
-        &mut env,
-        &pattern,
-        Some("Failed to parse pattern as string"),
-    );
+const LIKE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn like(expr: ExprHandle, pattern: java.lang.String) -> ExprHandle,
+    name = "like",
+};
+
+fn like<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    pattern: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
+    let pat = j_string_to_string(env, &pattern, Some("Failed to parse pattern as string"))?;
 
     let escaped = escape_regex(&pat);
     let regex_pattern = format!("^{}$", escaped.replace('%', ".*").replace('_', "."));
     let expr = l_expr.str().contains(lit(regex_pattern), true);
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn to_uppercase(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let expr = l_expr.str().to_uppercase();
-    to_ptr(expr)
+const TO_UPPERCASE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn to_uppercase(expr: ExprHandle) -> ExprHandle,
+    name = "toUppercase",
+};
+
+fn to_uppercase<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().str().to_uppercase()))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn applyBinary(
-    mut env: JNIEnv,
-    _: JClass,
-    left_ptr: *mut Expr,
-    right_ptr: *mut Expr,
+const APPLY_BINARY_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn apply_binary(left: ExprHandle, right: ExprHandle, operator: jint) -> ExprHandle,
+    name = "applyBinary",
+};
+
+fn apply_binary<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    left: ExprHandle,
+    right: ExprHandle,
     operator: jint,
-) -> jlong {
-    let l_expr = from_ptr(left_ptr);
-    let r_expr = from_ptr(right_ptr);
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = left.get();
+    let r_expr = right.get();
 
     let expr = BinaryOperator::from_i32(operator)
         .map(|option| match option {
@@ -395,221 +483,192 @@ pub fn applyBinary(
         })
         .context(format!(
             "Failed to parse provided ID `{operator}` as binary operator."
-        ))
-        .unwrap_or_throw(&mut env);
+        ))?;
 
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn alias(mut env: JNIEnv, _: JClass, expr_ptr: *mut Expr, name: JString) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let s_name = j_string_to_string(&mut env, &name, Some("Failed to parse alias name"));
-    let expr = l_expr.alias(s_name);
-    to_ptr(expr)
+const ALIAS_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn alias(expr: ExprHandle, name: java.lang.String) -> ExprHandle,
+    name = "alias",
+};
+
+fn alias<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    name: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let s_name = j_string_to_string(env, &name, Some("Failed to parse alias name"))?;
+    Ok(ExprHandle::alloc(expr.get().alias(s_name)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_finite(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_finite())
+const IS_EMPTY_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn is_empty(expr: ExprHandle) -> ExprHandle,
+    name = "isEmpty",
+};
+
+fn is_empty<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().is_empty(false)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_infinite(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_infinite())
+const SLICE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn slice(expr: ExprHandle, offset: jlong, length: jlong) -> ExprHandle,
+    name = "slice",
+};
+
+fn slice<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    offset: jlong,
+    length: jlong,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(
+        expr.get().slice(lit(offset), lit(length)),
+    ))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_empty(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_empty(false))
+const SHIFT_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn shift(expr: ExprHandle, periods: jlong) -> ExprHandle,
+    name = "shift",
+};
+
+fn shift<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    periods: jlong,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().shift(lit(periods))))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn drop_nulls(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.drop_nulls())
+const GATHER_EVERY_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn gather_every(expr: ExprHandle, n: jlong, offset: jlong) -> ExprHandle,
+    name = "gatherEvery",
+};
+
+fn gather_every<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    n: jlong,
+    offset: jlong,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(
+        expr.get().gather_every(n as usize, offset as usize),
+    ))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn drop_nans(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.drop_nans())
-}
+const UNIQUE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn unique(expr: ExprHandle, maintain_order: bool) -> ExprHandle,
+    name = "unique",
+};
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn reverse(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.reverse())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn slice(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, offset: jlong, length: jlong) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.slice(lit(offset), lit(length)))
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn shift(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, periods: jlong) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.shift(lit(periods)))
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn gather_every(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, n: jlong, offset: jlong) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.gather_every(n as usize, offset as usize))
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, maintain_order: bool) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
+fn unique<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    maintain_order: bool,
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
     let expr = if maintain_order {
         l_expr.unique_stable()
     } else {
         l_expr.unique()
     };
-    to_ptr(expr)
+    Ok(ExprHandle::alloc(expr))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_unique())
+const MODE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn mode(expr: ExprHandle) -> ExprHandle,
+    name = "mode",
+};
+
+fn mode<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().mode(false)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_duplicated(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_duplicated())
+const STD_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn std(expr: ExprHandle, ddof: jint) -> ExprHandle,
+    name = "std",
+};
+
+fn std<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    ddof: jint,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().std(ddof as u8)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_first_distinct(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_first_distinct())
+const VAR_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn var(expr: ExprHandle, ddof: jint) -> ExprHandle,
+    name = "var",
+};
+
+fn var<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    ddof: jint,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().var(ddof as u8)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn is_last_distinct(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.is_last_distinct())
-}
+const QUANTILE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn quantile(expr: ExprHandle, q: jdouble, method: java.lang.String) -> ExprHandle,
+    name = "quantile",
+};
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn mode(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.mode(false))
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn unique_counts(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.unique_counts())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn sum(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.sum())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn min(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.min())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn max(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.max())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn mean(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.mean())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn median(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.median())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn std(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ddof: jint) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.std(ddof as u8))
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn var(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ddof: jint) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.var(ddof as u8))
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn product(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.product())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn count(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.count())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn len(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.len())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn n_unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.n_unique())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn approx_n_unique(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.approx_n_unique())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn null_count(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.null_count())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn first(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.first())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn last(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.last())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn quantile(
-    mut env: JNIEnv,
-    _: JClass,
-    expr_ptr: *mut Expr,
+fn quantile<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
     q: jdouble,
-    method: JString,
-) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    let s_method = j_string_to_string(&mut env, &method, Some("Failed to parse quantile method"));
+    method: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let l_expr = expr.get();
+    let s_method = j_string_to_string(env, &method, Some("Failed to parse quantile method"))?;
     let q_method = match s_method.to_lowercase().as_str() {
         "nearest" => QuantileMethod::Nearest,
         "lower" => QuantileMethod::Lower,
@@ -619,64 +678,178 @@ pub fn quantile(
         "equiprobable" => QuantileMethod::Equiprobable,
         _ => QuantileMethod::Nearest,
     };
-    to_ptr(l_expr.quantile(lit(q), q_method))
+    Ok(ExprHandle::alloc(l_expr.quantile(lit(q), q_method)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn arg_min(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.arg_min())
-}
+const ARG_SORT_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn arg_sort(expr: ExprHandle, descending: bool, nulls_last: bool) -> ExprHandle,
+    name = "argSort",
+};
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn arg_max(_: JNIEnv, _: JClass, expr_ptr: *mut Expr) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.arg_max())
-}
-
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn arg_sort(
-    _: JNIEnv,
-    _: JClass,
-    expr_ptr: *mut Expr,
+fn arg_sort<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
     descending: bool,
     nulls_last: bool,
-) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.arg_sort(descending, nulls_last))
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(
+        expr.get().arg_sort(descending, nulls_last),
+    ))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn skew(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, bias: bool) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.skew(bias))
+const SKEW_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn skew(expr: ExprHandle, bias: bool) -> ExprHandle,
+    name = "skew",
+};
+
+fn skew<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    bias: bool,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().skew(bias)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn kurtosis(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, fisher: bool, bias: bool) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.kurtosis(fisher, bias))
+const KURTOSIS_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn kurtosis(expr: ExprHandle, fisher: bool, bias: bool) -> ExprHandle,
+    name = "kurtosis",
+};
+
+fn kurtosis<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    fisher: bool,
+    bias: bool,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().kurtosis(fisher, bias)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn any(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ignore_nulls: bool) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.any(ignore_nulls))
+const ANY_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn any(expr: ExprHandle, ignore_nulls: bool) -> ExprHandle,
+    name = "any",
+};
+
+fn any<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    ignore_nulls: bool,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().any(ignore_nulls)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn all(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, ignore_nulls: bool) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.all(ignore_nulls))
+const ALL_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn all(expr: ExprHandle, ignore_nulls: bool) -> ExprHandle,
+    name = "all",
+};
+
+fn all<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    ignore_nulls: bool,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().all(ignore_nulls)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn cum_sum(_: JNIEnv, _: JClass, expr_ptr: *mut Expr, reverse: bool) -> jlong {
-    let l_expr = from_ptr(expr_ptr);
-    to_ptr(l_expr.cum_sum(reverse))
+const CUM_SUM_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe ExprHandle => long },
+    extern fn cum_sum(expr: ExprHandle, reverse: bool) -> ExprHandle,
+    name = "cumSum",
+};
+
+fn cum_sum<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    reverse: bool,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().cum_sum(reverse)))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.expressions.column_expr$")]
-pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
-    free_ptr::<Expr>(ptr);
+const FREE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
+    error_policy = ThrowRuntimeException,
+    extern fn free(ptr: jlong),
+    name = "free",
+};
+
+fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
+    ExprHandle::free_raw(ptr);
+    Ok(())
 }
+
+/// All native methods exported by this module.
+pub const METHODS: &[NativeMethod] = &[
+    IS_FINITE_METHOD,
+    IS_INFINITE_METHOD,
+    DROP_NULLS_METHOD,
+    DROP_NANS_METHOD,
+    REVERSE_METHOD,
+    IS_UNIQUE_METHOD,
+    IS_DUPLICATED_METHOD,
+    IS_FIRST_DISTINCT_METHOD,
+    IS_LAST_DISTINCT_METHOD,
+    UNIQUE_COUNTS_METHOD,
+    SUM_METHOD,
+    MIN_METHOD,
+    MAX_METHOD,
+    MEAN_METHOD,
+    MEDIAN_METHOD,
+    PRODUCT_METHOD,
+    COUNT_METHOD,
+    LEN_METHOD,
+    N_UNIQUE_METHOD,
+    APPROX_N_UNIQUE_METHOD,
+    NULL_COUNT_METHOD,
+    FIRST_METHOD,
+    LAST_METHOD,
+    ARG_MIN_METHOD,
+    ARG_MAX_METHOD,
+    COLUMN_METHOD,
+    SORT_COLUMN_BY_NAME_METHOD,
+    APPLY_UNARY_METHOD,
+    CAST_METHOD,
+    IS_IN_METHOD,
+    IS_BETWEEN_METHOD,
+    LIKE_METHOD,
+    TO_UPPERCASE_METHOD,
+    APPLY_BINARY_METHOD,
+    ALIAS_METHOD,
+    IS_EMPTY_METHOD,
+    SLICE_METHOD,
+    SHIFT_METHOD,
+    GATHER_EVERY_METHOD,
+    UNIQUE_METHOD,
+    MODE_METHOD,
+    STD_METHOD,
+    VAR_METHOD,
+    QUANTILE_METHOD,
+    ARG_SORT_METHOD,
+    SKEW_METHOD,
+    KURTOSIS_METHOD,
+    ANY_METHOD,
+    ALL_METHOD,
+    CUM_SUM_METHOD,
+    FREE_METHOD,
+];

@@ -1,23 +1,31 @@
 use anyhow::Context;
-use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JObjectArray, JString};
-use jni::sys::jlong;
-use jni_fn::jni_fn;
+use jni::objects::{JObject, JObjectArray, JString};
+use jni::{Env, NativeMethod, native_method};
 use polars::io::RowIndex;
 use polars::prelude::*;
 
-use crate::internal_jni::conversion::JavaArrayToVec;
-use crate::internal_jni::io::{get_file_path, parse_cloud_options, parse_json_to_options};
-use crate::internal_jni::utils::to_ptr;
-use crate::utils::error::ResultExt;
+use crate::internal_jni::handle::{Handle, LazyFrameHandle};
+use crate::internal_jni::io::scan::build_scan_sources;
+use crate::internal_jni::io::{opt_parse, parse_json_to_options};
+use crate::utils::error::ThrowRuntimeException;
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.io.scan$")]
-pub unsafe fn scanCSV(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: JString) -> jlong {
-    let mut options = parse_json_to_options(&mut env, options);
+const SCAN_CSV_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.io.scan$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe LazyFrameHandle => long },
+    extern fn scan_csv(paths: [java.lang.String], options: java.lang.String) -> LazyFrameHandle,
+    name = "scanCSV",
+};
 
-    let n_rows = options
-        .remove("scan_csv_n_rows")
-        .and_then(|s| s.parse::<usize>().ok());
+fn scan_csv<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    paths: JObjectArray<'local, JString<'local>>,
+    options: JString<'local>,
+) -> anyhow::Result<LazyFrameHandle> {
+    let mut options = parse_json_to_options(env, &options)?;
+
+    let n_rows = opt_parse::<usize>(&mut options, "scan_csv_n_rows");
 
     let row_index_offset = options
         .remove("scan_csv_row_index_offset")
@@ -141,27 +149,7 @@ pub unsafe fn scanCSV(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: 
         .remove("scan_csv_comment_prefix")
         .map(PlSmallStr::from);
 
-    let paths_vec: Vec<PlRefPath> = JavaArrayToVec::to_vec(&mut env, paths)
-        .into_iter()
-        .map(|o| unsafe { JObject::from_raw(o) })
-        .map(|o| get_file_path(&mut env, JString::from(o)))
-        .map(PlRefPath::new)
-        .collect();
-
-    let sources = ScanSources::Paths(paths_vec.into());
-    let cloud_scheme = sources
-        .first_path()
-        .cloned()
-        .as_ref()
-        .and_then(|x| x.scheme());
-
-    let cloud_options = match parse_cloud_options(cloud_scheme, options) {
-        Ok(opts) => opts,
-        Err(err) => {
-            crate::utils::error::throw_java_exception(&mut env, err);
-            return 0;
-        },
-    };
+    let (sources, cloud_options) = build_scan_sources(env, &paths, options)?;
 
     let ldf = LazyCsvReader::new_with_sources(sources)
         .with_glob(glob)
@@ -190,8 +178,10 @@ pub unsafe fn scanCSV(mut env: JNIEnv, _: JClass, paths: JObjectArray, options: 
         .with_comment_prefix(comment_prefix)
         .with_cloud_options(cloud_options)
         .finish()
-        .context("Failed to perform csv scan")
-        .unwrap_or_throw(&mut env);
+        .context("Failed to perform csv scan")?;
 
-    to_ptr(ldf)
+    Ok(LazyFrameHandle::alloc(ldf))
 }
+
+/// All native methods exported by this module.
+pub const METHODS: &[NativeMethod] = &[SCAN_CSV_METHOD];

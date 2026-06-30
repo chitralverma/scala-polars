@@ -1,65 +1,100 @@
 use anyhow::Context;
-use jni::JNIEnv;
-use jni::objects::*;
-use jni::sys::*;
-use jni_fn::jni_fn;
+use jni::objects::{JObject, JObjectArray, JString};
+use jni::sys::jlong;
+use jni::{Env, NativeMethod, native_method};
 use polars::prelude::*;
 
 use crate::internal_jni::conversion::{AnyValueWrapper, IntoJava};
-use crate::internal_jni::utils::{free_ptr, get_n_rows, string_to_j_string};
-use crate::utils::error::ResultExt;
+use crate::internal_jni::handle::{DataFrameHandle, Handle, RowIteratorHandle};
+use crate::internal_jni::utils::get_n_rows;
+use crate::utils::error::ThrowRuntimeException;
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub unsafe fn createIterator(_: JNIEnv, _: JClass, df_ptr: *mut DataFrame, nRows: jlong) -> jlong {
-    let df = unsafe { &mut *df_ptr };
+const CREATE_ITERATOR_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.row$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe DataFrameHandle => long, unsafe RowIteratorHandle => long },
+    extern fn create_iterator(df: DataFrameHandle, n_rows: jlong) -> RowIteratorHandle,
+    name = "createIterator",
+};
 
-    let n_rows = get_n_rows(nRows);
-    let ri = RowIterator::new(df, n_rows);
-    Box::into_raw(Box::new(ri)) as jlong
+fn create_iterator<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    df: DataFrameHandle,
+    n_rows: jlong,
+) -> anyhow::Result<RowIteratorHandle> {
+    let mut df = df.get();
+    let ri = RowIterator::new(&mut df, get_n_rows(n_rows));
+    Ok(RowIteratorHandle::alloc(ri))
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub unsafe fn advanceIterator(
-    mut env: JNIEnv,
-    _: JClass,
-    ri_ptr: *mut RowIterator,
-) -> jobjectArray {
-    let ri = unsafe { &mut *ri_ptr };
-    let adv = ri.advance();
+const ADVANCE_ITERATOR_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.row$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe RowIteratorHandle => long },
+    extern fn advance_iterator(ri: RowIteratorHandle) -> [java.lang.Object],
+    name = "advanceIterator",
+};
 
-    if let Some(next_avs) = adv {
-        let j_array = env
-            .new_object_array(next_avs.len() as jsize, "java/lang/Object", JObject::null())
-            .context("Failed to initialize array for row values")
-            .unwrap_or_throw(&mut env);
+fn advance_iterator<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    ri: RowIteratorHandle,
+) -> anyhow::Result<JObjectArray<'local, JObject<'local>>> {
+    let ri = unsafe { ri.as_mut() };
+
+    if let Some(next_avs) = ri.advance() {
+        let j_array = JObjectArray::<JObject>::new(env, next_avs.len(), JObject::null())
+            .context("Failed to initialize array for row values")?;
 
         for (i, any_value) in next_avs.into_iter().enumerate() {
             let wrapped = AnyValueWrapper(any_value.clone());
-            let java_object = wrapped.into_java(&mut env);
-            env.set_object_array_element(&j_array, i as jsize, java_object)
-                .context(format!("Failed to set value `{any_value}` in row"))
-                .unwrap_or_throw(&mut env);
+            let java_object = wrapped.try_into_java(env)?;
+            j_array
+                .set_element(env, i, java_object)
+                .context(format!("Failed to set value `{any_value}` in row"))?;
         }
 
-        j_array.as_raw()
+        Ok(j_array)
     } else {
-        JObjectArray::from(JObject::null()).as_raw()
+        // Returning a null array signals end-of-iteration: the Scala caller wraps the result in
+        // `Option(value)`, which is `None` only for a JVM-null reference (an empty array would be
+        // `Some` and never terminate the iterator).
+        Ok(unsafe { JObjectArray::<JObject>::from_raw(env, std::ptr::null_mut()) })
     }
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub unsafe fn schemaString(mut env: JNIEnv, _: JClass, ri_ptr: *mut RowIterator) -> jstring {
-    let ri = unsafe { &*ri_ptr };
+const SCHEMA_STRING_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.row$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe RowIteratorHandle => long },
+    extern fn schema_string(ri: RowIteratorHandle) -> JString,
+    name = "schemaString",
+};
 
-    serde_json::to_string(&ri.schema.to_arrow(CompatLevel::oldest()))
-        .map(|schema_string| string_to_j_string(&mut env, schema_string, None::<&str>))
-        .context("Failed to serialize schema")
-        .unwrap_or_throw(&mut env)
+fn schema_string<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    ri: RowIteratorHandle,
+) -> anyhow::Result<JString<'local>> {
+    let ri = unsafe { ri.as_ref() };
+
+    let schema_string = serde_json::to_string(&ri.schema.to_arrow(CompatLevel::oldest()))
+        .context("Failed to serialize schema")?;
+
+    JString::from_str(env, schema_string).context("Failed to build schema string")
 }
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.row$")]
-pub fn free(_: JNIEnv, _: JClass, ptr: jlong) {
-    free_ptr::<RowIterator>(ptr);
+const FREE_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.row$",
+    error_policy = ThrowRuntimeException,
+    extern fn free(ptr: jlong),
+    name = "free",
+};
+
+fn free<'local>(_env: &mut Env<'local>, _this: JObject<'local>, ptr: jlong) -> anyhow::Result<()> {
+    RowIteratorHandle::free_raw(ptr);
+    Ok(())
 }
 
 pub struct RowIterator {
@@ -101,3 +136,11 @@ impl RowIterator {
         }
     }
 }
+
+/// All native methods exported by this module.
+pub const METHODS: &[NativeMethod] = &[
+    CREATE_ITERATOR_METHOD,
+    ADVANCE_ITERATOR_METHOD,
+    SCHEMA_STRING_METHOD,
+    FREE_METHOD,
+];

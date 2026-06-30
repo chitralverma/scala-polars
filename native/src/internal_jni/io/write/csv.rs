@@ -1,47 +1,40 @@
-#![allow(non_snake_case)]
-
-use jni::JNIEnv;
 use jni::objects::{JObject, JString};
-use jni_fn::jni_fn;
+use jni::{Env, NativeMethod, native_method};
 use polars::prelude::*;
 
-use crate::internal_jni::io::parse_json_to_options;
-use crate::internal_jni::io::write::write_dataframe;
-use crate::internal_jni::utils::from_ptr;
+use crate::internal_jni::handle::{DataFrameHandle, Handle};
+use crate::internal_jni::io::write::{parse_overwrite_mode, write_dataframe};
+use crate::internal_jni::io::{opt_parse, parse_json_to_options};
+use crate::utils::error::ThrowRuntimeException;
 
-#[jni_fn("com.github.chitralverma.polars.internal.jni.io.write$")]
-pub fn writeCSV(
-    mut env: JNIEnv,
-    _object: JObject,
-    df_ptr: *mut DataFrame,
-    filePath: JString,
-    options: JString,
-) {
-    let mut options = parse_json_to_options(&mut env, options);
+const WRITE_CSV_METHOD: NativeMethod = native_method! {
+    java_type = "com.github.chitralverma.polars.internal.jni.io.write$",
+    error_policy = ThrowRuntimeException,
+    type_map = { unsafe DataFrameHandle => long },
+    extern fn write_csv(df: DataFrameHandle, file_path: java.lang.String, options: java.lang.String),
+    name = "writeCSV",
+};
 
-    let include_bom = options
-        .remove("write_csv_include_bom")
-        .and_then(|s| s.parse::<bool>().ok());
+fn write_csv<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    df: DataFrameHandle,
+    file_path: JString<'local>,
+    options: JString<'local>,
+) -> anyhow::Result<()> {
+    let mut options = parse_json_to_options(env, &options)?;
 
-    let include_header = options
-        .remove("write_csv_include_header")
-        .and_then(|s| s.parse::<bool>().ok());
+    let include_bom = opt_parse::<bool>(&mut options, "write_csv_include_bom");
 
-    let float_scientific = options
-        .remove("write_csv_float_scientific")
-        .and_then(|s| s.parse::<bool>().ok());
+    let include_header = opt_parse::<bool>(&mut options, "write_csv_include_header");
 
-    let float_precision = options
-        .remove("write_csv_float_precision")
-        .and_then(|s| s.parse::<usize>().ok());
+    let float_scientific = opt_parse::<bool>(&mut options, "write_csv_float_scientific");
 
-    let separator = options
-        .remove("write_csv_separator")
-        .and_then(|s| s.parse::<u8>().ok());
+    let float_precision = opt_parse::<usize>(&mut options, "write_csv_float_precision");
 
-    let quote_char = options
-        .remove("write_csv_quote_char")
-        .and_then(|s| s.parse::<u8>().ok());
+    let separator = opt_parse::<u8>(&mut options, "write_csv_separator");
+
+    let quote_char = opt_parse::<u8>(&mut options, "write_csv_quote_char");
 
     let date_format = options.remove("write_csv_date_format").map(|s| s.into());
     let time_format = options.remove("write_csv_time_format").map(|s| s.into());
@@ -61,15 +54,12 @@ pub fn writeCSV(
             _ => QuoteStyle::Necessary,
         });
 
-    let overwrite_mode = options
-        .remove("write_mode")
-        .map(|s| matches!(s.to_lowercase().as_str(), "overwrite"))
-        .unwrap_or(false);
+    let overwrite_mode = parse_overwrite_mode(&mut options);
 
     write_dataframe(
-        &mut env,
-        from_ptr(df_ptr),
-        filePath,
+        env,
+        df.get(),
+        &file_path,
         overwrite_mode,
         options,
         "CSV",
@@ -111,5 +101,10 @@ pub fn writeCSV(
 
             csv_writer.finish(dataframe)
         },
-    );
+    )?;
+
+    Ok(())
 }
+
+/// All native methods exported by this module.
+pub const METHODS: &[NativeMethod] = &[WRITE_CSV_METHOD];

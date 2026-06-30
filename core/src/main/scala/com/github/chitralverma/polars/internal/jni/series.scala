@@ -4,27 +4,27 @@ private[polars] object series extends Natively {
 
   @native def show(ptr: Long): Unit
 
-  @native def new_str_series(name: String, data: Array[String]): Long
+  @native def newStrSeries(name: String, data: Array[String]): Long
 
-  @native def new_int_series(name: String, data: Array[Int]): Long
+  @native def newIntSeries(name: String, data: Array[Int]): Long
 
-  @native def new_float_series(name: String, data: Array[Float]): Long
+  @native def newFloatSeries(name: String, data: Array[Float]): Long
 
-  @native def new_double_series(name: String, data: Array[Double]): Long
+  @native def newDoubleSeries(name: String, data: Array[Double]): Long
 
-  @native def new_long_series(name: String, data: Array[Long]): Long
+  @native def newLongSeries(name: String, data: Array[Long]): Long
 
-  @native def new_boolean_series(name: String, data: Array[Boolean]): Long
+  @native def newBooleanSeries(name: String, data: Array[Boolean]): Long
 
-  @native def new_date_series(name: String, data: Array[String]): Long
+  @native def newDateSeries(name: String, data: Array[String]): Long
 
-  @native def new_datetime_series(name: String, data: Array[String]): Long
+  @native def newDatetimeSeries(name: String, data: Array[String]): Long
 
-  @native def new_time_series(name: String, data: Array[String]): Long
+  @native def newTimeSeries(name: String, data: Array[String]): Long
 
-  @native def new_list_series(name: String, ptrs: Array[Long]): Long
+  @native def newListSeries(name: String, ptrs: Array[Long]): Long
 
-  @native def new_struct_series(name: String, ptrs: Array[Long]): Long
+  @native def newStructSeries(name: String, ptrs: Array[Long]): Long
 
   @native def free(ptr: Long): Unit
 

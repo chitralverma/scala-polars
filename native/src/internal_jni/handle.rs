@@ -1,0 +1,137 @@
+//! Typed handles for native objects that cross the JNI boundary as `jlong` pointers.
+//!
+//! Each handle is a `#[repr(transparent)]` newtype over a `*mut T`, so it is layout-compatible
+//! with the `jlong` it is mapped to via `native_method!`'s `type_map = { unsafe XHandle => long }`.
+//! Handles centralize the raw-pointer lifecycle: [`Handle::alloc`] boxes a value onto the heap and
+//! leaks it as a handle, [`Handle::get`] clones the pointee back, and [`Handle::free`] reclaims it.
+//!
+//! Ownership across the boundary is a hand-maintained contract (explicit `free`), not GC-managed.
+
+use jni::sys::jlong;
+
+/// Shared behaviour for the pointer-backed handle newtypes.
+pub trait Handle<T: Clone>: Copy {
+    /// Wraps a raw pointer.
+    fn from_ptr(ptr: *mut T) -> Self;
+    /// Returns the wrapped raw pointer.
+    fn as_ptr(self) -> *mut T;
+
+    /// Boxes `value` on the heap and returns a handle that owns it.
+    fn alloc(value: T) -> Self
+    where
+        Self: Sized,
+    {
+        Self::from_ptr(Box::into_raw(Box::new(value)))
+    }
+
+    /// Clones the pointee out of the handle.
+    ///
+    /// # Safety
+    /// The handle must reference a live allocation produced by [`Handle::alloc`].
+    fn get(self) -> T {
+        unsafe { (*self.as_ptr()).clone() }
+    }
+
+    /// Reclaims and drops the boxed allocation behind a raw `jlong` handle. A zero handle is a no-op.
+    fn free_raw(raw: jlong)
+    where
+        Self: Sized,
+    {
+        if raw != 0 {
+            unsafe {
+                let _ = Box::from_raw(raw as *mut T);
+            }
+        }
+    }
+}
+
+/// Declares a `#[repr(transparent)]` pointer handle newtype with `jlong` conversions and the
+/// [`Handle`] impl. Use the type with `native_method!`'s `type_map = { unsafe $name => long }`.
+///
+/// Handles default to a null pointer (`0`), which is the sentinel returned across the boundary
+/// when an error policy fires.
+macro_rules! declare_handle {
+    ($name:ident, $target:ty) => {
+        #[derive(Clone, Copy)]
+        #[repr(transparent)]
+        pub struct $name(pub *mut $target);
+
+        impl Default for $name {
+            fn default() -> Self {
+                $name(std::ptr::null_mut())
+            }
+        }
+
+        impl From<$name> for jlong {
+            fn from(h: $name) -> jlong {
+                h.0 as jlong
+            }
+        }
+
+        impl From<jlong> for $name {
+            fn from(v: jlong) -> $name {
+                $name(v as *mut $target)
+            }
+        }
+    };
+}
+
+/// Adds the cloning [`Handle`] behaviour for a handle whose target is `Clone`.
+macro_rules! impl_clone_handle {
+    ($name:ident, $target:ty) => {
+        impl Handle<$target> for $name {
+            fn from_ptr(ptr: *mut $target) -> Self {
+                $name(ptr)
+            }
+            fn as_ptr(self) -> *mut $target {
+                self.0
+            }
+        }
+    };
+}
+
+use polars::prelude::{DataFrame, Expr, LazyFrame, Series};
+
+declare_handle!(ExprHandle, Expr);
+declare_handle!(LazyFrameHandle, LazyFrame);
+declare_handle!(DataFrameHandle, DataFrame);
+declare_handle!(SeriesHandle, Series);
+declare_handle!(RowIteratorHandle, crate::internal_jni::row::RowIterator);
+
+impl_clone_handle!(ExprHandle, Expr);
+impl_clone_handle!(LazyFrameHandle, LazyFrame);
+impl_clone_handle!(DataFrameHandle, DataFrame);
+impl_clone_handle!(SeriesHandle, Series);
+
+impl RowIteratorHandle {
+    /// Boxes a [`RowIterator`](crate::internal_jni::row::RowIterator) and returns an owning handle.
+    pub fn alloc(value: crate::internal_jni::row::RowIterator) -> Self {
+        RowIteratorHandle(Box::into_raw(Box::new(value)))
+    }
+
+    /// Returns a mutable reference to the boxed iterator.
+    ///
+    /// # Safety
+    /// The handle must reference a live allocation produced by [`RowIteratorHandle::alloc`], and the
+    /// caller must not alias the returned reference.
+    pub unsafe fn as_mut<'a>(self) -> &'a mut crate::internal_jni::row::RowIterator {
+        unsafe { &mut *self.0 }
+    }
+
+    /// Returns a shared reference to the boxed iterator.
+    ///
+    /// # Safety
+    /// The handle must reference a live allocation produced by [`RowIteratorHandle::alloc`].
+    pub unsafe fn as_ref<'a>(self) -> &'a crate::internal_jni::row::RowIterator {
+        unsafe { &*self.0 }
+    }
+
+    /// Reclaims and drops the boxed iterator behind a raw `jlong` handle. A zero handle is a no-op.
+    pub fn free_raw(raw: jlong) {
+        if raw != 0 {
+            unsafe {
+                let _ = Box::from_raw(raw as *mut crate::internal_jni::row::RowIterator);
+            }
+        }
+    }
+}

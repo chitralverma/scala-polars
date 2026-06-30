@@ -10,8 +10,8 @@ private[polars] object name_expr extends Natively {
 
   @native def suffix(ptr: Long, suffix: String): Long
 
-  @native def to_uppercase(ptr: Long): Long
+  @native def toUppercase(ptr: Long): Long
 
-  @native def to_lowercase(ptr: Long): Long
+  @native def toLowercase(ptr: Long): Long
 
 }

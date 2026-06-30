@@ -43,13 +43,13 @@ class ColumnNameNameSpace private[polars] (private val parent: Expression) {
   /** Convert the name of the input column to uppercase. */
   def toUppercase: Column = {
     parent.checkClosed()
-    Column.withPtr(name_expr.to_uppercase(parent.ptr))
+    Column.withPtr(name_expr.toUppercase(parent.ptr))
   }
 
   /** Convert the name of the input column to lowercase. */
   def toLowercase: Column = {
     parent.checkClosed()
-    Column.withPtr(name_expr.to_lowercase(parent.ptr))
+    Column.withPtr(name_expr.toLowercase(parent.ptr))
   }
 
 }

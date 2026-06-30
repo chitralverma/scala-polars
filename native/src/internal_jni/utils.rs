@@ -1,66 +1,76 @@
-use std::fmt::Display;
-
 use anyhow::Context;
-use jni::JNIEnv;
+use jni::Env;
 use jni::objects::*;
-use jni::strings::JNIString;
 use jni::sys::*;
 
-use crate::utils::error::ResultExt;
+/// Creates a new Java string from `s`, returning the raw `jstring` for return
+/// across the JNI boundary.
+pub fn string_to_j_string(env: &mut Env, s: impl AsRef<str>) -> anyhow::Result<jstring> {
+    Ok(env
+        .new_string(s)
+        .context("Error converting Rust String to JString")?
+        .into_raw())
+}
 
-pub fn string_to_j_string<T, S: Into<JNIString>>(env: &mut JNIEnv, s: S, msg: Option<T>) -> jstring
+/// Reads a Java string into an owned Rust `String`.
+pub fn j_string_to_string<T>(env: &Env, s: &JString, msg: Option<T>) -> anyhow::Result<String>
 where
-    T: AsRef<str> + Send + Sync + Display + 'static,
+    T: AsRef<str> + Send + Sync + std::fmt::Display + 'static,
 {
+    let res = s.try_to_string(env);
     if let Some(c) = msg {
-        env.new_string(s).context(c)
+        res.context(c)
     } else {
-        env.new_string(s)
-            .context("Error converting JString to Rust String")
+        res.context("Error converting JString to Rust String")
     }
-    .unwrap_or_throw(env)
-    .as_raw()
 }
 
-pub fn j_string_to_string<T>(env: &mut JNIEnv, s: &JString, msg: Option<T>) -> String
-where
-    T: AsRef<str> + Send + Sync + Display + 'static,
-{
-    let str_res = if let Some(c) = msg {
-        env.get_string(s).context(c)
-    } else {
-        env.get_string(s)
-            .context("Error converting JString to Rust String")
-    };
-    str_res.map(|java_str| java_str.into()).unwrap_or_throw(env)
+/// Reads a `String[]` (typed `JObjectArray<JString>`) into an owned `Vec<String>`.
+pub fn j_string_array_to_vec(
+    env: &mut Env,
+    array: &JObjectArray<JString>,
+    msg: &'static str,
+) -> anyhow::Result<Vec<String>> {
+    let len = array
+        .len(env)
+        .context("Error getting length of the array")?;
+    let mut out = Vec::with_capacity(len);
+    for i in 0..len {
+        let element = array
+            .get_element(env, i)
+            .context("Error getting element of the array")?;
+        out.push(j_string_to_string(env, &element, Some(msg))?);
+    }
+    Ok(out)
 }
 
-/// Fallible variant of [`j_string_to_string`] that propagates the error instead of
-/// throwing and returning an empty-string sentinel. Use inside fallible helpers.
-pub fn try_j_string_to_string<T>(
-    env: &mut JNIEnv,
-    s: &JString,
+/// Reads a `java.lang.String` referenced by a [`JObject`] into an owned Rust `String`.
+pub fn j_object_ref_to_string<T>(
+    env: &mut Env,
+    o: &JObject,
     msg: Option<T>,
 ) -> anyhow::Result<String>
 where
-    T: AsRef<str> + Send + Sync + Display + 'static,
+    T: AsRef<str> + Send + Sync + std::fmt::Display + 'static,
 {
-    let str_res = if let Some(c) = msg {
-        env.get_string(s).context(c)
-    } else {
-        env.get_string(s)
-            .context("Error converting JString to Rust String")
-    };
-    Ok(str_res?.into())
+    let s = env.as_cast::<JString>(o)?;
+    j_string_to_string(env, &s, msg)
 }
 
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub fn j_object_to_string<T>(env: &mut JNIEnv, o: jobject, msg: Option<T>) -> String
+/// Reads a raw `jobject` known to be a `java.lang.String` into an owned Rust `String`.
+///
+/// # Safety
+/// `o` must be a valid local reference to a `java.lang.String` (or null).
+pub unsafe fn j_object_to_string<T>(
+    env: &mut Env,
+    o: jobject,
+    msg: Option<T>,
+) -> anyhow::Result<String>
 where
-    T: AsRef<str> + Send + Sync + Display + 'static,
+    T: AsRef<str> + Send + Sync + std::fmt::Display + 'static,
 {
-    let jo = unsafe { JObject::from_raw(o) };
-    j_string_to_string(env, &JString::from(jo), msg)
+    let jo = unsafe { JObject::from_raw(env, o) };
+    j_object_ref_to_string(env, &jo, msg)
 }
 
 pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
@@ -69,30 +79,4 @@ pub fn get_n_rows(n_rows: jlong) -> Option<usize> {
     } else {
         None
     }
-}
-
-pub fn to_ptr<T: Clone>(v: T) -> jlong {
-    Box::into_raw(Box::new(v.clone())) as jlong
-}
-
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub fn from_ptr<T: Clone>(ptr: *mut T) -> T {
-    unsafe { (*ptr).clone() }
-}
-
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub fn free_ptr<T>(ptr: jlong) {
-    if ptr != 0 {
-        unsafe {
-            let _ = Box::from_raw(ptr as *mut T);
-        }
-    }
-}
-
-pub fn find_java_class<'a>(env: &mut JNIEnv<'a>, class: &str) -> JClass<'a> {
-    env.find_class(class)
-        .context(format!(
-            "Error finding Java class for provided value `{class}`"
-        ))
-        .unwrap_or_throw(env)
 }
