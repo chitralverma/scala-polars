@@ -22,7 +22,7 @@ echo-command args:
 [group('lint')]
 fmt:
     @just echo-command 'Formatting core module'
-    @sbt --batch -error scalafmtAll scalafmtSbt javafmtAll reload
+    @sbt --batch -error "scalafmtAll ; scalafmtSbt ; javafmtAll ; reload"
     @just echo-command 'Formatting native module'
     @cargo clippy -q {{ cargo_flags }} --no-deps --fix --allow-dirty --allow-staged --manifest-path {{ native_manifest }}
     @cargo sort {{ native_root }}
@@ -33,7 +33,7 @@ fmt:
 [group('lint')]
 lint:
     @just echo-command 'Checking core module'
-    @sbt --batch -error scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
+    @sbt --batch -error "scalafmtCheckAll ; scalafmtSbtCheck ; javafmtCheckAll"
     @just echo-command 'Checking native module'
     @cargo clippy -q {{ cargo_flags }} --no-deps --manifest-path {{ native_manifest }} -- -D warnings
     @cargo sort {{ native_root }} --check
