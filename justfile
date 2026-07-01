@@ -40,9 +40,15 @@ lint:
     @cargo fmt --check --manifest-path {{ native_manifest }}
     @just --fmt --unstable --check
 
+# Check API doc generation across all Scala versions (skip-guarded; mirrors ci-release's doc)
+[group('lint')]
+check-docs:
+    @just echo-command 'Checking API docs (Compile + Test) across Scala versions'
+    @SKIP_NATIVE_GENERATION=true sbt --batch -error "+scala-polars/Compile/doc" "+scala-polars/Test/doc"
+
 # Run all code formatting and quality checks
 [group('lint')]
-pre-commit: fmt lint
+pre-commit: fmt lint check-docs
 
 # Generate JNI headers
 [group('dev')]
