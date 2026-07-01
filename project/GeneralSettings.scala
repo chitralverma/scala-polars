@@ -74,11 +74,33 @@ object GeneralSettings {
     fork := true,
     // Enable external API link resolution.
     autoAPIMappings := true,
-    Compile / doc / scalacOptions ++= docExternalMappingOptions(scalaVersion.value),
-    Test / doc / scalacOptions ++= docExternalMappingOptions(scalaVersion.value),
+    Compile / doc / scalacOptions := {
+      val defaultOpts = (Compile / doc / scalacOptions).value
+      val extraOpts = docExternalMappingOptions(scalaVersion.value)
+      val allOpts = defaultOpts ++ extraOpts
+      if (scalaVersion.value.startsWith("2.12")) {
+        allOpts.filterNot(_.startsWith("-jdk-api-doc-base"))
+      } else {
+        allOpts
+      }
+    },
+    Test / doc / scalacOptions := {
+      val defaultOpts = (Test / doc / scalacOptions).value
+      val extraOpts = docExternalMappingOptions(scalaVersion.value)
+      val allOpts = defaultOpts ++ extraOpts
+      if (scalaVersion.value.startsWith("2.12")) {
+        allOpts.filterNot(_.startsWith("-jdk-api-doc-base"))
+      } else {
+        allOpts
+      }
+    },
     // Keep directory-based classpath to allow NativeLoader extraction.
     exportJars := false,
     Test / javaHome := jdk8TestHome,
+    // sbt 2.x eagerly closes the test ClassLoader during JVM shutdown, which prevents Jacoco's
+    // shutdown hook from loading its classes and causes a `NoClassDefFoundError` on exit.
+    // Keeping the ClassLoader open during JVM shutdown solves the classloading error.
+    Test / closeClassLoaders := false,
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", _*) => MergeStrategy.discard
       case _ => MergeStrategy.first

@@ -154,7 +154,7 @@ coverage-java scala_version='2.13.18':
     # Bypass sbt 2.x global cache with a temporary cache directory to force jacoco instrumentation.
     tmp_cache="$(mktemp -d)/sbt-cache"
     just echo-command "Running Java coverage (JaCoCo) (cache: ${tmp_cache})"
-    sbt -Dsbt.global.localcache="${tmp_cache}" --batch "++{{ scala_version }}" "clean" "scala-polars/jacoco"
+    sbt -Dsbt.global.localcache="${tmp_cache}" -Djacoco.enable=true --batch "++{{ scala_version }}" "clean" "scala-polars/jacoco"
     report="$(find target/out -path '*/jacoco/report/jacoco.xml' 2>/dev/null | head -1)"
     echo "Java coverage report (HTML): ${report%/jacoco.xml}/html/index.html"
     echo "JaCoCo XML (for Codecov): ${report}"
