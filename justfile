@@ -34,6 +34,8 @@ fmt:
 lint:
     @just echo-command 'Checking core module'
     @sbt --batch -error scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
+    @just echo-command 'Checking test-source docs (Test/doc; caught by ci-release)'
+    @sbt --batch -error "scala-polars/Test/doc"
     @just echo-command 'Checking native module'
     @cargo clippy -q {{ cargo_flags }} --no-deps --manifest-path {{ native_manifest }} -- -D warnings
     @cargo sort {{ native_root }} --check
