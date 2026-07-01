@@ -24,9 +24,7 @@ object NativeBuildSettings {
   )
 
   lazy val settings: Seq[Setting[?]] = Seq(
-    // sbt 2.x caches all task results by default; this task shells out to cargo and copies the
-    // built library (pure side effects), so a cache hit would silently skip the native build.
-    // `Def.uncached` marks it to always re-run.
+    // Mark uncached to prevent cargo build bypass in sbt 2.x.
     generateNativeLibrary := Def.uncached(
       Def
         .taskDyn[Unit] {
@@ -132,8 +130,7 @@ object NativeBuildSettings {
         }
         .value
     ),
-    // Returns raw filesystem `Path`s (not a cacheable output type in sbt 2.x) and must re-run to
-    // observe freshly built libs, so it is marked uncached as well.
+    // Mark uncached to observe native library changes.
     managedNativeLibraries := Def.uncached(
       Def
         .taskDyn[Seq[Path]] {
@@ -221,15 +218,13 @@ object NativeBuildSettings {
         }
     }.taskValue,
 
-    // Exclude native libs from sources.jar. In sbt 2.x, mapping keys are `HashedVirtualFileRef`
-    // rather than `File`; filter on the in-jar target path (the mapping's String value), which the
-    // native resources occupy under `native/`.
+    // Exclude native libs from sources.jar (filter on the target path).
     Compile / packageSrc / mappings :=
       (Compile / packageSrc / mappings).value.filterNot { case (_, targetPath) =>
         targetPath.startsWith("native/")
       },
 
-    // Exclude native libs from javadoc.jar (see note above).
+    // Exclude native libs from javadoc.jar.
     Compile / packageDoc / mappings :=
       (Compile / packageDoc / mappings).value.filterNot { case (_, targetPath) =>
         targetPath.startsWith("native/")

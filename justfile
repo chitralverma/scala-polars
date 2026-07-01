@@ -120,9 +120,7 @@ coverage scala_version='':
     cp "${libdir}" "${staged}/${arch}/"
     export SKIP_NATIVE_GENERATION=true
     export NATIVE_LIB_LOCATION="${staged}"
-    # sbt 2.x caches all tasks globally. Bypassing the local cache directory via -Dsbt.global.localcache
-    # forces an isolated, clean sbt server run with a temporary cache directory (otherwise sbt gets
-    # global cache hits on the uninstrumented classes, skipping scoverage).
+    # Bypass sbt 2.x global cache with a temporary cache directory to force scoverage instrumentation.
     tmp_cache="$(mktemp -d)/sbt-cache"
     just echo-command "Running Scala coverage (cache: ${tmp_cache})"
     ver='{{ scala_version }}'
@@ -153,9 +151,7 @@ coverage-java scala_version='2.13.18':
     cp "${libdir}" "${staged}/${arch}/"
     export SKIP_NATIVE_GENERATION=true
     export NATIVE_LIB_LOCATION="${staged}"
-    # sbt 2.x caches all tasks globally. Bypassing the local cache directory via -Dsbt.global.localcache
-    # and running `clean` forces an isolated, clean sbt server run with a temporary cache directory
-    # (otherwise sbt gets global cache hits on the uninstrumented classes, skipping jacoco).
+    # Bypass sbt 2.x global cache with a temporary cache directory to force jacoco instrumentation.
     tmp_cache="$(mktemp -d)/sbt-cache"
     just echo-command "Running Java coverage (JaCoCo) (cache: ${tmp_cache})"
     sbt -Dsbt.global.localcache="${tmp_cache}" --batch "++{{ scala_version }}" "clean" "scala-polars/jacoco"

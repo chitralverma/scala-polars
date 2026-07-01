@@ -6,7 +6,7 @@ import Utils.*
  ***********************
  */
 
-// Explicit aggregating root so the synthetic default root neither builds `src/` nor publishes.
+// Aggregating root to prevent publishing of the default root project.
 lazy val root = (project in file("."))
   .withId("scala-polars-root")
   .settings(name := "scala-polars-root")

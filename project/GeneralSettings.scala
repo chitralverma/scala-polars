@@ -15,12 +15,7 @@ object GeneralSettings {
   val defaultScalaVersion: String = scala213
   val supportedScalaVersions: Seq[String] = Seq(scala212, scala213, scala33)
 
-  /** JDK 8 install for the forked test JVM. sbt 2.x runs on JDK 17+, so JDK 8 can no longer host
-    * the build; instead the test JVM is forked onto a JDK 8 to prove the `-release 8` artifacts
-    * run on the binary-compatibility floor. CI sets `JAVA_HOME_8` (see release.yml); the
-    * arch-specific `JAVA_HOME_8_X64` / `JAVA_HOME_8_AARCH64` from actions/setup-java are honoured
-    * as fallbacks. Absent locally, tests run on the ambient JVM.
-    */
+  /** Fork JVM onto JDK 8 for tests when JAVA_HOME_8* is available. */
   private val jdk8TestHome: Option[File] =
     Seq("JAVA_HOME_8", "JAVA_HOME_8_X64", "JAVA_HOME_8_ARM64", "JAVA_HOME_8_AARCH64").iterator
       .flatMap(sys.env.get)
@@ -31,19 +26,14 @@ object GeneralSettings {
 
   private def docExternalMappingOptions(scalaVer: String): Seq[String] =
     if (scalaVer.startsWith("3.")) {
-      // Scala 3 scaladoc. Comma-separates multiple mappings.
       Seq(s"-external-mappings:.*java/.*::javadoc::$jdkJavadocUrl")
     } else if (scalaVer.startsWith("2.12")) {
-      // Scala 2.12 scaladoc (lacks -jdk-api-doc-base, supported in 2.13+)
       Seq(
         "-doc-external-doc",
         s"/modules/java.base#$jdkJavadocUrl",
         "-no-link-warnings"
       )
     } else {
-      // Scala 2.13 scaladoc:
-      //  * -jdk-api-doc-base sets the base for the java.* linker.
-      //  * -doc-external-doc keys on classpath entry canonical paths.
       Seq(
         "-jdk-api-doc-base",
         jdkJavadocUrl,
@@ -82,9 +72,7 @@ object GeneralSettings {
     ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
           else Seq("-release", "8")),
     fork := true,
-    // Let scaladoc/javadoc resolve external `[[scala.*]]` (and other dependency) doc links from the
-    // `apiURL` published in each dependency's POM, instead of failing the fatal doc build. Replaces
-    // the former sbt-api-mappings plugin.
+    // Enable external API link resolution.
     autoAPIMappings := true,
     Compile / doc / scalacOptions := {
       val oldOpts = (Compile / doc / scalacOptions).value
@@ -94,15 +82,10 @@ object GeneralSettings {
       val oldOpts = (Test / doc / scalacOptions).value
       oldOpts ++ docExternalMappingOptions(scalaVersion.value)
     },
-    // sbt 2.x defaults exportJars := true, which routes classpaths through jars and breaks
-    // `getResource("/")` / `resource.toURI` — NativeLoader relies on those to extract the bundled
-    // native library from the classpath. Keep the directory-based classpath.
+    // Keep directory-based classpath to allow NativeLoader extraction.
     exportJars := false,
     Test / javaHome := jdk8TestHome,
-    // sbt 2.x caches tasks globally based on inputs. However, `sbt-scoverage`'s compiler plugin
-    // instrumentation changes the output but doesn't correctly invalidate sbt's global cache,
-    // leading to global cache hits on uninstrumented classes. Override `localCacheDirectory`
-    // when coverage is enabled to bypass the global cache and force clean instrumentation.
+    // Use localized cache directory during coverage.
     localCacheDirectory := {
       val defaultCache = localCacheDirectory.value
       val covEnabled = (ThisBuild / scoverage.ScoverageKeys.coverageEnabled).value
