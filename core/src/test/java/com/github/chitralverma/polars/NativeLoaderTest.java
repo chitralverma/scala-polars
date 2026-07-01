@@ -7,7 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Unit tests for {@link NativeLoader} — mirror of {@code NativeLoaderSuite}. Covers arch
+ * Unit tests for {@code NativeLoader} — mirror of {@code NativeLoaderSuite}. Covers arch
  * normalization, classpath resource paths, and the content-addressed extraction cache. Not a port
  * of an upstream pytest.
  *

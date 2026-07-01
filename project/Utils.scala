@@ -4,7 +4,8 @@ import scala.sys.process.*
 
 object Utils {
 
-  lazy val nativeRoot = taskKey[File]("Directory pointing to the native project root.")
+  lazy val nativeRoot =
+    settingKey[File]("Directory pointing to the native project root.")
 
   def executeProcess(
       cmd: String,
@@ -14,7 +15,7 @@ object Utils {
       extraEnv: Seq[(String, String)] = Nil
   ): Unit = {
     val exitCode =
-      Process(cmd, cwd, extraEnv: _*).run(getProcessLogger(logger, infoOnly)).exitValue()
+      Process(cmd, cwd, extraEnv *).run(getProcessLogger(logger, infoOnly)).exitValue()
 
     if (exitCode != 0) {
       sys.error(s"Failed to execute command `$cmd` with exit code $exitCode.")

@@ -10,7 +10,7 @@ import Versions.*
 
 object ProjectDependencies {
 
-  lazy val dependencies: Seq[Setting[_]] = Seq(
+  lazy val dependencies: Seq[Setting[?]] = Seq(
     libraryDependencies ++=
       Seq(
         "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompat,
@@ -36,7 +36,7 @@ object ProjectDependencies {
   /** Test deps for `core`. Versions pinned to the last JDK 8-compatible releases (CI tests on JDK
     * 8). ScalaTest + JUnit run under one `Test` pass.
     */
-  lazy val testDependencies: Seq[Setting[_]] = Seq(
+  lazy val testDependencies: Seq[Setting[?]] = Seq(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
       "com.github.sbt" % "junit-interface" % junitInterfaceVersion % Test,
@@ -49,7 +49,7 @@ object ProjectDependencies {
   /** Scala coverage (sbt-scoverage). scoverage instruments Scala only; Java is covered by
     * [[jacocoSettings]]. The JNI `@native` declarations are FFI surface, excluded from coverage.
     */
-  lazy val coverageSettings: Seq[Setting[_]] = Seq(
+  lazy val coverageSettings: Seq[Setting[?]] = Seq(
     coverageExcludedPackages := "com\\.github\\.chitralverma\\.polars\\.internal\\.jni\\..*",
     coverageFailOnMinimum := false
   )
@@ -58,7 +58,7 @@ object ProjectDependencies {
     * instrument. Emits XML (Codecov) + HTML. JaCoCo also sees Scala classes — scoverage owns
     * those, so the JNI FFI declarations are excluded here too.
     */
-  lazy val jacocoSettings: Seq[Setting[_]] = Seq(
+  lazy val jacocoSettings: Seq[Setting[?]] = Seq(
     jacocoReportSettings := JacocoReportSettings()
       .withTitle("scala-polars Java coverage")
       .withFormats(JacocoReportFormats.XML, JacocoReportFormats.HTML),
@@ -70,6 +70,7 @@ object ProjectDependencies {
 object Versions {
   val scalaCollectionCompat = "2.14.0"
   val scalaParallelCollections = "1.2.0"
+  // Single version knob for jackson-databind / -module-scala / -datatype-jsr310.
   val jacksonVersion = "2.22.0"
 
   // Test stack — pinned to JDK 8-compatible releases (CI tests on JDK 8).

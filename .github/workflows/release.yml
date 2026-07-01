@@ -25,10 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # sbt 2.x requires JDK 17+ to run; use the latest LTS (25) for all build/CI tooling.
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: "8"
+          java-version: "25"
           distribution: "zulu"
           cache: "sbt"
 
@@ -96,10 +97,11 @@ jobs:
 
       - uses: actions/checkout@v6
 
+      # sbt 2.x runs on JDK 17+; latest LTS (25) for the native build tooling.
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "zulu"
           cache: "sbt"
 
@@ -116,7 +118,7 @@ jobs:
       - name: Cross publish artifacts containing native library
         run: |
           rustup target add ${{ matrix.arch }}
-          sbt generateNativeLibrary
+          sbt "generateNativeLibrary ; shutdown"
 
       - name: Temporarily save native library for ${{ matrix.arch }}
         uses: actions/upload-artifact@v7
@@ -127,7 +129,7 @@ jobs:
           if-no-files-found: error
 
   test-build:
-    name: ${{ matrix.os }} ${{ matrix.java }} test
+    name: ${{ matrix.os }} test-jdk-${{ matrix.java }}
     runs-on: ${{ matrix.os }}
     needs: [build-natives]
     env:
@@ -135,20 +137,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # sbt runs on JDK 25; `matrix.java` is the JDK the forked test JVM targets, proving the
+        # `-release 8` artifacts run on JDK 8 as well as the latest LTS.
         java: ["8", "25"]
         os: ["ubuntu-22.04", "windows-2022", "macos-14"]
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK
+      # Install the test-target JDK first, then JDK 25 last so it is the default that hosts sbt.
+      # actions/setup-java exposes each install as JAVA_HOME_<major>_<arch>.
+      - name: Set up JDKs (test target + sbt runtime)
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java }}
+          java-version: |
+            ${{ matrix.java }}
+            25
           distribution: "zulu"
           cache: "sbt"
 
       - uses: sbt/setup-sbt@v1
+
+      # Point the forked test JVM at the matrix JDK. GeneralSettings reads JAVA_HOME_8 for the
+      # JDK 8 leg; the JDK 25 leg runs tests on the sbt runtime JDK (no override needed).
+      - name: Select forked-test JDK
+        shell: bash
+        run: |
+          if [ "${{ matrix.java }}" = "8" ]; then
+            for v in JAVA_HOME_8_X64 JAVA_HOME_8_ARM64 JAVA_HOME_8_AARCH64; do
+              if [ -n "${!v:-}" ]; then echo "JAVA_HOME_8=${!v}" >> "$GITHUB_ENV"; break; fi
+            done
+          fi
 
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -157,30 +176,32 @@ jobs:
           path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
 
-      - name: Test for ${{ matrix.os }} ${{ matrix.java }}
+      # sbt 2.x `test` is incremental/cached; use `testFull` to force the whole suite every run.
+      # The assembled example jars self-extract the bundled native lib (end-to-end smoke test).
+      - name: Test for ${{ matrix.os }} (target JDK ${{ matrix.java }})
+        shell: bash
         run: |
-          sbt +test
-          sbt +assembly
-          java -cp ./examples/target/scala-2.12/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
-          java -cp ./examples/target/scala-2.13/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
-          java -cp ./examples/target/scala-3.3.8/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar examples.scala.io.LazyAndEagerAPI
+          sbt "+scala-polars/testFull ; +assembly ; shutdown"
+          for v in 2.12.21 2.13.18 3.3.8; do
+            java -cp "./target/out/jvm/scala-${v}/scala-polars-examples/scala-polars-examples-assembly-0.1.0-SNAPSHOT.jar" examples.scala.io.LazyAndEagerAPI
+          done
 
-      # Coverage on one canonical leg (Ubuntu/JDK 8): scoverage (Scala) + JaCoCo (Java) XMLs → Codecov.
+      # Coverage on one canonical leg (Ubuntu / test-JDK 8): scoverage (Scala) + JaCoCo (Java) → Codecov.
       - name: Scala coverage report (scoverage)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
-        run: sbt coverage scala-polars/test scala-polars/coverageReport
+        run: sbt "coverage ; scala-polars/testFull ; scala-polars/coverageReport ; shutdown"
 
       - name: Java coverage report (JaCoCo)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
-        run: sbt scala-polars/jacoco
+        run: sbt "scala-polars/jacoco ; shutdown"
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
         uses: codecov/codecov-action@v5
         with:
           files: >-
-            core/target/scala-*/coverage-report/cobertura.xml,
-            core/target/scala-*/jacoco/report/jacoco.xml
+            target/out/jvm/scala-*/scala-polars/coverage-report/cobertura.xml,
+            target/out/jvm/scala-*/scala-polars/jacoco/report/jacoco.xml
           disable_search: true
           fail_ci_if_error: false
         env:
@@ -192,9 +213,9 @@ jobs:
         with:
           name: coverage-reports
           path: |
-            core/target/scala-*/scoverage-report/
-            core/target/scala-*/coverage-report/cobertura.xml
-            core/target/scala-*/jacoco/report/
+            target/out/jvm/scala-*/scala-polars/scoverage-report/
+            target/out/jvm/scala-*/scala-polars/coverage-report/cobertura.xml
+            target/out/jvm/scala-*/scala-polars/jacoco/report/
           if-no-files-found: warn
 
   publish:
@@ -212,10 +233,11 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # sbt 2.x runs on JDK 17+; latest LTS (25) for publishing.
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: "8"
+          java-version: "25"
           distribution: "zulu"
           cache: "sbt"
 
@@ -232,16 +254,11 @@ jobs:
         run: ls -lhtR
         working-directory: ${{env.NATIVE_LIB_LOCATION}}
 
+      # ci-release 1.11.x publishes to the Sonatype Central Portal by default.
       - name: Publish Artifacts
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt ci-release
-
-      - name: Publish API Docs
-        run: |
-          git config --global user.email "git@github.com"
-          git config --global user.name  "git"
-          sbt ghpagesPushSite
+        run: sbt "ci-release ; shutdown"

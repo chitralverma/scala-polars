@@ -50,12 +50,6 @@ check-docs:
 [group('lint')]
 pre-commit: fmt lint check-docs
 
-# Generate JNI headers
-[group('dev')]
-gen-headers:
-    @just echo-command 'Generating JNI headers'
-    @sbt --batch genHeaders
-
 # Build native library TARGET_TRIPLE, NATIVE_RELEASE, NATIVE_LIB_LOCATION env vars are supported
 [group('dev')]
 build-native:
@@ -77,8 +71,6 @@ compile:
 clean:
     @just echo-command 'Cleaning native artifacts'
     @cargo clean --manifest-path {{ native_manifest }} --quiet
-    @just echo-command 'Cleaning JNI headers'
-    @sbt --batch -error cleanHeaders
     @just echo-command 'Cleaning core artifacts'
     @sbt --batch -error clean cleanFiles reload
 
@@ -86,7 +78,7 @@ clean:
 [group('dev')]
 test scala_version='':
     @just echo-command 'Running tests'
-    @sbt --batch {{ if scala_version == '' { '+test' } else { '"++' + scala_version + ' scala-polars/test"' } }}
+    @sbt --batch {{ if scala_version == '' { '+testFull' } else { '"++' + scala_version + ' scala-polars/testFull"' } }}
 
 # Run tests reusing an already-built native lib (skips the Rust rebuild); requires `just build-native` first
 [group('dev')]
@@ -94,7 +86,7 @@ test-fast scala_version='':
     #!/usr/bin/env bash
     set -euo pipefail
     arch="$(rustc -vV | sed -n 's/^host: //p' | cut -d- -f1)"
-    libdir="$(find core/target native/target -type f \
+    libdir="$(find target/out native/target -type f \
         \( -name 'libscala_polars.so' -o -name 'libscala_polars.dylib' -o -name 'scala_polars.dll' \) \
         2>/dev/null | head -1)"
     if [[ -z "${libdir}" ]]; then
@@ -108,7 +100,7 @@ test-fast scala_version='':
     export SKIP_NATIVE_GENERATION=true
     export NATIVE_LIB_LOCATION="${staged}"
     just echo-command 'Running tests (reusing native lib)'
-    {{ if scala_version == '' { 'sbt --batch +test' } else { 'sbt --batch "++' + scala_version + ' scala-polars/test"' } }}
+    {{ if scala_version == '' { 'sbt --batch +testFull' } else { 'sbt --batch "++' + scala_version + ' scala-polars/testFull"' } }}
 
 # Generate Scala coverage reports (sbt-scoverage); reuses an existing native lib. Pass a Scala version to scope.
 [group('dev')]
@@ -116,7 +108,7 @@ coverage scala_version='':
     #!/usr/bin/env bash
     set -euo pipefail
     arch="$(rustc -vV | sed -n 's/^host: //p' | cut -d- -f1)"
-    libdir="$(find core/target native/target -type f \
+    libdir="$(find target/out native/target -type f \
         \( -name 'libscala_polars.so' -o -name 'libscala_polars.dylib' -o -name 'scala_polars.dll' \) \
         2>/dev/null | head -1)"
     if [[ -z "${libdir}" ]]; then
@@ -128,15 +120,19 @@ coverage scala_version='':
     cp "${libdir}" "${staged}/${arch}/"
     export SKIP_NATIVE_GENERATION=true
     export NATIVE_LIB_LOCATION="${staged}"
-    just echo-command 'Running Scala coverage'
+    # sbt 2.x caches all tasks globally. Bypassing the local cache directory via -Dsbt.global.localcache
+    # forces an isolated, clean sbt server run with a temporary cache directory (otherwise sbt gets
+    # global cache hits on the uninstrumented classes, skipping scoverage).
+    tmp_cache="$(mktemp -d)/sbt-cache"
+    just echo-command "Running Scala coverage (cache: ${tmp_cache})"
     ver='{{ scala_version }}'
     if [[ -z "${ver}" ]]; then
-        sbt --batch coverage "scala-polars/test" "scala-polars/coverageReport"
+        sbt -Dsbt.global.localcache="${tmp_cache}" --batch "clean" coverage "scala-polars/testFull" "scala-polars/coverageReport"
     else
-        sbt --batch "++${ver}" coverage "scala-polars/test" "scala-polars/coverageReport"
+        sbt -Dsbt.global.localcache="${tmp_cache}" --batch "++${ver}" "clean" coverage "scala-polars/testFull" "scala-polars/coverageReport"
     fi
-    echo "Scala coverage report (HTML): core/target/scala-*/scoverage-report/index.html"
-    echo "Cobertura XML (for Codecov): core/target/scala-*/coverage-report/cobertura.xml"
+    echo "Scala coverage report (HTML): target/out/jvm/scala-*/scala-polars/scoverage-report/index.html"
+    echo "Cobertura XML (for Codecov): target/out/jvm/scala-*/scala-polars/coverage-report/cobertura.xml"
     echo "For Java coverage (JSeries.java) run 'just coverage-java'."
 
 # Generate Java coverage (sbt-jacoco) for the Java production source; reuses an existing native lib.
@@ -145,7 +141,7 @@ coverage-java scala_version='2.13.18':
     #!/usr/bin/env bash
     set -euo pipefail
     arch="$(rustc -vV | sed -n 's/^host: //p' | cut -d- -f1)"
-    libdir="$(find core/target native/target -type f \
+    libdir="$(find target/out native/target -type f \
         \( -name 'libscala_polars.so' -o -name 'libscala_polars.dylib' -o -name 'scala_polars.dll' \) \
         2>/dev/null | head -1)"
     if [[ -z "${libdir}" ]]; then
@@ -157,21 +153,20 @@ coverage-java scala_version='2.13.18':
     cp "${libdir}" "${staged}/${arch}/"
     export SKIP_NATIVE_GENERATION=true
     export NATIVE_LIB_LOCATION="${staged}"
-    just echo-command 'Running Java coverage (JaCoCo)'
-    sbt --batch "++{{ scala_version }}" "scala-polars/jacoco"
-    report="$(find core/target -path '*/jacoco/report/jacoco.xml' 2>/dev/null | head -1)"
+    # sbt 2.x caches all tasks globally. Bypassing the local cache directory via -Dsbt.global.localcache
+    # and running `clean` forces an isolated, clean sbt server run with a temporary cache directory
+    # (otherwise sbt gets global cache hits on the uninstrumented classes, skipping jacoco).
+    tmp_cache="$(mktemp -d)/sbt-cache"
+    just echo-command "Running Java coverage (JaCoCo) (cache: ${tmp_cache})"
+    sbt -Dsbt.global.localcache="${tmp_cache}" --batch "++{{ scala_version }}" "clean" "scala-polars/jacoco"
+    report="$(find target/out -path '*/jacoco/report/jacoco.xml' 2>/dev/null | head -1)"
     echo "Java coverage report (HTML): ${report%/jacoco.xml}/html/index.html"
     echo "JaCoCo XML (for Codecov): ${report}"
 
-# Generate documentation
+# Generate API documentation (Scaladoc + Javadoc) for the core module
 [group('release')]
 site:
-    @sbt --batch makeSite
-
-# Publish documentation
-[group('release')]
-publish-site:
-    @sbt --batch ghpagesPushSite
+    @sbt --batch "scala-polars/Compile/doc"
 
 # Release artifacts
 [group('release')]
