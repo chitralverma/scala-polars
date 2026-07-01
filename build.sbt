@@ -60,3 +60,15 @@ lazy val examples = project
     publishArtifact := false
   )
   .dependsOn(core)
+
+/*
+ * ***********************
+ * Unused Key Linting Exclusion *
+ * ***********************
+ */
+
+Global / excludeLintKeys ++= Set(
+  git.gitUncommittedChanges,
+  git.gitDescribedVersion,
+  publishArtifact
+)
