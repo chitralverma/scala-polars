@@ -10,6 +10,8 @@
 # SBT specific
 .bsp/
 coverage.xml
+jacoco.exec
+*.exec
 target/
 .classpath
 .project
