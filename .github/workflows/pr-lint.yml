@@ -45,3 +45,6 @@ jobs:
 
       - name: Check doc issues
         run: just site
+
+      - name: Check API docs (all Scala versions)
+        run: just check-docs

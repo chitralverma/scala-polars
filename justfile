@@ -34,17 +34,21 @@ fmt:
 lint:
     @just echo-command 'Checking core module'
     @sbt --batch -error scalafmtCheckAll scalafmtSbtCheck javafmtCheckAll
-    @just echo-command 'Checking test-source docs (Test/doc; caught by ci-release)'
-    @sbt --batch -error "scala-polars/Test/doc"
     @just echo-command 'Checking native module'
     @cargo clippy -q {{ cargo_flags }} --no-deps --manifest-path {{ native_manifest }} -- -D warnings
     @cargo sort {{ native_root }} --check
     @cargo fmt --check --manifest-path {{ native_manifest }}
     @just --fmt --unstable --check
 
+# Check API doc generation across all Scala versions (skip-guarded; mirrors ci-release's doc)
+[group('lint')]
+check-docs:
+    @just echo-command 'Checking API docs (Compile + Test) across Scala versions'
+    @SKIP_NATIVE_GENERATION=true sbt --batch -error "+scala-polars/Compile/doc" "+scala-polars/Test/doc"
+
 # Run all code formatting and quality checks
 [group('lint')]
-pre-commit: fmt lint
+pre-commit: fmt lint check-docs
 
 # Generate JNI headers
 [group('dev')]
