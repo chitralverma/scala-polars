@@ -74,29 +74,13 @@ object GeneralSettings {
     fork := true,
     // Enable external API link resolution.
     autoAPIMappings := true,
-    Compile / doc / scalacOptions := {
-      val oldOpts = (Compile / doc / scalacOptions).value
-      oldOpts ++ docExternalMappingOptions(scalaVersion.value)
-    },
-    Test / doc / scalacOptions := {
-      val oldOpts = (Test / doc / scalacOptions).value
-      oldOpts ++ docExternalMappingOptions(scalaVersion.value)
-    },
+    Compile / doc / scalacOptions ++= docExternalMappingOptions(scalaVersion.value),
+    Test / doc / scalacOptions ++= docExternalMappingOptions(scalaVersion.value),
     // Keep directory-based classpath to allow NativeLoader extraction.
     exportJars := false,
     Test / javaHome := jdk8TestHome,
-    // Use localized cache directory during coverage.
-    localCacheDirectory := {
-      val defaultCache = localCacheDirectory.value
-      val covEnabled = (ThisBuild / scoverage.ScoverageKeys.coverageEnabled).value
-      if (covEnabled) {
-        target.value / "sbt-cache"
-      } else {
-        defaultCache
-      }
-    },
     assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", _ @_*) => MergeStrategy.discard
+      case PathList("META-INF", _*) => MergeStrategy.discard
       case _ => MergeStrategy.first
     }
   )
