@@ -44,7 +44,7 @@ lint:
 [group('lint')]
 check-docs:
     @just echo-command 'Checking API docs (Compile + Test) across Scala versions'
-    @SKIP_NATIVE_GENERATION=true sbt --batch -error "+scala-polars/Compile/doc" "+scala-polars/Test/doc"
+    @SKIP_NATIVE_GENERATION=true sbt --batch -error "+scala-polars/Compile/doc ; +scala-polars/Test/doc"
 
 # Run all code formatting and quality checks
 [group('lint')]
@@ -72,13 +72,13 @@ clean:
     @just echo-command 'Cleaning native artifacts'
     @cargo clean --manifest-path {{ native_manifest }} --quiet
     @just echo-command 'Cleaning core artifacts'
-    @sbt --batch -error clean cleanFiles reload
+    @sbt --batch -error "clean ; cleanFiles ; reload"
 
 # Run tests (Scala + Java); pass a Scala version to scope, e.g. `just test 2.13.18`
 [group('dev')]
 test scala_version='':
     @just echo-command 'Running tests'
-    @sbt --batch {{ if scala_version == '' { '+testFull' } else { '"++' + scala_version + ' scala-polars/testFull"' } }}
+    @sbt --batch {{ if scala_version == '' { '+testFull' } else { '"++' + scala_version + ' ; scala-polars/testFull"' } }}
 
 # Run tests reusing an already-built native lib (skips the Rust rebuild); requires `just build-native` first
 [group('dev')]
@@ -100,7 +100,7 @@ test-fast scala_version='':
     export SKIP_NATIVE_GENERATION=true
     export NATIVE_LIB_LOCATION="${staged}"
     just echo-command 'Running tests (reusing native lib)'
-    {{ if scala_version == '' { 'sbt --batch +testFull' } else { 'sbt --batch "++' + scala_version + ' scala-polars/testFull"' } }}
+    {{ if scala_version == '' { 'sbt --batch +testFull' } else { 'sbt --batch "++' + scala_version + ' ; scala-polars/testFull"' } }}
 
 # Generate Scala coverage reports (sbt-scoverage); reuses an existing native lib. Pass a Scala version to scope.
 [group('dev')]
@@ -125,9 +125,9 @@ coverage scala_version='':
     just echo-command "Running Scala coverage (cache: ${tmp_cache})"
     ver='{{ scala_version }}'
     if [[ -z "${ver}" ]]; then
-        sbt -Dsbt.global.localcache="${tmp_cache}" --batch "clean" coverage "scala-polars/testFull" "scala-polars/coverageReport"
+        sbt -Dsbt.global.localcache="${tmp_cache}" --batch "clean ; coverage ; scala-polars/testFull ; scala-polars/coverageReport"
     else
-        sbt -Dsbt.global.localcache="${tmp_cache}" --batch "++${ver}" "clean" coverage "scala-polars/testFull" "scala-polars/coverageReport"
+        sbt -Dsbt.global.localcache="${tmp_cache}" --batch "++${ver} ; clean ; coverage ; scala-polars/testFull ; scala-polars/coverageReport"
     fi
     echo "Scala coverage report (HTML): target/out/jvm/scala-*/scala-polars/scoverage-report/index.html"
     echo "Cobertura XML (for Codecov): target/out/jvm/scala-*/scala-polars/coverage-report/cobertura.xml"
@@ -154,7 +154,7 @@ coverage-java scala_version='2.13.18':
     # Bypass sbt 2.x global cache with a temporary cache directory to force jacoco instrumentation.
     tmp_cache="$(mktemp -d)/sbt-cache"
     just echo-command "Running Java coverage (JaCoCo) (cache: ${tmp_cache})"
-    sbt -Dsbt.global.localcache="${tmp_cache}" -Djacoco.enable=true --batch "++{{ scala_version }}" "clean" "scala-polars/jacoco"
+    sbt -Dsbt.global.localcache="${tmp_cache}" -Djacoco.enable=true --batch "++{{ scala_version }} ; clean ; scala-polars/jacoco"
     report="$(find target/out -path '*/jacoco/report/jacoco.xml' 2>/dev/null | head -1)"
     echo "Java coverage report (HTML): ${report%/jacoco.xml}/html/index.html"
     echo "JaCoCo XML (for Codecov): ${report}"
