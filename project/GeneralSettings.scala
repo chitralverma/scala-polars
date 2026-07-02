@@ -104,8 +104,8 @@ object GeneralSettings {
     // shutdown hook from loading its classes and causes a `NoClassDefFoundError` on exit.
     // Keeping the ClassLoader open during JVM shutdown solves the classloading error.
     Test / closeClassLoaders := false,
-    // Compile Java sources to target JDK 8 bytecode.
-    javacOptions ++= Seq("--release", "8"),
+    // Compile Java sources to target JDK 8 bytecode (supported on both JDK 8 and modern JDKs).
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", _*) => MergeStrategy.discard
       case _ => MergeStrategy.first
