@@ -44,7 +44,7 @@ lint:
 [group('lint')]
 check-docs:
     @just echo-command 'Checking API docs (Compile + Test) across Scala versions'
-    @SKIP_NATIVE_GENERATION=true sbt --batch "+scala-polars/Compile/doc ; +scala-polars/Test/doc"
+    @SKIP_NATIVE_GENERATION=true sbt -Dsbt.global.localcache="$(mktemp -d)/sbt-cache" --batch "+scala-polars/clean ; +scala-polars/Compile/doc ; +scala-polars/Test/doc"
 
 # Run all code formatting and quality checks
 [group('lint')]
