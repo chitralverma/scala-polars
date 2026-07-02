@@ -69,8 +69,11 @@ object GeneralSettings {
       "-language:postfixOps",
       "-unchecked",
       "-Xfatal-warnings"
-    ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
-          else Seq("-release", "8")),
+    ) ++ (
+      if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
+      else if (scalaVersion.value.startsWith("3.3")) Seq("-Xtarget:8")
+      else Seq("-release", "8")
+    ),
     fork := true,
     // Enable external API link resolution.
     autoAPIMappings := true,
