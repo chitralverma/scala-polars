@@ -200,7 +200,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: >-
             target/out/jvm/scala-*/scala-polars/coverage-report/cobertura.xml,
