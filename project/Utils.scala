@@ -4,7 +4,8 @@ import scala.sys.process.*
 
 object Utils {
 
-  lazy val nativeRoot = taskKey[File]("Directory pointing to the native project root.")
+  lazy val nativeRoot =
+    settingKey[File]("Directory pointing to the native project root.")
 
   def executeProcess(
       cmd: String,
@@ -14,7 +15,7 @@ object Utils {
       extraEnv: Seq[(String, String)] = Nil
   ): Unit = {
     val exitCode =
-      Process(cmd, cwd, extraEnv: _*).run(getProcessLogger(logger, infoOnly)).exitValue()
+      Process(cmd, cwd, extraEnv *).run(getProcessLogger(logger, infoOnly)).exitValue()
 
     if (exitCode != 0) {
       sys.error(s"Failed to execute command `$cmd` with exit code $exitCode.")
@@ -26,6 +27,13 @@ object Utils {
   def priorTo213(scalaVersion: String): Boolean =
     CrossVersion.partialVersion(scalaVersion) match {
       case Some((2, minor)) if minor < 13 => true
+      case _ => false
+    }
+
+  def useTargetJvm18(scalaVersion: String): Boolean =
+    CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, minor)) if minor < 13 => true
+      case Some((3, 3)) => true // Scala 3.3 LTS lacks -release; use -target:jvm-1.8
       case _ => false
     }
 

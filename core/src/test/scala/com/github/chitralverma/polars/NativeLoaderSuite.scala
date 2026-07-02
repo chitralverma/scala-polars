@@ -5,7 +5,7 @@ import java.nio.file.Files
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-/** Unit tests for [[NativeLoader]] — arch normalization, classpath resource paths, and the
+/** Unit tests for `NativeLoader` — arch normalization, classpath resource paths, and the
   * content-addressed extraction cache. Not a port of an upstream pytest; the Java mirror is
   * `NativeLoaderTest`.
   */

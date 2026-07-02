@@ -1,8 +1,25 @@
-import DocSettings.*
 import Utils.*
 
-ThisBuild / publish / skip := true
-ThisBuild / publishArtifact := false
+val enableCoverage =
+  sys.env.get("RUN_COVERAGE").contains("true") || sys.props.get("jacoco.enable").contains("true")
+
+/*
+ ***********************
+ * Root (aggregate) *
+ ***********************
+ */
+
+// Aggregating root to prevent publishing of the default root project.
+lazy val root = (project in file("."))
+  .withId("scala-polars-root")
+  .settings(name := "scala-polars-root")
+  .settings(GeneralSettings.commonSettings)
+  .disablePlugins(JacocoPlugin)
+  .settings(
+    publish / skip := true,
+    publishArtifact := false
+  )
+  .aggregate(core, examples)
 
 /*
  ***********************
@@ -14,12 +31,10 @@ lazy val core = project
   .in(file("core"))
   .withId("scala-polars")
   .settings(name := "scala-polars")
-  .enablePlugins(GhpagesPlugin, SiteScaladocPlugin, JacocoPlugin)
-  .settings(
-//    unidocSourceFilePatterns := Nil,
-    git.remoteRepo := "git@github.com:chitralverma/scala-polars.git",
-    SiteScaladoc / siteSubdirName := "api/latest"
-  )
+  .configure { p =>
+    if (enableCoverage) p.enablePlugins(JacocoPlugin)
+    else p.disablePlugins(JacocoPlugin)
+  }
   .settings(ProjectDependencies.dependencies)
   .settings(ProjectDependencies.testDependencies)
   .settings(ProjectDependencies.coverageSettings)
@@ -34,9 +49,6 @@ lazy val core = project
     nativeRoot := baseDirectory.value.toPath.resolveSibling("native").toFile,
     inConfig(Compile)(NativeBuildSettings.settings)
   )
-  .settings(ExtraCommands.commands)
-  .settings(ExtraCommands.commandAliases)
-//  .configureUnidoc("scala-polars API Reference")
 
 /*
  ***********************
@@ -49,9 +61,24 @@ lazy val examples = project
   .withId("scala-polars-examples")
   .settings(name := "scala-polars-examples")
   .settings(GeneralSettings.commonSettings)
+  .configure { p =>
+    if (enableCoverage) p.enablePlugins(JacocoPlugin)
+    else p.disablePlugins(JacocoPlugin)
+  }
   .settings(
-    Compile / packageBin / publishArtifact := false,
-    Compile / packageDoc / publishArtifact := false,
-    Compile / packageSrc / publishArtifact := false
+    publish / skip := true,
+    publishArtifact := false
   )
   .dependsOn(core)
+
+/*
+ * ***********************
+ * Unused Key Linting Exclusion *
+ * ***********************
+ */
+
+Global / excludeLintKeys ++= Set(
+  git.gitUncommittedChanges,
+  git.gitDescribedVersion,
+  publishArtifact
+)

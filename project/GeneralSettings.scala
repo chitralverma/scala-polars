@@ -1,3 +1,5 @@
+import java.net.URI
+
 import sbt.*
 import sbt.Keys.*
 
@@ -13,17 +15,44 @@ object GeneralSettings {
   val defaultScalaVersion: String = scala213
   val supportedScalaVersions: Seq[String] = Seq(scala212, scala213, scala33)
 
-  lazy val commonSettings = Seq(
+  /** Fork JVM onto JDK 8 for tests when JAVA_HOME_8* is available. */
+  private val jdk8TestHome: Option[File] =
+    Seq("JAVA_HOME_8", "JAVA_HOME_8_X64", "JAVA_HOME_8_ARM64", "JAVA_HOME_8_AARCH64").iterator
+      .flatMap(sys.env.get)
+      .map(file)
+      .find(_.exists())
+
+  private val jdkJavadocUrl = "https://docs.oracle.com/en/java/javase/21/docs/api/"
+
+  private def docExternalMappingOptions(scalaVer: String): Seq[String] =
+    if (scalaVer.startsWith("3.")) {
+      Seq(s"-external-mappings:.*java/.*::javadoc::$jdkJavadocUrl")
+    } else if (scalaVer.startsWith("2.12")) {
+      Seq(
+        "-doc-external-doc",
+        s"/modules/java.base#$jdkJavadocUrl",
+        "-no-link-warnings"
+      )
+    } else {
+      Seq(
+        "-jdk-api-doc-base",
+        jdkJavadocUrl,
+        "-doc-external-doc",
+        s"/modules/java.base#$jdkJavadocUrl"
+      )
+    }
+
+  lazy val commonSettings: Seq[Setting[?]] = Seq(
     organization := "com.github.chitralverma",
     versionScheme := Some("early-semver"),
-    homepage := Some(url("https://github.com/chitralverma/scala-polars")),
-    licenses := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
+    homepage := Some(URI.create("https://github.com/chitralverma/scala-polars")),
+    licenses := Seq(License.Apache2),
     developers := List(
       Developer(
         id = "chitralverma",
         name = "Chitral Verma",
         email = "chitral.verma@gmail.com",
-        url = url("https://github.com/chitralverma")
+        url = URI.create("https://github.com/chitralverma")
       )
     ),
     scalaVersion := defaultScalaVersion,
@@ -40,13 +69,46 @@ object GeneralSettings {
       "-language:postfixOps",
       "-unchecked",
       "-Xfatal-warnings"
-    ) ++ (if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
-          else Seq("-release", "8")),
+    ) ++ (
+      if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
+      else if (scalaVersion.value.startsWith("3.3")) Seq("-Xtarget:8")
+      else Seq("-release", "8")
+    ),
     fork := true,
-    turbo := true,
+    // Enable external API link resolution.
+    autoAPIMappings := true,
+    Compile / doc / scalacOptions := {
+      val defaultOpts = (Compile / doc / scalacOptions).value
+      val extraOpts = docExternalMappingOptions(scalaVersion.value)
+      val allOpts = defaultOpts ++ extraOpts
+      if (scalaVersion.value.startsWith("2.12")) {
+        allOpts.filterNot(_.startsWith("-jdk-api-doc-base"))
+      } else {
+        allOpts
+      }
+    },
+    Test / doc / scalacOptions := {
+      val defaultOpts = (Test / doc / scalacOptions).value
+      val extraOpts = docExternalMappingOptions(scalaVersion.value)
+      val allOpts = defaultOpts ++ extraOpts
+      if (scalaVersion.value.startsWith("2.12")) {
+        allOpts.filterNot(_.startsWith("-jdk-api-doc-base"))
+      } else {
+        allOpts
+      }
+    },
+    // Keep directory-based classpath to allow NativeLoader extraction.
+    exportJars := false,
+    Test / javaHome := jdk8TestHome,
+    // sbt 2.x eagerly closes the test ClassLoader during JVM shutdown, which prevents Jacoco's
+    // shutdown hook from loading its classes and causes a `NoClassDefFoundError` on exit.
+    // Keeping the ClassLoader open during JVM shutdown solves the classloading error.
+    Test / closeClassLoaders := false,
+    // Compile Java sources to target JDK 8 bytecode (supported on both JDK 8 and modern JDKs).
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-      case x => MergeStrategy.first
+      case PathList("META-INF", _*) => MergeStrategy.discard
+      case _ => MergeStrategy.first
     }
   )
 
