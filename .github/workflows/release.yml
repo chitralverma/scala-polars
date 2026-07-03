@@ -23,7 +23,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       SKIP_NATIVE_GENERATION: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # sbt 2.x requires JDK 17+ to run; use the latest LTS (25) for all build/CI tooling.
       - name: Set up JDK
@@ -99,7 +99,7 @@ jobs:
       - name: Install system packages
         run: ${{ matrix.packages }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for the native build tooling.
       - name: Set up JDK
@@ -148,7 +148,7 @@ jobs:
         os: ["ubuntu-22.04", "ubuntu-22.04-arm", "windows-2022", "windows-11-arm", "macos-15-intel", "macos-15"]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Install the test-target JDK first, then JDK 25 last so it is the default that hosts sbt.
       # actions/setup-java exposes each install as JAVA_HOME_<major>_<arch>.
@@ -234,7 +234,7 @@ jobs:
       SKIP_NATIVE_GENERATION: true
     needs: [test-build]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.10.0
@@ -288,7 +288,7 @@ jobs:
     env:
       SKIP_NATIVE_GENERATION: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for doc generation.
       - name: Set up JDK
