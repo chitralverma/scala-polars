@@ -176,7 +176,7 @@ jobs:
         shell: bash
         run: |
           sbt "+scala-polars/testFull ; +assembly ; shutdown"
-          versions=$(sbt --batch -error "print scala-polars/crossScalaVersions" "shutdown" | grep -E '[0-9]+\.[0-9]+\.[0-9]+' | tr -d '*' | xargs)
+          versions=$(sbt --batch -error "print scala-polars/crossScalaVersions" "shutdown" | grep -Eo '(2\.12|2\.13|3\.3)\.[0-9]+' | xargs)
           for v in $versions; do
             jar="./target/out/jvm/scala-${v}/scala-polars-examples/scala-polars-examples-assembly-*.jar"
             echo "Running end-to-end smoke test on: $jar (Scala $v)"
@@ -295,7 +295,7 @@ jobs:
       # API docs land under target/out/jvm/scala-<default>/scala-polars/api. Stage to site/api/latest.
       - name: Stage API docs
         run: |
-          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" "shutdown" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | xargs)
+          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" "shutdown" | grep -Eo '(2\.12|2\.13|3\.3)\.[0-9]+' | head -n 1 | xargs)
           src="target/out/jvm/scala-${default_scala}/scala-polars/api"
           if [ ! -d "${src}" ]; then echo "No API docs found at ${src}" >&2; exit 1; fi
           mkdir -p site/api/latest
