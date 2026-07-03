@@ -182,28 +182,7 @@ df.show();
 
 ## Building From Source
 
-### Prerequisites
-
-- **JDK 17+**
-- **Rust** (nightly toolchain)
-- **sbt** (2.x)
-- **just** (runner tool)
-
-### CLI Commands
-
-```bash
-# Compile both the Rust native bindings and JVM sources
-just compile
-
-# Create the platform-specific assembly Fat JAR
-just assembly
-
-# Compile Rust shared library only
-just build-native
-
-# Build native with release profiles enabled
-NATIVE_RELEASE=true just build-native
-```
+To compile, build, or run the library from source locally, please refer to our [Contributing Guide](CONTRIBUTING.md) for full system prerequisites and available build commands.
 
 ---
 
