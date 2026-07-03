@@ -111,7 +111,7 @@ implementation("com.github.chitralverma:scala-polars_2.13:0.1.0-SNAPSHOT")
 
 ### 1. Lazy Execution API (Recommended)
 
-Lazy execution optimizes queries globally before loading or transforming data. This example lazily scans a CSV, applies filters/aggregations, and optimizes execution.
+Lazy execution optimizes queries globally before loading or transforming data. This example lazily scans a CSV, filters rows, selects columns, sorts, and limits the result.
 
 ```scala
 import com.github.chitralverma.polars.Polars
