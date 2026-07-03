@@ -12,7 +12,7 @@ permissions:
 
 env:
   NATIVE_LIB_LOCATION: /tmp/native-libs/
-  SBT_OPTS: "-Dsbt.ci=true"
+  SBT_OPTS: "-Dsbt.ci=true -Dsbt.global.localcache=/tmp/sbt-cache"
   JAVA_OPTS: "-XX:+UseG1GC -Xms512M -Xmx4G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8"
   NATIVE_RELEASE: true
 
@@ -142,9 +142,9 @@ jobs:
       fail-fast: false
       matrix:
         # sbt runs on JDK 25; `matrix.java` is the JDK the forked test JVM targets, proving the
-        # `-release 8` artifacts run on JDK 8 as well as the latest LTS.
+        # `-release 17` artifacts run on the min LTS (17) as well as the latest LTS (25).
         # Test on all 6 target configurations natively to achieve 100% test-architecture parity.
-        java: ["8", "25"]
+        java: ["17", "25"]
         os: ["ubuntu-22.04", "ubuntu-22.04-arm", "windows-2022", "windows-11-arm", "macos-15-intel", "macos-15"]
 
     steps:
@@ -163,17 +163,6 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
-      # Point the forked test JVM at the matrix JDK. GeneralSettings reads JAVA_HOME_8 for the
-      # JDK 8 leg; the JDK 25 leg runs tests on the sbt runtime JDK (no override needed).
-      - name: Select forked-test JDK
-        shell: bash
-        run: |
-          if [ "${{ matrix.java }}" = "8" ]; then
-            for v in JAVA_HOME_8_X64 JAVA_HOME_8_ARM64 JAVA_HOME_8_AARCH64; do
-              if [ -n "${!v:-}" ]; then echo "JAVA_HOME_8=${!v}" >> "$GITHUB_ENV"; break; fi
-            done
-          fi
-
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
@@ -187,24 +176,24 @@ jobs:
         shell: bash
         run: |
           sbt "+scala-polars/testFull ; +assembly ; shutdown"
-          versions=$(sbt --batch -error "print scala-polars/crossScalaVersions" "shutdown" | tr -d '*[](),' | xargs)
+          versions=$(sbt --batch -error "print scala-polars/crossScalaVersions" "shutdown" | grep -E '[0-9]+\.[0-9]+\.[0-9]+' | tr -d '*' | xargs)
           for v in $versions; do
             jar="./target/out/jvm/scala-${v}/scala-polars-examples/scala-polars-examples-assembly-*.jar"
             echo "Running end-to-end smoke test on: $jar (Scala $v)"
             java -cp "$jar" examples.scala.io.LazyAndEagerAPI
           done
 
-      # Coverage on one canonical leg (Ubuntu / test-JDK 8): scoverage (Scala) + JaCoCo (Java) → Codecov.
+      # Coverage on one canonical leg (Ubuntu / test-JDK 17): scoverage (Scala) + JaCoCo (Java) → Codecov.
       - name: Scala coverage report (scoverage)
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         run: sbt "coverage ; scala-polars/testFull ; scala-polars/coverageReport ; shutdown"
 
       - name: Java coverage report (JaCoCo)
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         run: sbt "-Djacoco.enable=true" "scala-polars/jacoco ; shutdown"
 
       - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         uses: codecov/codecov-action@v7
         with:
           files: >-
@@ -216,7 +205,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage reports (artifact)
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         uses: actions/upload-artifact@v7
         with:
           name: coverage-reports
@@ -306,7 +295,7 @@ jobs:
       # API docs land under target/out/jvm/scala-<default>/scala-polars/api. Stage to site/api/latest.
       - name: Stage API docs
         run: |
-          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" "shutdown" | tr -d '*[](),' | xargs)
+          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" "shutdown" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | xargs)
           src="target/out/jvm/scala-${default_scala}/scala-polars/api"
           if [ ! -d "${src}" ]; then echo "No API docs found at ${src}" >&2; exit 1; fi
           mkdir -p site/api/latest
