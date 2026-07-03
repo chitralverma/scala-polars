@@ -70,7 +70,7 @@ Configure the snapshot repository and add the dependency coordinates (substituti
         <name>Central Portal Snapshots</name>
         <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         <releases>
-            <enabled>false</releases>
+            <enabled>false</enabled>
         </releases>
         <snapshots>
             <enabled>true</enabled>
@@ -111,20 +111,20 @@ implementation("com.github.chitralverma:scala-polars_2.13:0.1.0-SNAPSHOT")
 
 ### 1. Lazy Execution API (Recommended)
 
-Lazy execution optimizes queries globally before loading or transforming data. This example lazily scans a CSV, applies filters/aggregations, and optimizes execution.
+Lazy execution optimizes queries globally before loading or transforming data. This example lazily scans a CSV, filters rows, selects columns, sorts, and limits the result.
 
 ```scala
+import com.github.chitralverma.polars.Polars
 import com.github.chitralverma.polars.api._
+import com.github.chitralverma.polars.functions._
 
 // 1. Define a lazy computation plan (no data is read or loaded yet)
-val lazyPlan = LazyFrame.scanCsv("employee_data.csv")
+val lazyPlan = Polars.scan
+  .csv("employee_data.csv")
   .filter(col("age") >= lit(21))
-  .groupBy("department")
-  .agg(
-    col("salary").mean().as("avg_salary"),
-    col("experience").max().as("max_experience")
-  )
-  .sort("avg_salary", descending = true)
+  .select(col("name"), col("department"), col("salary"))
+  .sort("salary", descending = true, nullLast = false, maintainOrder = false)
+  .limit(5)
 
 // 2. Compile, optimize, and execute the plan natively in Rust
 val result: DataFrame = lazyPlan.collect()
