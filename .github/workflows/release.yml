@@ -13,7 +13,7 @@ permissions:
 env:
   NATIVE_LIB_LOCATION: /tmp/native-libs/
   SBT_OPTS: "-Dsbt.ci=true"
-  JAVA_OPTS: "-XX:+UseG1GC -Xms2G -Xmx8G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8"
+  JAVA_OPTS: "-XX:+UseG1GC -Xms512M -Xmx4G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8"
   NATIVE_RELEASE: true
 
 jobs:
@@ -61,6 +61,10 @@ jobs:
     timeout-minutes: 180
     env:
       TARGET_TRIPLE: ${{ matrix.arch }}
+      # Limit parallel compilation jobs on the ARM64 Linux runner (4GB RAM) to prevent memory exhaustion
+      CARGO_BUILD_JOBS: 2
+      # Limit sbt JVM heap to 1.5GB to leave maximum free memory for cargo compilation
+      JAVA_OPTS: "-XX:+UseG1GC -Xms256M -Xmx1536M -Xss6M -XX:ReservedCodeCacheSize=128M -Dfile.encoding=UTF-8"
     needs: [check-formatting]
     strategy:
       fail-fast: true
@@ -80,7 +84,7 @@ jobs:
             arch: x86_64-apple-darwin
             packages: "brew install sbt"
 
-          - os: macos-14
+          - os: macos-15
             arch: aarch64-apple-darwin
             packages: ""
 
@@ -139,8 +143,9 @@ jobs:
       matrix:
         # sbt runs on JDK 25; `matrix.java` is the JDK the forked test JVM targets, proving the
         # `-release 8` artifacts run on JDK 8 as well as the latest LTS.
+        # Test on all 6 target configurations natively to achieve 100% test-architecture parity.
         java: ["8", "25"]
-        os: ["ubuntu-22.04", "windows-2022", "macos-14"]
+        os: ["ubuntu-22.04", "ubuntu-22.04-arm", "windows-2022", "windows-11-arm", "macos-15-intel", "macos-15"]
 
     steps:
       - uses: actions/checkout@v6
