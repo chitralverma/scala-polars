@@ -15,13 +15,6 @@ object GeneralSettings {
   val defaultScalaVersion: String = scala213
   val supportedScalaVersions: Seq[String] = Seq(scala212, scala213, scala33)
 
-  /** Fork JVM onto JDK 8 for tests when JAVA_HOME_8* is available. */
-  private val jdk8TestHome: Option[File] =
-    Seq("JAVA_HOME_8", "JAVA_HOME_8_X64", "JAVA_HOME_8_ARM64", "JAVA_HOME_8_AARCH64").iterator
-      .flatMap(sys.env.get)
-      .map(file)
-      .find(_.exists())
-
   private val jdkJavadocUrl = "https://docs.oracle.com/en/java/javase/21/docs/api/"
 
   private def docExternalMappingOptions(scalaVer: String): Seq[String] =
@@ -68,11 +61,9 @@ object GeneralSettings {
       "-language:higherKinds",
       "-language:postfixOps",
       "-unchecked",
-      "-Xfatal-warnings"
-    ) ++ (
-      if (priorTo213(scalaVersion.value)) Seq("-target:jvm-1.8")
-      else if (scalaVersion.value.startsWith("3.3")) Seq("-Xtarget:8")
-      else Seq("-release", "8")
+      "-Xfatal-warnings",
+      "-release",
+      "17"
     ),
     fork := true,
     // Enable external API link resolution.
@@ -99,13 +90,8 @@ object GeneralSettings {
     },
     // Keep directory-based classpath to allow NativeLoader extraction.
     exportJars := false,
-    Test / javaHome := jdk8TestHome,
-    // sbt 2.x eagerly closes the test ClassLoader during JVM shutdown, which prevents Jacoco's
-    // shutdown hook from loading its classes and causes a `NoClassDefFoundError` on exit.
-    // Keeping the ClassLoader open during JVM shutdown solves the classloading error.
-    Test / closeClassLoaders := false,
-    // Compile Java sources to target JDK 8 bytecode (supported on both JDK 8 and modern JDKs).
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+    // Compile Java sources targeting JDK 17 bytecode.
+    javacOptions ++= Seq("--release", "17"),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", _*) => MergeStrategy.discard
       case _ => MergeStrategy.first

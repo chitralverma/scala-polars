@@ -23,7 +23,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       SKIP_NATIVE_GENERATION: true
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       # sbt 2.x requires JDK 17+ to run; use the latest LTS (25) for all build/CI tooling.
       - name: Set up JDK
@@ -99,7 +99,7 @@ jobs:
       - name: Install system packages
         run: ${{ matrix.packages }}
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for the native build tooling.
       - name: Set up JDK
@@ -142,13 +142,13 @@ jobs:
       fail-fast: false
       matrix:
         # sbt runs on JDK 25; `matrix.java` is the JDK the forked test JVM targets, proving the
-        # `-release 8` artifacts run on JDK 8 as well as the latest LTS.
+        # `-release 17` artifacts run on the min LTS (17) as well as the latest LTS (25).
         # Test on all 6 target configurations natively to achieve 100% test-architecture parity.
-        java: ["8", "25"]
+        java: ["17", "25"]
         os: ["ubuntu-22.04", "ubuntu-22.04-arm", "windows-2022", "windows-11-arm", "macos-15-intel", "macos-15"]
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       # Install the test-target JDK first, then JDK 25 last so it is the default that hosts sbt.
       # actions/setup-java exposes each install as JAVA_HOME_<major>_<arch>.
@@ -163,17 +163,6 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
-      # Point the forked test JVM at the matrix JDK. GeneralSettings reads JAVA_HOME_8 for the
-      # JDK 8 leg; the JDK 25 leg runs tests on the sbt runtime JDK (no override needed).
-      - name: Select forked-test JDK
-        shell: bash
-        run: |
-          if [ "${{ matrix.java }}" = "8" ]; then
-            for v in JAVA_HOME_8_X64 JAVA_HOME_8_ARM64 JAVA_HOME_8_AARCH64; do
-              if [ -n "${!v:-}" ]; then echo "JAVA_HOME_8=${!v}" >> "$GITHUB_ENV"; break; fi
-            done
-          fi
-
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
@@ -186,26 +175,26 @@ jobs:
       - name: Test for ${{ matrix.os }} (target JDK ${{ matrix.java }})
         shell: bash
         run: |
-          sbt "+scala-polars/testFull ; +assembly ; shutdown"
-          versions=$(sbt --batch -error "print scala-polars/crossScalaVersions" "shutdown" | tr -d '*[](),' | xargs)
+          sbt "-Dsbt.global.localcache=/tmp/sbt-cache" "+scala-polars/testFull ; +assembly ; shutdown"
+          versions=$(sbt "-Dsbt.global.localcache=/tmp/sbt-cache" --batch -error "print scala-polars/crossScalaVersions" "shutdown" | grep '^* ' | tr -d '*' | xargs)
           for v in $versions; do
             jar="./target/out/jvm/scala-${v}/scala-polars-examples/scala-polars-examples-assembly-*.jar"
             echo "Running end-to-end smoke test on: $jar (Scala $v)"
             java -cp "$jar" examples.scala.io.LazyAndEagerAPI
           done
 
-      # Coverage on one canonical leg (Ubuntu / test-JDK 8): scoverage (Scala) + JaCoCo (Java) → Codecov.
+      # Coverage on one canonical leg (Ubuntu / test-JDK 17): scoverage (Scala) + JaCoCo (Java) → Codecov.
       - name: Scala coverage report (scoverage)
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
-        run: sbt "coverage ; scala-polars/testFull ; scala-polars/coverageReport ; shutdown"
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
+        run: sbt "-Dsbt.global.localcache=/tmp/sbt-cache" "coverage ; scala-polars/testFull ; scala-polars/coverageReport ; shutdown"
 
       - name: Java coverage report (JaCoCo)
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
-        run: sbt "-Djacoco.enable=true" "scala-polars/jacoco ; shutdown"
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
+        run: sbt "-Dsbt.global.localcache=/tmp/sbt-cache" "-Djacoco.enable=true" "scala-polars/jacoco ; shutdown"
 
       - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
-        uses: codecov/codecov-action@v7
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
+        uses: codecov/codecov-action@v5
         with:
           files: >-
             target/out/jvm/scala-*/scala-polars/coverage-report/cobertura.xml,
@@ -216,7 +205,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage reports (artifact)
-        if: matrix.os == 'ubuntu-22.04' && matrix.java == '8'
+        if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         uses: actions/upload-artifact@v7
         with:
           name: coverage-reports
@@ -234,7 +223,7 @@ jobs:
       SKIP_NATIVE_GENERATION: true
     needs: [test-build]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.10.0
@@ -269,7 +258,7 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt "ci-release ; shutdown"
+        run: sbt "-Dsbt.global.localcache=/tmp/sbt-cache" "ci-release ; shutdown"
 
   publish-docs:
     timeout-minutes: 15
@@ -288,7 +277,7 @@ jobs:
     env:
       SKIP_NATIVE_GENERATION: true
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for doc generation.
       - name: Set up JDK
@@ -301,12 +290,12 @@ jobs:
       - uses: sbt/setup-sbt@v1
 
       - name: Generate Scaladoc + Javadoc
-        run: sbt "scala-polars/Compile/doc ; shutdown"
+        run: sbt "-Dsbt.global.localcache=/tmp/sbt-cache" "scala-polars/Compile/doc ; shutdown"
 
       # API docs land under target/out/jvm/scala-<default>/scala-polars/api. Stage to site/api/latest.
       - name: Stage API docs
         run: |
-          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" "shutdown" | tr -d '*[](),' | xargs)
+          default_scala=$(sbt "-Dsbt.global.localcache=/tmp/sbt-cache" --batch -error "print scala-polars/scalaVersion" "shutdown" | grep '^* ' | tr -d '*' | xargs)
           src="target/out/jvm/scala-${default_scala}/scala-polars/api"
           if [ ! -d "${src}" ]; then echo "No API docs found at ${src}" >&2; exit 1; fi
           mkdir -p site/api/latest

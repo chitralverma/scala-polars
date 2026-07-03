@@ -18,7 +18,7 @@ object ProjectDependencies {
         "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion
       ) ++
-        (if (!priorTo213(scalaVersion.value))
+        (if (!scalaVersion.value.startsWith("2.12"))
            Seq(
              "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollections
            )
@@ -33,9 +33,7 @@ object ProjectDependencies {
         )
   )
 
-  /** Test deps for `core`. Versions pinned to the last JDK 8-compatible releases (CI tests on JDK
-    * 8). ScalaTest + JUnit run under one `Test` pass.
-    */
+  /** Test dependencies for the core module. */
   lazy val testDependencies: Seq[Setting[?]] = Seq(
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
