@@ -90,6 +90,10 @@ object GeneralSettings {
     },
     // Keep directory-based classpath to allow NativeLoader extraction.
     exportJars := false,
+    // sbt 2.x eagerly closes the test ClassLoader during JVM shutdown, which prevents Jacoco's
+    // shutdown hook from loading its classes and causes a `NoClassDefFoundError` on exit.
+    // Keeping the ClassLoader open during JVM shutdown solves the classloading error.
+    Test / closeClassLoaders := false,
     // Compile Java sources targeting JDK 17 bytecode.
     javacOptions ++= Seq("--release", "17"),
     assembly / assemblyMergeStrategy := {
