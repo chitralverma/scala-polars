@@ -191,8 +191,6 @@ jobs:
 
       - name: Java coverage report (JaCoCo)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
-        env:
-          RUN_COVERAGE: "true"
         run: sbt "scala-polars/jacoco"
 
       - name: Upload coverage to Codecov
