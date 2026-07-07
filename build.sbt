@@ -1,5 +1,8 @@
 import Utils.*
 
+val enableCoverage =
+  sys.env.get("RUN_COVERAGE").contains("true") || sys.props.get("jacoco.enable").contains("true")
+
 /*
  ***********************
  * Root (aggregate) *
@@ -28,7 +31,10 @@ lazy val core = project
   .in(file("core"))
   .withId("scala-polars")
   .settings(name := "scala-polars")
-  .enablePlugins(JacocoPlugin)
+  .configure { p =>
+    if (enableCoverage) p.enablePlugins(JacocoPlugin)
+    else p.disablePlugins(JacocoPlugin)
+  }
   .settings(ProjectDependencies.dependencies)
   .settings(ProjectDependencies.testDependencies)
   .settings(ProjectDependencies.coverageSettings)
@@ -55,6 +61,10 @@ lazy val examples = project
   .withId("scala-polars-examples")
   .settings(name := "scala-polars-examples")
   .settings(GeneralSettings.commonSettings)
+  .configure { p =>
+    if (enableCoverage) p.enablePlugins(JacocoPlugin)
+    else p.disablePlugins(JacocoPlugin)
+  }
   .settings(
     publish / skip := true,
     publishArtifact := false
