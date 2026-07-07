@@ -178,9 +178,10 @@ jobs:
           sbt "+scala-polars/testFull ; +assembly"
           versions=$(sbt --batch -error "print scala-polars/crossScalaVersions" | grep -Eo '(2\.12|2\.13|3\.3)\.[0-9]+' | xargs)
           for v in $versions; do
-            jar="./target/out/jvm/scala-${v}/scala-polars-examples/scala-polars-examples-assembly-*.jar"
-            echo "Running end-to-end smoke test on: $jar (Scala $v)"
-            java -cp "$jar" examples.scala.io.LazyAndEagerAPI
+            for jar in ./target/out/jvm/scala-${v}/scala-polars-examples/scala-polars-examples-assembly-*.jar; do
+              echo "Running end-to-end smoke test on: $jar (Scala $v)"
+              java -cp "$jar" examples.scala.io.LazyAndEagerAPI
+            done
           done
 
       # Coverage on one canonical leg (Ubuntu / test-JDK 17): scoverage (Scala) + JaCoCo (Java) → Codecov.
