@@ -322,7 +322,8 @@ jobs:
         run: sbt --batch "scala-polars/Compile/doc"
 
       # Compile/doc builds the default Scala version only, producing a single
-      # target/out/jvm/scala-<ver>/scala-polars/api dir. Stage it to site/api/latest.
+      # target/out/jvm/scala-<ver>/scala-polars/api dir. Stage it to site/api/latest and add a
+      # root index.html that redirects to it (so the site root does not 404).
       - name: Stage API docs
         shell: bash
         run: |
@@ -334,6 +335,19 @@ jobs:
           fi
           mkdir -p site/api/latest
           cp -R "${dirs[0]}/." site/api/latest/
+          cat > site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta http-equiv="refresh" content="0; url=api/latest/" />
+            <title>scala-polars documentation</title>
+          </head>
+          <body>
+            <a href="api/latest/">Go to the scala-polars API documentation</a>
+          </body>
+          </html>
+          HTML
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
