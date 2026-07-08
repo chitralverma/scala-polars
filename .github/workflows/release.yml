@@ -12,8 +12,7 @@ permissions:
 
 env:
   NATIVE_LIB_LOCATION: ${{ github.workspace }}/native-libs/
-  # `-Dsbt.color=false -Dsbt.log.noformat=true` strip ANSI escapes so log-marker checks
-  # (`[error]` / `[success]`) match at line start. `--batch` is added per-invocation.
+  # color/noformat off so `[error]`/`[success]` markers match at line start; `--batch` per-call.
   SBT_OPTS: "-Dsbt.ci=true -Dsbt.global.localcache=/tmp/sbt-cache -Dsbt.color=false -Dsbt.log.noformat=true"
   JAVA_OPTS: "-XX:+UseG1GC -Xms512M -Xmx4G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8"
   NATIVE_RELEASE: true
@@ -172,17 +171,9 @@ jobs:
           path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
 
-      # Tests + assembly run in a SINGLE sbt invocation (one server lifecycle). Splitting them
-      # into two sbt processes exposed a thin-client startup/handoff race on the hosted Ubuntu
-      # runners: the second short-lived sbt would abort ~0.6s after start with no output, no
-      # server banner and no `[error]`/`[success]` markers. Keeping one invocation avoids that
-      # fragile second startup entirely. The smoke test stays a separate, sbt-free step.
-      #
-      # `--batch` (no interactive prompt) + the color-off SBT_OPTS mean the log is ANSI-free, so
-      # pass/fail is derived from sbt's own line-start `[error]`/`[success]` markers with the
-      # captured exit code as a fallback: a genuine failure (or an abnormal exit such as an
-      # OOM/kill that emits no `[error]`) still fails the job, while a clean run is not derailed
-      # by an occasional non-zero thin-client exit.
+      # Test + assembly in one sbt invocation (splitting them tripped a thin-client startup race
+      # on the Ubuntu runners). Pass/fail is read from sbt's `[error]`/`[success]` markers, with
+      # the exit code as fallback, so an abnormal exit with no `[error]` still fails.
       - name: Test and assemble for ${{ matrix.os }} (target JDK ${{ matrix.java }})
         shell: bash
         run: |
@@ -192,8 +183,7 @@ jobs:
           if grep -qE '^\[error\]' sbt-build.log; then exit 1; fi
           if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-build.log; then exit "$code"; fi
 
-      # The assembled example jars self-extract the bundled native lib. The cross-built Scala
-      # versions are static (see project/GeneralSettings.scala), so no extra sbt call is needed.
+      # Cross-built Scala versions are static (see project/GeneralSettings.scala); no sbt call needed.
       - name: End-to-end smoke test for ${{ matrix.os }} (target JDK ${{ matrix.java }})
         shell: bash
         run: |
@@ -205,8 +195,7 @@ jobs:
             done
           done
 
-      # Coverage on one canonical leg (Ubuntu / test-JDK 17): scoverage (Scala) + JaCoCo (Java) → Codecov.
-      # Same marker-based guard as the test/assembly steps.
+      # Coverage on one leg (Ubuntu / JDK 17): scoverage (Scala) + JaCoCo (Java) → Codecov.
       - name: Scala coverage report (scoverage)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         shell: bash
@@ -217,11 +206,8 @@ jobs:
           if grep -qE '^\[error\]' sbt-scoverage.log; then exit 1; fi
           if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-scoverage.log; then exit "$code"; fi
 
-      # JaCoCo is gated by `enableCoverage` in build.sbt, evaluated at build-load time from the
-      # `jacoco.enable` system property, which must be present on the sbt *server* JVM. A server is
-      # already running from earlier steps (started without coverage), and neither a client-side
-      # `-D` nor a step env var reaches it. Shut that server down first, then start a fresh one with
-      # `jacoco.enable=true` in SBT_OPTS so the JacocoPlugin registers the `jacoco` task.
+      # `jacoco.enable` (read by build.sbt at load) must be on the server JVM, so shut down any
+      # server reused from prior steps and start fresh with it set in SBT_OPTS.
       - name: Java coverage report (JaCoCo)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         shell: bash
