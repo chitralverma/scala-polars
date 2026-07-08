@@ -16,4 +16,6 @@ private[polars] object functions_expr extends Natively {
 
   @native def meanHorizontal(ptrs: Array[Long], ignoreNulls: Boolean): Long
 
+  @native def ternaryExpr(predicate: Long, truthy: Long, falsy: Long): Long
+
 }

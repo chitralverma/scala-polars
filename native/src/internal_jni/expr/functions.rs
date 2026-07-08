@@ -4,6 +4,7 @@ use jni::{Env, NativeMethod, native_method};
 use polars_plan::dsl::functions::{
     all_horizontal, any_horizontal, max_horizontal, mean_horizontal, min_horizontal, sum_horizontal,
 };
+use polars_plan::dsl::ternary_expr;
 use polars_plan::prelude::Expr;
 
 use crate::internal_jni::conversion::JavaArrayToVec;
@@ -138,6 +139,25 @@ fn mean_horizontal_expr<'local>(
     Ok(ExprHandle::alloc(expr))
 }
 
+const TERNARY_EXPR_METHOD: NativeMethod = fn_method!(
+    extern fn ternary_expr_expr(predicate: ExprHandle, truthy: ExprHandle, falsy: ExprHandle) -> ExprHandle,
+    name = "ternaryExpr",
+);
+
+fn ternary_expr_expr<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    predicate: ExprHandle,
+    truthy: ExprHandle,
+    falsy: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(ternary_expr(
+        predicate.get(),
+        truthy.get(),
+        falsy.get(),
+    )))
+}
+
 pub const METHODS: &[NativeMethod] = &[
     ANY_HORIZONTAL_METHOD,
     ALL_HORIZONTAL_METHOD,
@@ -145,4 +165,5 @@ pub const METHODS: &[NativeMethod] = &[
     MIN_HORIZONTAL_METHOD,
     SUM_HORIZONTAL_METHOD,
     MEAN_HORIZONTAL_METHOD,
+    TERNARY_EXPR_METHOD,
 ];

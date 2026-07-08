@@ -3,7 +3,7 @@ package com.github.chitralverma.polars
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalTime, ZonedDateTime}
 
-import com.github.chitralverma.polars.api.expressions.{Column, Expression}
+import com.github.chitralverma.polars.api.expressions.{Column, Expression, When}
 import com.github.chitralverma.polars.internal.jni.expressions.{column_expr, literal_expr}
 
 object functions {
@@ -35,6 +35,31 @@ object functions {
 
       Expression.withPtr(ptr)
   }
+
+  /** Start a `when / otherwise` conditional expression.
+    *
+    * Provide a condition and the value to use where that condition is true. The returned
+    * [[com.github.chitralverma.polars.api.expressions.When]] may be extended with more
+    * `when(...)` branches and finalised with `otherwise(...)`. When no `otherwise` is supplied,
+    * unmatched rows evaluate to `null`. The value from the first condition that is true is
+    * picked; if no condition is true, the `otherwise` value is used.
+    *
+    * @param condition
+    *   a boolean expression selecting the rows to which `value` applies
+    * @param value
+    *   the value for rows where the condition is true; an
+    *   [[com.github.chitralverma.polars.api.expressions.Expression]] is used directly, any other
+    *   value is treated as a literal
+    * @return
+    *   a [[com.github.chitralverma.polars.api.expressions.When]] builder
+    * @note
+    *   All branches are evaluated in parallel and filtered afterwards, so every value expression
+    *   must be valid on its own, independent of the conditions in the chain.
+    * @note
+    *   The output column name is taken from the first branch; it is not affected by the
+    *   conditions.
+    */
+  def when(condition: Expression, value: Any): When = new When(List(condition -> lit(value)))
 
   def desc(col_name: String): Expression = {
     val ptr = column_expr.sortColumnByName(col_name, descending = true)
