@@ -172,31 +172,25 @@ jobs:
           path: ${{env.NATIVE_LIB_LOCATION}}
           merge-multiple: true
 
-      # Unit tests, assembly, and the end-to-end smoke test are separate steps so each sbt
-      # invocation is its own isolated process and failures do not cascade or hide each other.
+      # Tests + assembly run in a SINGLE sbt invocation (one server lifecycle). Splitting them
+      # into two sbt processes exposed a thin-client startup/handoff race on the hosted Ubuntu
+      # runners: the second short-lived sbt would abort ~0.6s after start with no output, no
+      # server banner and no `[error]`/`[success]` markers. Keeping one invocation avoids that
+      # fragile second startup entirely. The smoke test stays a separate, sbt-free step.
       #
-      # Every sbt call uses `--batch` (no interactive prompt) and inherits the color-off SBT_OPTS.
-      # Pass/fail is derived from sbt's own line-start `[error]`/`[success]` markers with the
-      # captured exit code as a fallback, so a genuine failure (or an abnormal exit such as an
+      # `--batch` (no interactive prompt) + the color-off SBT_OPTS mean the log is ANSI-free, so
+      # pass/fail is derived from sbt's own line-start `[error]`/`[success]` markers with the
+      # captured exit code as a fallback: a genuine failure (or an abnormal exit such as an
       # OOM/kill that emits no `[error]`) still fails the job, while a clean run is not derailed
       # by an occasional non-zero thin-client exit.
-      - name: Unit tests for ${{ matrix.os }} (target JDK ${{ matrix.java }})
+      - name: Test and assemble for ${{ matrix.os }} (target JDK ${{ matrix.java }})
         shell: bash
         run: |
           set -o pipefail
-          sbt --batch "+scala-polars/testFull" 2>&1 | tee sbt-test.log
+          sbt --batch "+scala-polars/testFull ; +assembly" 2>&1 | tee sbt-build.log
           code=${PIPESTATUS[0]}
-          if grep -qE '^\[error\]' sbt-test.log; then exit 1; fi
-          if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-test.log; then exit "$code"; fi
-
-      - name: Assemble example jars for ${{ matrix.os }} (target JDK ${{ matrix.java }})
-        shell: bash
-        run: |
-          set -o pipefail
-          sbt --batch "+assembly" 2>&1 | tee sbt-assembly.log
-          code=${PIPESTATUS[0]}
-          if grep -qE '^\[error\]' sbt-assembly.log; then exit 1; fi
-          if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-assembly.log; then exit "$code"; fi
+          if grep -qE '^\[error\]' sbt-build.log; then exit 1; fi
+          if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-build.log; then exit "$code"; fi
 
       # The assembled example jars self-extract the bundled native lib. The cross-built Scala
       # versions are static (see project/GeneralSettings.scala), so no extra sbt call is needed.
