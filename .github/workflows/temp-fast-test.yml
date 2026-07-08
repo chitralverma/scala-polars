@@ -95,11 +95,9 @@ jobs:
       - name: Java coverage report (JaCoCo)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         shell: bash
-        env:
-          RUN_COVERAGE: "true"
         run: |
           set -o pipefail
-          sbt --batch "reload ; scala-polars/jacoco" 2>&1 | tee sbt-jacoco.log
+          sbt --batch -Djacoco.enable=true "reload ; scala-polars/jacoco" 2>&1 | tee sbt-jacoco.log
           code=${PIPESTATUS[0]}
           if grep -qE '^\[error\]' sbt-jacoco.log; then exit 1; fi
           if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-jacoco.log; then exit "$code"; fi
