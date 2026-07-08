@@ -1,0 +1,58 @@
+name: TEMP Verify Pages Deploy
+
+# Temporary: verifies the github-pages deploy works from main after fixing the
+# Pages build type (workflow) and the environment branch policy. Delete once green.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SBT_OPTS: "-Dsbt.ci=true -Dsbt.color=false -Dsbt.log.noformat=true"
+  SKIP_NATIVE_GENERATION: true
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: "25"
+          distribution: "zulu"
+          cache: "sbt"
+
+      - uses: sbt/setup-sbt@v1
+
+      - name: Generate Scaladoc + Javadoc
+        run: sbt --batch "scala-polars/Compile/doc"
+
+      - name: Stage API docs
+        run: |
+          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" | grep -Eo '(2\.12|2\.13|3\.3)\.[0-9]+' | head -n 1 | xargs)
+          src="target/out/jvm/scala-${default_scala}/scala-polars/api"
+          if [ ! -d "${src}" ]; then echo "No API docs found at ${src}" >&2; exit 1; fi
+          mkdir -p site/api/latest
+          cp -R "${src}/." site/api/latest/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
