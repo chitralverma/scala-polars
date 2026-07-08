@@ -99,6 +99,7 @@ jobs:
           SBT_OPTS: "-Dsbt.ci=true -Dsbt.global.localcache=/tmp/sbt-cache -Dsbt.color=false -Dsbt.log.noformat=true -Djacoco.enable=true"
         run: |
           set -o pipefail
+          sbt --batch shutdown > /dev/null 2>&1 || true
           sbt --batch "scala-polars/jacoco" 2>&1 | tee sbt-jacoco.log
           code=${PIPESTATUS[0]}
           if grep -qE '^\[error\]' sbt-jacoco.log; then exit 1; fi

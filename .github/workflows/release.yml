@@ -218,9 +218,10 @@ jobs:
           if [ "$code" -ne 0 ] && ! grep -qE '^\[success\]' sbt-scoverage.log; then exit "$code"; fi
 
       # JaCoCo is gated by `enableCoverage` in build.sbt, evaluated at build-load time from the
-      # `jacoco.enable` system property. That property must be present on the sbt *server* JVM,
-      # so it is added to SBT_OPTS for this step (a client-side `-D` is not reliably forwarded to
-      # a freshly-spawned server's build load, and a step-scoped env var never reaches it either).
+      # `jacoco.enable` system property, which must be present on the sbt *server* JVM. A server is
+      # already running from earlier steps (started without coverage), and neither a client-side
+      # `-D` nor a step env var reaches it. Shut that server down first, then start a fresh one with
+      # `jacoco.enable=true` in SBT_OPTS so the JacocoPlugin registers the `jacoco` task.
       - name: Java coverage report (JaCoCo)
         if: matrix.os == 'ubuntu-22.04' && matrix.java == '17'
         shell: bash
@@ -228,6 +229,7 @@ jobs:
           SBT_OPTS: "-Dsbt.ci=true -Dsbt.global.localcache=/tmp/sbt-cache -Dsbt.color=false -Dsbt.log.noformat=true -Djacoco.enable=true"
         run: |
           set -o pipefail
+          sbt --batch shutdown > /dev/null 2>&1 || true
           sbt --batch "scala-polars/jacoco" 2>&1 | tee sbt-jacoco.log
           code=${PIPESTATUS[0]}
           if grep -qE '^\[error\]' sbt-jacoco.log; then exit 1; fi
