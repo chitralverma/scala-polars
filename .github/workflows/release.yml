@@ -321,14 +321,19 @@ jobs:
       - name: Generate Scaladoc + Javadoc
         run: sbt --batch "scala-polars/Compile/doc"
 
-      # API docs land under target/out/jvm/scala-<default>/scala-polars/api. Stage to site/api/latest.
+      # Compile/doc builds the default Scala version only, producing a single
+      # target/out/jvm/scala-<ver>/scala-polars/api dir. Stage it to site/api/latest.
       - name: Stage API docs
+        shell: bash
         run: |
-          default_scala=$(sbt --batch -error "print scala-polars/scalaVersion" | grep -Eo '(2\.12|2\.13|3\.3)\.[0-9]+' | head -n 1 | xargs)
-          src="target/out/jvm/scala-${default_scala}/scala-polars/api"
-          if [ ! -d "${src}" ]; then echo "No API docs found at ${src}" >&2; exit 1; fi
+          shopt -s nullglob
+          dirs=(target/out/jvm/scala-*/scala-polars/api)
+          if [ ${#dirs[@]} -ne 1 ]; then
+            echo "Expected exactly one API docs dir, found ${#dirs[@]}: ${dirs[*]:-<none>}" >&2
+            exit 1
+          fi
           mkdir -p site/api/latest
-          cp -R "${src}/." site/api/latest/
+          cp -R "${dirs[0]}/." site/api/latest/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
