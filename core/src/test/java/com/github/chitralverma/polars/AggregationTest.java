@@ -7,8 +7,8 @@ import com.github.chitralverma.polars.testing.AbstractPolarsJavaTest;
 import org.junit.Test;
 
 /**
- * Java mirror of {@code AggregationSuite}. Replicates and asserts behaviours tested in upstream
- * py-polars for core expression-level and horizontal aggregations in Java.
+ * Java mirror of {@code AggregationSuite}. Tests core expression-level and horizontal aggregations
+ * in Java.
  */
 public class AggregationTest extends AbstractPolarsJavaTest {
 
@@ -149,9 +149,7 @@ public class AggregationTest extends AbstractPolarsJavaTest {
   }
 
   @Test
-  public void testVerticalAliasForColAgg() {
-    // Replicates test_vertical.py::test_alias_for_col_agg and test_alias_for_col_agg_bool
-    // Skipped: selectors (cs.*), as_expression (not yet supported)
+  public void verticalAggregationsFreeFnAndExprForms() {
     DataFrame df = intFrame("a", 1, 4);
     assertColumnValues(df.select(min("a").alias("m")), "m", 1);
     assertColumnValues(df.select(max("a").alias("m")), "m", 4);
@@ -164,9 +162,8 @@ public class AggregationTest extends AbstractPolarsJavaTest {
   }
 
   @Test
-  public void testHorizontalAggregationsEdgeCases() {
-    // Replicates test_horizontal.py::test_max_min_nulls_consistency (using shift for nulls)
-    // Skipped: cum_sum_horizontal (deferred to Phase 10 Structs), pl.duration, Decimal dtypes
+  public void horizontalAggregationsEdgeCases() {
+    // Null handling verified via shift-introduced nulls.
     DataFrame dfNulls =
         intFrame("a", 10, 20, 30)
             .withColumn("b", col("a").shift(1)) // [null, 10, 20]
@@ -184,7 +181,7 @@ public class AggregationTest extends AbstractPolarsJavaTest {
         10,
         20);
 
-    // Replicates test_horizontal.py::test_nested_min_max
+    // Nested horizontal aggregations.
     DataFrame dfNested =
         intFrame("a", 1).withColumn("b", lit(2)).withColumn("c", lit(3)).withColumn("d", lit(4));
     DataFrame dfNestedRes =
@@ -193,13 +190,13 @@ public class AggregationTest extends AbstractPolarsJavaTest {
                 .alias("t"));
     assertColumnValues(dfNestedRes, "t", 3);
 
-    // Replicates test_horizontal.py::test_horizontal_broadcasting
+    // Literal operands are broadcast to the column length.
     DataFrame dfBroad =
         intFrame("a", 1, 3).withColumn("b", lit(3)); // b = [3, 3] (literal broadcasted)
     assertColumnValues(
         dfBroad.select(sumHorizontal(lit(1), col("a"), col("b")).alias("sum_h")), "sum_h", 5, 7);
 
-    // Replicates test_horizontal.py::test_mean_horizontal_bool
+    // Boolean columns are treated as 0/1 for the mean.
     DataFrame dfBoolMean =
         booleanFrame("a", true, false, false)
             .withColumn("b", col("a").reverse()); // [false, false, true]
@@ -210,7 +207,7 @@ public class AggregationTest extends AbstractPolarsJavaTest {
         0.0,
         0.5);
 
-    // Replicates test_horizontal.py::test_raise_invalid_types_21835
+    // Mixing incompatible column types (int and string) raises.
     DataFrame dfInvalid =
         DataFrame.fromSeries(
             com.github.chitralverma.polars.api.Series.ofInt("x", new int[] {1}),

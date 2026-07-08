@@ -8,8 +8,7 @@ import org.junit.Test;
 
 /**
  * Unit tests for {@code NativeLoader} — mirror of {@code NativeLoaderSuite}. Covers arch
- * normalization, classpath resource paths, and the content-addressed extraction cache. Not a port
- * of an upstream pytest.
+ * normalization, classpath resource paths, and the content-addressed extraction cache.
  *
  * <p>The package-private helpers live on the Scala companion object and are reached from this
  * same-package Java test through its generated singleton.

@@ -4,8 +4,8 @@ import com.github.chitralverma.polars.api.expressions.Expression
 import com.github.chitralverma.polars.functions._
 import com.github.chitralverma.polars.testing.PolarsTestBase
 
-/** Replicates and asserts behaviours tested in upstream py-polars for core unary transforms and
-  * predicates, such as null/nan filters, positional slices, and unique/distinct masks.
+/** Tests core unary transforms and predicates, such as null/nan filters, positional slices, and
+  * unique/distinct masks.
   */
 class UnarySuite extends PolarsTestBase {
 

@@ -7,10 +7,7 @@ import com.github.chitralverma.polars.testing.AbstractPolarsJavaTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- * Java mirror of {@code NameSuite}. Replicates name modification behaviors and asserts Column
- * aliasing and name namespaces in Java.
- */
+/** Java mirror of {@code NameSuite}. Tests Column aliasing and the name namespace in Java. */
 public class NameTest extends AbstractPolarsJavaTest {
 
   @Test

@@ -3,10 +3,7 @@ package com.github.chitralverma.polars
 import com.github.chitralverma.polars.functions._
 import com.github.chitralverma.polars.testing.PolarsTestBase
 
-/** Replicates behaviours tested in upstream py-polars
-  * `tests/unit/operations/namespaces/test_name.py` and asserts column aliasing (`alias`/`as`)
-  * behaviour.
-  */
+/** Tests column aliasing (`alias`/`as`) and the `name` namespace. */
 class NameSuite extends PolarsTestBase {
 
   test("expression alias and JVM-friendly as") {

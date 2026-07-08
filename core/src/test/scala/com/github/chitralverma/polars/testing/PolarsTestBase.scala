@@ -7,9 +7,8 @@ import org.scalatest.matchers.should.Matchers
 import com.github.chitralverma.polars.api.{DataFrame, Series}
 
 /** Shared base for Scala test suites — a reusable test base, not a per-suite fixture. Suites
-  * extend it for frame-construction and assertion helpers, and should name the upstream pytest
-  * they replicate (e.g. `py-polars/tests/unit/operations/test_filter.py`) at the top of the file.
-  * The Java mirror is `AbstractPolarsJavaTest`.
+  * extend it for frame-construction and assertion helpers. The Java mirror is
+  * `AbstractPolarsJavaTest`.
   */
 abstract class PolarsTestBase extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 

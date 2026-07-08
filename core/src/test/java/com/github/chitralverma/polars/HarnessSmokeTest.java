@@ -9,7 +9,7 @@ import org.junit.Test;
 
 /**
  * Harness self-test (Java) — mirror of {@code HarnessSmokeSuite}. Native lib loads under {@code
- * Test}, a frame round-trips an expression. Not a port of an upstream pytest.
+ * Test}, a frame round-trips an expression.
  */
 public class HarnessSmokeTest extends AbstractPolarsJavaTest {
 

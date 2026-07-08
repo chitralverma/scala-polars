@@ -3,9 +3,7 @@ package com.github.chitralverma.polars
 import com.github.chitralverma.polars.functions._
 import com.github.chitralverma.polars.testing.PolarsTestBase
 
-/** Replicates and asserts behaviours tested in upstream py-polars for core expression-level and
-  * horizontal aggregations.
-  */
+/** Tests core expression-level and horizontal aggregations. */
 class AggregationSuite extends PolarsTestBase {
 
   test("expression-level statistical and value reductions") {
@@ -132,9 +130,7 @@ class AggregationSuite extends PolarsTestBase {
     assertColumnValues(dfAll, "all_h", true, true, false, false)
   }
 
-  test("test_vertical: alias for col agg (equivalence of free-fn and expr form)") {
-    // Replicates test_vertical.py::test_alias_for_col_agg and test_alias_for_col_agg_bool
-    // Skipped: selectors (cs.*), as_expression (not yet supported)
+  test("vertical aggregations: free-fn and expr forms are equivalent") {
     val df = intFrame("a", 1, 4)
     assertColumnValues(df.select(min("a").alias("m")), "m", 1)
     assertColumnValues(df.select(max("a").alias("m")), "m", 4)
@@ -146,9 +142,8 @@ class AggregationSuite extends PolarsTestBase {
     assertColumnValues(dfBool.select(functions.all("b").alias("all")), "all", false)
   }
 
-  test("test_horizontal: max_min_nulls_consistency, nested_min_max, broadcasting, and raises") {
-    // Replicates test_horizontal.py::test_max_min_nulls_consistency (using shift for nulls)
-    // Skipped: cum_sum_horizontal (deferred to Phase 10 Structs), pl.duration, Decimal dtypes
+  test("horizontal aggregations: null consistency, nesting, broadcasting, and type raises") {
+    // Null handling verified via shift-introduced nulls.
     val dfNulls = intFrame("a", 10, 20, 30)
       .withColumn("b", col("a").shift(1)) // [null, 10, 20]
       .withColumn("c", col("a").shift(-1)) // [20, 30, null]
@@ -167,7 +162,7 @@ class AggregationSuite extends PolarsTestBase {
       20
     )
 
-    // Replicates test_horizontal.py::test_nested_min_max
+    // Nested horizontal aggregations.
     val dfNested =
       intFrame("a", 1).withColumn("b", lit(2)).withColumn("c", lit(3)).withColumn("d", lit(4))
     val dfNestedRes = dfNested.select(
@@ -176,7 +171,7 @@ class AggregationSuite extends PolarsTestBase {
     )
     assertColumnValues(dfNestedRes, "t", 3)
 
-    // Replicates test_horizontal.py::test_horizontal_broadcasting
+    // Literal operands are broadcast to the column length.
     val dfBroad = intFrame("a", 1, 3).withColumn("b", lit(3)) // b = [3, 3] (literal broadcasted)
     assertColumnValues(
       dfBroad.select(sumHorizontal(lit(1), col("a"), col("b")).alias("sum_h")),
@@ -185,7 +180,7 @@ class AggregationSuite extends PolarsTestBase {
       7
     )
 
-    // Replicates test_horizontal.py::test_mean_horizontal_bool
+    // Boolean columns are treated as 0/1 for the mean.
     val dfBoolMean = booleanFrame("a", true, false, false)
       .withColumn("b", col("a").reverse()) // [false, false, true]
     assertColumnValues(
@@ -196,7 +191,7 @@ class AggregationSuite extends PolarsTestBase {
       0.5
     )
 
-    // Replicates test_horizontal.py::test_raise_invalid_types_21835 (min_horizontal on int and string raises)
+    // Mixing incompatible column types (int and string) raises.
     val dfInvalid = api.DataFrame.fromSeries(
       api.Series.ofInt("x", Array(1)),
       api.Series.ofString("y", Array("two"))
