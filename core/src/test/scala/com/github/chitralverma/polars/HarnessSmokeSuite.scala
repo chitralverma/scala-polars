@@ -4,7 +4,7 @@ import com.github.chitralverma.polars.functions._
 import com.github.chitralverma.polars.testing.PolarsTestBase
 
 /** Harness self-test (Scala): native lib loads under `Test`, a frame round-trips an expression.
-  * Not a port of an upstream pytest; the Java mirror is `HarnessSmokeTest`.
+  * The Java mirror is `HarnessSmokeTest`.
   */
 class HarnessSmokeSuite extends PolarsTestBase {
 

@@ -10,9 +10,7 @@ import org.junit.Assert;
 
 /**
  * Shared base for Java test cases — the Java mirror of PolarsTestBase. A reusable test base, not a
- * per-test fixture: test classes extend it for frame-construction and assertion helpers, and should
- * name the upstream pytest they replicate (e.g. py-polars/tests/unit/operations/test_filter.py) at
- * the top of the file.
+ * per-test fixture: test classes extend it for frame-construction and assertion helpers.
  */
 public abstract class AbstractPolarsJavaTest {
 

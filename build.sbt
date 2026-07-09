@@ -78,7 +78,5 @@ lazy val examples = project
  */
 
 Global / excludeLintKeys ++= Set(
-  git.gitUncommittedChanges,
-  git.gitDescribedVersion,
   publishArtifact
 )

@@ -6,8 +6,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 /** Unit tests for `NativeLoader` — arch normalization, classpath resource paths, and the
-  * content-addressed extraction cache. Not a port of an upstream pytest; the Java mirror is
-  * `NativeLoaderTest`.
+  * content-addressed extraction cache. The Java mirror is `NativeLoaderTest`.
   */
 class NativeLoaderSuite extends AnyFunSuite with Matchers {
 

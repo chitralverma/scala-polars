@@ -8,10 +8,7 @@ import com.github.chitralverma.polars.testing.AbstractPolarsJavaTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- * Java mirror of {@code DataTypeSuite}. Replicates behaviours tested in upstream py-polars
- * `tests/unit/datatypes/test_datatypes.py`.
- */
+/** Java mirror of {@code DataTypeSuite}. Tests the {@code DataType} surface in Java. */
 public class DataTypeTest extends AbstractPolarsJavaTest {
 
   @Test

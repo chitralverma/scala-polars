@@ -10,10 +10,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- * Java mirror of {@code UnarySuite}. Replicates and asserts behaviours tested in upstream py-polars
- * for core unary transforms and predicates in Java.
- */
+/** Java mirror of {@code UnarySuite}. Tests core unary transforms and predicates in Java. */
 public class UnaryTest extends AbstractPolarsJavaTest {
 
   @Test

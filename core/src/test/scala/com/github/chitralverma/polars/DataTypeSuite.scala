@@ -4,9 +4,9 @@ import com.github.chitralverma.polars.api.types._
 import com.github.chitralverma.polars.functions._
 import com.github.chitralverma.polars.testing.PolarsTestBase
 
-/** Replicates behaviours tested in upstream py-polars `tests/unit/datatypes/test_datatypes.py`.
-  * Verifies de-collapsed integers, precise floating types, temporal types, and nested types can
-  * be round-tripped with their JNI String/JSON ffiName, casted end-to-end, and verified in Rows.
+/** Tests the `DataType` surface. Verifies de-collapsed integers, precise floating types, temporal
+  * types, and nested types can be round-tripped with their JNI String/JSON ffiName, casted
+  * end-to-end, and verified in Rows.
   */
 class DataTypeSuite extends PolarsTestBase {
 
@@ -28,7 +28,7 @@ class DataTypeSuite extends PolarsTestBase {
       .ffiName shouldBe """{"Struct":[{"name":"a","dtype":"Int32"}]}"""
   }
 
-  test("datatype equality and time units (test_dtype_time_units)") {
+  test("datatype equality and time units") {
     DataTypes.datetime("ms", "UTC") should not be DataTypes.datetime("ns", "UTC")
     DataTypes.duration("ns") should not be DataTypes.duration("us")
 
