@@ -484,6 +484,331 @@ class Expression(protected[polars] val _ptr: Long) extends AutoCloseable {
   /** Compute the cumulative sum of the values. */
   def cumSum(): Column = cumSum(reverse = false)
 
+  /** Negate the values (unary minus). */
+  def neg(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.neg(ptr))
+  }
+
+  /** Negate the values (unary minus). */
+  def unary_- : Column = neg()
+
+  /** Raise the values to the given power.
+    *
+    * @param exponent
+    *   exponent to raise each value to
+    */
+  def pow(exponent: Double): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.pow(ptr, exponent))
+  }
+
+  /** Floor-divide the values by another expression.
+    *
+    * @param other
+    *   divisor expression
+    */
+  def floorDiv(other: Expression): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.floorDiv(ptr, other.ptr))
+  }
+
+  /** Round the values down to the nearest integer (floor). */
+  def floor(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.floor(ptr))
+  }
+
+  /** Round the values up to the nearest integer (ceiling). */
+  def ceil(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.ceil(ptr))
+  }
+
+  /** Round the values to the given number of decimal places.
+    *
+    * Rounding uses the round-half-to-even (banker's rounding) rule.
+    *
+    * @param decimals
+    *   number of decimal places to round to (must be >= 0)
+    */
+  def round(decimals: Int): Column = {
+    checkClosed()
+    require(decimals >= 0, s"round: 'decimals' must be >= 0, but got $decimals")
+    Column.withPtr(column_expr.round(ptr, decimals))
+  }
+
+  /** Round the values to the nearest whole number. */
+  def round(): Column = round(0)
+
+  /** Round the values to the given number of significant figures.
+    *
+    * @param digits
+    *   number of significant figures to keep (must be >= 1)
+    */
+  def roundSigFigs(digits: Int): Column = {
+    checkClosed()
+    require(digits >= 1, s"roundSigFigs: 'digits' must be >= 1, but got $digits")
+    Column.withPtr(column_expr.roundSigFigs(ptr, digits))
+  }
+
+  /** Truncate the values to the given number of decimal places, rounding toward zero.
+    *
+    * @param decimals
+    *   number of decimal places to keep (must be >= 0)
+    */
+  def truncate(decimals: Int): Column = {
+    checkClosed()
+    require(decimals >= 0, s"truncate: 'decimals' must be >= 0, but got $decimals")
+    Column.withPtr(column_expr.truncate(ptr, decimals))
+  }
+
+  /** Truncate the values toward zero, dropping any fractional part. */
+  def truncate(): Column = truncate(0)
+
+  /** Compute the absolute value of each value. */
+  def abs(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.abs(ptr))
+  }
+
+  /** Clip (limit) the values to the inclusive range defined by the given bounds.
+    *
+    * Values below `lower` become `lower`; values above `upper` become `upper`. Null values are
+    * preserved.
+    *
+    * @param lower
+    *   lower bound expression
+    * @param upper
+    *   upper bound expression
+    */
+  def clip(lower: Expression, upper: Expression): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.clip(ptr, lower.ptr, upper.ptr))
+  }
+
+  /** Clip (limit) the values so none fall below the given lower bound.
+    *
+    * Values below `lower` become `lower`; higher values are unchanged. Null values are preserved.
+    *
+    * @param lower
+    *   lower bound expression
+    */
+  def clipMin(lower: Expression): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.clipMin(ptr, lower.ptr))
+  }
+
+  /** Clip (limit) the values so none exceed the given upper bound.
+    *
+    * Values above `upper` become `upper`; lower values are unchanged. Null values are preserved.
+    *
+    * @param upper
+    *   upper bound expression
+    */
+  def clipMax(upper: Expression): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.clipMax(ptr, upper.ptr))
+  }
+
+  /** Return the sign of each value: -1 for negatives, 1 for positives, 0 for zero.
+    *
+    * Null values are preserved and NaN maps to NaN.
+    */
+  def sign(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.sign(ptr))
+  }
+
+  /** Compute the square root of each value. */
+  def sqrt(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.sqrt(ptr))
+  }
+
+  /** Compute the cube root of each value. */
+  def cbrt(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.cbrt(ptr))
+  }
+
+  /** Compute the exponential (e raised to the value) of each value. */
+  def exp(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.exp(ptr))
+  }
+
+  /** Compute the logarithm of each value to the given base.
+    *
+    * @param base
+    *   logarithm base
+    */
+  def log(base: Double): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.log(ptr, base))
+  }
+
+  /** Compute the natural logarithm (base e) of each value. */
+  def log(): Column = log(math.E)
+
+  /** Compute the base-10 logarithm of each value. */
+  def log10(): Column = log(10.0)
+
+  /** Compute the natural logarithm of one plus each value (`log(1 + x)`). */
+  def log1p(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.log1p(ptr))
+  }
+
+  /** Compute the first discrete difference between consecutive values.
+    *
+    * @param n
+    *   number of positions to look back when computing the difference
+    * @param nullBehavior
+    *   how to handle nulls: "ignore" (default) keeps them, "drop" removes them before
+    *   differencing
+    */
+  def diff(n: Long, nullBehavior: String): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.diff(ptr, n, nullBehavior))
+  }
+
+  /** Compute the first discrete difference between consecutive values, ignoring nulls.
+    *
+    * @param n
+    *   number of positions to look back when computing the difference
+    */
+  def diff(n: Long): Column = diff(n, "ignore")
+
+  /** Compute the difference between each value and the immediately preceding one. */
+  def diff(): Column = diff(1, "ignore")
+
+  /** Compute the fractional change between each value and the one `n` positions before it.
+    *
+    * @param n
+    *   number of positions to look back
+    */
+  def pctChange(n: Long): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.pctChange(ptr, n))
+  }
+
+  /** Compute the fractional change between consecutive values. */
+  def pctChange(): Column = pctChange(1)
+
+  /** Compute the sine of each value (in radians). */
+  def sin(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.sin(ptr))
+  }
+
+  /** Compute the cosine of each value (in radians). */
+  def cos(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.cos(ptr))
+  }
+
+  /** Compute the tangent of each value (in radians). */
+  def tan(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.tan(ptr))
+  }
+
+  /** Compute the cotangent of each value (in radians). */
+  def cot(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.cot(ptr))
+  }
+
+  /** Compute the inverse sine (arcsine) of each value, returning radians. */
+  def arcsin(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arcsin(ptr))
+  }
+
+  /** Compute the inverse cosine (arccosine) of each value, returning radians. */
+  def arccos(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arccos(ptr))
+  }
+
+  /** Compute the inverse tangent (arctangent) of each value, returning radians. */
+  def arctan(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arctan(ptr))
+  }
+
+  /** Compute the hyperbolic sine of each value. */
+  def sinh(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.sinh(ptr))
+  }
+
+  /** Compute the hyperbolic cosine of each value. */
+  def cosh(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.cosh(ptr))
+  }
+
+  /** Compute the hyperbolic tangent of each value. */
+  def tanh(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.tanh(ptr))
+  }
+
+  /** Compute the inverse hyperbolic sine of each value. */
+  def arcsinh(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arcsinh(ptr))
+  }
+
+  /** Compute the inverse hyperbolic cosine of each value. */
+  def arccosh(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arccosh(ptr))
+  }
+
+  /** Compute the inverse hyperbolic tangent of each value. */
+  def arctanh(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.arctanh(ptr))
+  }
+
+  /** Convert each value from radians to degrees. */
+  def degrees(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.degrees(ptr))
+  }
+
+  /** Convert each value from degrees to radians. */
+  def radians(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.radians(ptr))
+  }
+
+  /** Cast the values to their underlying physical representation.
+    *
+    * This exposes the physical storage type of logical dtypes (for example, the integer codes
+    * backing a categorical, or the primitive backing a temporal type).
+    */
+  def toPhysical(): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.toPhysical(ptr))
+  }
+
+  /** Reinterpret the bits of an integer column as another integer type of the same width.
+    *
+    * @param signed
+    *   whether to reinterpret as a signed integer; `false` reinterprets as unsigned
+    */
+  def reinterpret(signed: Boolean): Column = {
+    checkClosed()
+    Column.withPtr(column_expr.reinterpret(ptr, signed))
+  }
+
+  /** Reinterpret the bits of an integer column as a signed integer of the same width. */
+  def reinterpret(): Column = reinterpret(signed = true)
+
   override def close(): Unit = synchronized {
     if (!isClosed && _ptr != 0) {
       column_expr.free(_ptr)

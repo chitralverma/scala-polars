@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Rem, Sub};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 use anyhow::Context;
 use jni::objects::{JObject, JObjectArray, JString};
@@ -7,6 +7,7 @@ use jni::{Env, NativeMethod, jni_sig, jni_str, native_method};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use polars::prelude::*;
+use polars_core::series::ops::NullBehavior;
 
 use crate::internal_jni::handle::{ExprHandle, Handle};
 use crate::internal_jni::macros::decl_free;
@@ -106,6 +107,31 @@ decl_unary_expr! {
     (LAST_METHOD, last, "last", last),
     (ARG_MIN_METHOD, arg_min, "argMin", arg_min),
     (ARG_MAX_METHOD, arg_max, "argMax", arg_max),
+    (NEG_METHOD, neg, "neg", neg),
+    (FLOOR_METHOD, floor, "floor", floor),
+    (CEIL_METHOD, ceil, "ceil", ceil),
+    (ABS_METHOD, abs, "abs", abs),
+    (SIGN_METHOD, sign, "sign", sign),
+    (SQRT_METHOD, sqrt, "sqrt", sqrt),
+    (CBRT_METHOD, cbrt, "cbrt", cbrt),
+    (EXP_METHOD, exp, "exp", exp),
+    (LOG1P_METHOD, log1p, "log1p", log1p),
+    (TO_PHYSICAL_METHOD, to_physical, "toPhysical", to_physical),
+    (SIN_METHOD, sin, "sin", sin),
+    (COS_METHOD, cos, "cos", cos),
+    (TAN_METHOD, tan, "tan", tan),
+    (COT_METHOD, cot, "cot", cot),
+    (ARCSIN_METHOD, arcsin, "arcsin", arcsin),
+    (ARCCOS_METHOD, arccos, "arccos", arccos),
+    (ARCTAN_METHOD, arctan, "arctan", arctan),
+    (SINH_METHOD, sinh, "sinh", sinh),
+    (COSH_METHOD, cosh, "cosh", cosh),
+    (TANH_METHOD, tanh, "tanh", tanh),
+    (ARCSINH_METHOD, arcsinh, "arcsinh", arcsinh),
+    (ARCCOSH_METHOD, arccosh, "arccosh", arccosh),
+    (ARCTANH_METHOD, arctanh, "arctanh", arctanh),
+    (DEGREES_METHOD, degrees, "degrees", degrees),
+    (RADIANS_METHOD, radians, "radians", radians),
 }
 
 const COLUMN_METHOD: NativeMethod =
@@ -656,6 +682,156 @@ fn cum_sum<'local>(
     Ok(ExprHandle::alloc(expr.get().cum_sum(reverse)))
 }
 
+const POW_METHOD: NativeMethod =
+    col_method!(extern fn pow(expr: ExprHandle, exponent: jdouble) -> ExprHandle, name = "pow",);
+
+fn pow<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    exponent: jdouble,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().pow(lit(exponent))))
+}
+
+const FLOOR_DIV_METHOD: NativeMethod = col_method!(extern fn floor_div(expr: ExprHandle, other: ExprHandle) -> ExprHandle, name = "floorDiv",);
+
+fn floor_div<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    other: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().floor_div(other.get())))
+}
+
+const ROUND_METHOD: NativeMethod =
+    col_method!(extern fn round(expr: ExprHandle, decimals: jint) -> ExprHandle, name = "round",);
+
+fn round<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    decimals: jint,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(
+        expr.get().round(decimals as u32, RoundMode::HalfToEven),
+    ))
+}
+
+const ROUND_SIG_FIGS_METHOD: NativeMethod = col_method!(extern fn round_sig_figs(expr: ExprHandle, digits: jint) -> ExprHandle, name = "roundSigFigs",);
+
+fn round_sig_figs<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    digits: jint,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().round_sig_figs(digits)))
+}
+
+const TRUNCATE_METHOD: NativeMethod = col_method!(extern fn truncate(expr: ExprHandle, decimals: jint) -> ExprHandle, name = "truncate",);
+
+fn truncate<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    decimals: jint,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().truncate(decimals as u32)))
+}
+
+const CLIP_METHOD: NativeMethod = col_method!(extern fn clip(expr: ExprHandle, lower: ExprHandle, upper: ExprHandle) -> ExprHandle, name = "clip",);
+
+fn clip<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    lower: ExprHandle,
+    upper: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().clip(lower.get(), upper.get())))
+}
+
+const CLIP_MIN_METHOD: NativeMethod = col_method!(extern fn clip_min(expr: ExprHandle, lower: ExprHandle) -> ExprHandle, name = "clipMin",);
+
+fn clip_min<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    lower: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().clip_min(lower.get())))
+}
+
+const CLIP_MAX_METHOD: NativeMethod = col_method!(extern fn clip_max(expr: ExprHandle, upper: ExprHandle) -> ExprHandle, name = "clipMax",);
+
+fn clip_max<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    upper: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().clip_max(upper.get())))
+}
+
+const LOG_METHOD: NativeMethod =
+    col_method!(extern fn log(expr: ExprHandle, base: jdouble) -> ExprHandle, name = "log",);
+
+fn log<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    base: jdouble,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().log(lit(base))))
+}
+
+const DIFF_METHOD: NativeMethod = col_method!(extern fn diff(expr: ExprHandle, n: jlong, null_behavior: java.lang.String) -> ExprHandle, name = "diff",);
+
+fn diff<'local>(
+    env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    n: jlong,
+    null_behavior: JString<'local>,
+) -> anyhow::Result<ExprHandle> {
+    let behavior = j_string_to_string(
+        env,
+        &null_behavior,
+        Some("Failed to parse null behavior as string"),
+    )?;
+    let nb = match behavior.to_lowercase().as_str() {
+        "drop" => NullBehavior::Drop,
+        _ => NullBehavior::Ignore,
+    };
+    Ok(ExprHandle::alloc(expr.get().diff(lit(n), nb)))
+}
+
+const PCT_CHANGE_METHOD: NativeMethod = col_method!(extern fn pct_change(expr: ExprHandle, n: jlong) -> ExprHandle, name = "pctChange",);
+
+fn pct_change<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    n: jlong,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(expr.get().pct_change(lit(n))))
+}
+
+const REINTERPRET_METHOD: NativeMethod = col_method!(extern fn reinterpret(expr: ExprHandle, signed: bool) -> ExprHandle, name = "reinterpret",);
+
+fn reinterpret<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    expr: ExprHandle,
+    signed: bool,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(
+        expr.get().reinterpret(Some(signed), None),
+    ))
+}
+
 decl_free!(
     FREE_METHOD,
     "com.github.chitralverma.polars.internal.jni.expressions.column_expr$",
@@ -688,6 +864,31 @@ pub const METHODS: &[NativeMethod] = &[
     LAST_METHOD,
     ARG_MIN_METHOD,
     ARG_MAX_METHOD,
+    NEG_METHOD,
+    FLOOR_METHOD,
+    CEIL_METHOD,
+    ABS_METHOD,
+    SIGN_METHOD,
+    SQRT_METHOD,
+    CBRT_METHOD,
+    EXP_METHOD,
+    LOG1P_METHOD,
+    TO_PHYSICAL_METHOD,
+    SIN_METHOD,
+    COS_METHOD,
+    TAN_METHOD,
+    COT_METHOD,
+    ARCSIN_METHOD,
+    ARCCOS_METHOD,
+    ARCTAN_METHOD,
+    SINH_METHOD,
+    COSH_METHOD,
+    TANH_METHOD,
+    ARCSINH_METHOD,
+    ARCCOSH_METHOD,
+    ARCTANH_METHOD,
+    DEGREES_METHOD,
+    RADIANS_METHOD,
     COLUMN_METHOD,
     SORT_COLUMN_BY_NAME_METHOD,
     APPLY_UNARY_METHOD,
@@ -713,5 +914,17 @@ pub const METHODS: &[NativeMethod] = &[
     ANY_METHOD,
     ALL_METHOD,
     CUM_SUM_METHOD,
+    POW_METHOD,
+    FLOOR_DIV_METHOD,
+    ROUND_METHOD,
+    ROUND_SIG_FIGS_METHOD,
+    TRUNCATE_METHOD,
+    CLIP_METHOD,
+    CLIP_MIN_METHOD,
+    CLIP_MAX_METHOD,
+    LOG_METHOD,
+    DIFF_METHOD,
+    PCT_CHANGE_METHOD,
+    REINTERPRET_METHOD,
     FREE_METHOD,
 ];

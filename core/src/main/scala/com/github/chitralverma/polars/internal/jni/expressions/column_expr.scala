@@ -104,6 +104,80 @@ private[polars] object column_expr extends Natively {
 
   @native def cumSum(ptr: Long, reverse: Boolean): Long
 
+  @native def neg(ptr: Long): Long
+
+  @native def pow(ptr: Long, exponent: Double): Long
+
+  @native def floorDiv(ptr: Long, other: Long): Long
+
+  @native def floor(ptr: Long): Long
+
+  @native def ceil(ptr: Long): Long
+
+  @native def round(ptr: Long, decimals: Int): Long
+
+  @native def roundSigFigs(ptr: Long, digits: Int): Long
+
+  @native def truncate(ptr: Long, decimals: Int): Long
+
+  @native def abs(ptr: Long): Long
+
+  @native def clip(ptr: Long, lower: Long, upper: Long): Long
+
+  @native def clipMin(ptr: Long, lower: Long): Long
+
+  @native def clipMax(ptr: Long, upper: Long): Long
+
+  @native def sign(ptr: Long): Long
+
+  @native def sqrt(ptr: Long): Long
+
+  @native def cbrt(ptr: Long): Long
+
+  @native def exp(ptr: Long): Long
+
+  @native def log(ptr: Long, base: Double): Long
+
+  @native def log1p(ptr: Long): Long
+
+  @native def diff(ptr: Long, n: Long, nullBehavior: String): Long
+
+  @native def pctChange(ptr: Long, n: Long): Long
+
+  @native def sin(ptr: Long): Long
+
+  @native def cos(ptr: Long): Long
+
+  @native def tan(ptr: Long): Long
+
+  @native def cot(ptr: Long): Long
+
+  @native def arcsin(ptr: Long): Long
+
+  @native def arccos(ptr: Long): Long
+
+  @native def arctan(ptr: Long): Long
+
+  @native def sinh(ptr: Long): Long
+
+  @native def cosh(ptr: Long): Long
+
+  @native def tanh(ptr: Long): Long
+
+  @native def arcsinh(ptr: Long): Long
+
+  @native def arccosh(ptr: Long): Long
+
+  @native def arctanh(ptr: Long): Long
+
+  @native def degrees(ptr: Long): Long
+
+  @native def radians(ptr: Long): Long
+
+  @native def toPhysical(ptr: Long): Long
+
+  @native def reinterpret(ptr: Long, signed: Boolean): Long
+
   @native def free(ptr: Long): Unit
 
 }

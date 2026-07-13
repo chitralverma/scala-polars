@@ -18,4 +18,6 @@ private[polars] object functions_expr extends Natively {
 
   @native def ternaryExpr(predicate: Long, truthy: Long, falsy: Long): Long
 
+  @native def arctan2(y: Long, x: Long): Long
+
 }

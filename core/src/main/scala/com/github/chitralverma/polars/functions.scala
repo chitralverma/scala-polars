@@ -146,9 +146,55 @@ object functions {
   def cumSum(colName: String, reverse: Boolean): Column = col(colName).cumSum(reverse)
   def cumSum(colName: String): Column = col(colName).cumSum()
 
-  // --- Horizontal Aggregations ---
+  // --- Two-argument trigonometry ---
 
   import com.github.chitralverma.polars.internal.jni.expressions.functions_expr
+
+  /** Compute the element-wise arctangent of `y / x`, choosing the correct quadrant from the signs
+    * of both arguments. The result is expressed in radians.
+    *
+    * @param y
+    *   expression supplying the numerator (the "y" coordinate)
+    * @param x
+    *   expression supplying the denominator (the "x" coordinate)
+    * @return
+    *   a [[com.github.chitralverma.polars.api.expressions.Column]] of angles in radians
+    */
+  def arctan2(y: Expression, x: Expression): Column =
+    Column.withPtr(functions_expr.arctan2(y.ptr, x.ptr))
+
+  /** Compute the element-wise arctangent of `y / x` from two column names.
+    *
+    * @param yColName
+    *   name of the column supplying the numerator
+    * @param xColName
+    *   name of the column supplying the denominator
+    */
+  def arctan2(yColName: String, xColName: String): Column =
+    arctan2(col(yColName), col(xColName))
+
+  /** Compute the element-wise arctangent of `y / x` in degrees.
+    *
+    * @param y
+    *   expression supplying the numerator (the "y" coordinate)
+    * @param x
+    *   expression supplying the denominator (the "x" coordinate)
+    * @return
+    *   a [[com.github.chitralverma.polars.api.expressions.Column]] of angles in degrees
+    */
+  def arctan2d(y: Expression, x: Expression): Column = arctan2(y, x).degrees()
+
+  /** Compute the element-wise arctangent of `y / x` in degrees from two column names.
+    *
+    * @param yColName
+    *   name of the column supplying the numerator
+    * @param xColName
+    *   name of the column supplying the denominator
+    */
+  def arctan2d(yColName: String, xColName: String): Column =
+    arctan2d(col(yColName), col(xColName))
+
+  // --- Horizontal Aggregations ---
 
   @annotation.varargs
   def anyHorizontal(cols: Expression*): Column =
