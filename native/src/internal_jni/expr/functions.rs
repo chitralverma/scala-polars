@@ -158,6 +158,20 @@ fn ternary_expr_expr<'local>(
     )))
 }
 
+const ARCTAN2_METHOD: NativeMethod = fn_method!(
+    extern fn arctan2_expr(y: ExprHandle, x: ExprHandle) -> ExprHandle,
+    name = "arctan2",
+);
+
+fn arctan2_expr<'local>(
+    _env: &mut Env<'local>,
+    _this: JObject<'local>,
+    y: ExprHandle,
+    x: ExprHandle,
+) -> anyhow::Result<ExprHandle> {
+    Ok(ExprHandle::alloc(y.get().arctan2(x.get())))
+}
+
 pub const METHODS: &[NativeMethod] = &[
     ANY_HORIZONTAL_METHOD,
     ALL_HORIZONTAL_METHOD,
@@ -166,4 +180,5 @@ pub const METHODS: &[NativeMethod] = &[
     SUM_HORIZONTAL_METHOD,
     MEAN_HORIZONTAL_METHOD,
     TERNARY_EXPR_METHOD,
+    ARCTAN2_METHOD,
 ];
