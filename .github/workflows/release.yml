@@ -28,7 +28,7 @@ jobs:
 
       # sbt 2.x requires JDK 17+ to run; use the latest LTS (25) for all build/CI tooling.
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: "25"
           distribution: "zulu"
@@ -104,7 +104,7 @@ jobs:
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for the native build tooling.
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: "25"
           distribution: "zulu"
@@ -154,7 +154,7 @@ jobs:
       # Install the test-target JDK first, then JDK 25 last so it is the default that hosts sbt.
       # actions/setup-java exposes each install as JAVA_HOME_<major>_<arch>.
       - name: Set up JDKs (test target + sbt runtime)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: |
             ${{ matrix.java }}
@@ -261,7 +261,7 @@ jobs:
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for publishing.
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: "25"
           distribution: "zulu"
@@ -310,7 +310,7 @@ jobs:
 
       # sbt 2.x runs on JDK 17+; latest LTS (25) for doc generation.
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: "25"
           distribution: "zulu"
