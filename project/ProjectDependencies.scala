@@ -67,7 +67,7 @@ object ProjectDependencies {
 
 object Versions {
   val scalaCollectionCompat = "2.14.0"
-  val scalaParallelCollections = "1.2.0"
+  val scalaParallelCollections = "1.3.0"
   // Single version knob for jackson-databind / -module-scala / -datatype-jsr310.
   val jacksonVersion = "2.22.1"
 
